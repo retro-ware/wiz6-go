@@ -563,6 +563,9 @@ func wmazeF8f4c(row, wall int) {
 // the party counter of the same index runs; ornament 0 shows the facing) and shows
 // the title strip.
 func drawViewFrame() {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	for i := range 6 {
 		var tile, frame int
 		switch i {
@@ -590,6 +593,9 @@ func drawViewFrame() {
 // drawMazeView (WMAZE 903b) draws the view from the party's position into the
 // working buffer, row by row from the front, then the queued objects from the back.
 func drawMazeView() {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	x, y, cx, cy, block := partyX, partyY, cellX, cellY, partyBlock
 	g4fa6 = 0
 	viewRowsOpen = 1

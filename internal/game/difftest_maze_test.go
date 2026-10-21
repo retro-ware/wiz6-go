@@ -6,6 +6,12 @@ var mazeFuncs = map[string]func(a []int) int{
 	"f61f8": func(a []int) int { mzWins(); healMember(a[0], a[1], a[2], a[3], a[4]); return 0 },
 	"f63f4": func(a []int) int { mzWins(); return b2i(restParty()) },
 	"fae49": func(a []int) int { mzWins(); trapEvent(); return 0 },
+	"f5949": func(a []int) int { mzWins(); moveParty(a[0]); return 0 },
+	"f56f4": func(a []int) int { mzWins(); return tryMove(a[0]) },
+	"f7868": func(a []int) int { mzWins(); fleeParty(a[0]); return 0 },
+	"fc8eb": func(a []int) int { mzWins(); runCellEvents(); return 0 },
+	"fa4f5": func(a []int) int { mzWins(); checkSecretDetect(); return 0 },
+	"fccd2": func(a []int) int { mzWins(); searchCell(); return 0 },
 }
 
 // mzWins makes the windows the maze code draws in; the C's are stubbed.
@@ -28,6 +34,8 @@ var mazeRoots = map[string]any{
 	"partyX": &partyX, "partyY": &partyY, "mazeA": &mazeA, "mazeB": &mazeB,
 	"mzRedrawView": &mzRedrawView, "mzG5034": &mzG5034, "mzG5038": &mzG5038, "mzG503a": &mzG503a,
 	"mzG503c": &mzG503c, "mzG503e": &mzG503e, "eventScreenDirty": &eventScreenDirty, "mzG5232": &mzG5232,
+	"returnCmd": &returnCmd, "g363e": &g363e, "reachableCells": &reachableCells, "eventCells": &eventCells,
+	"g4338": &g4338, "g433a": &g433a, "treasureID": &treasureID,
 }
 
 func init() {

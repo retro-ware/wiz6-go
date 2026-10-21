@@ -17,3 +17,8 @@
 [widths] 10:33 random (swept into 5e8a6ad), healMember, openTreasure committed; checking WMNPC 1266/555, WPCVW
 [widths] 10:34 WPCVW/WDOPT/WMAZE/WTREA roll-sum fixes committed; scanning WPOPS, WPCMK, root
 2026-10-21 10:35:31 [combat] spell_table[67]=244 was the sentinel harness bug (fixed by char agent); regenerated; fb03c fc064 fb44d f9405 fc3ee fc1e4 fb934 f8fa8 f4c48 f47a3 x300 match. fb44d: specs used garbage item records >482 (harness). fc064: monster members 6-8 excluded (C try_raise_skill corrupts memory past party).
+[widths] 10:35 WPCVW/WPCMK resist clamp fixes committed
+2026-10-21 10:35:53 [char] WPCVW: 19 functions x300 match (level up parts, equip, items, classes); a11b limitStats pending
+2026-10-21 10:36:08 [char] WPCVW: 19 functions x300 match (level up parts, equip, items, classes)
+[widths] 10:37 spell-effect status wraps (WDOPT 6054, WPCVW 6b3c, WTREA 6efd) committed
+2026-10-21 10:37:12 [maze] move_party, try_move, flee_party, run_cell_events (all 25 event kinds), check_secret_detect, search_cell: 300 each match (harness: input ranges, UI guards)
