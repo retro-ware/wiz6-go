@@ -88,6 +88,10 @@ func stopSound() {
 
 // playSound (ROOT 0aaa) plays sound n as the sound setting allows.
 func playSound(n int) {
+	if dtLog != nil {
+		dtLog("snd", n)
+		return
+	}
 	r := sounds[n]
 	level := r.Level
 	step := n >= 10 && n <= 12 // is_sound_10_to_12: footsteps and the like

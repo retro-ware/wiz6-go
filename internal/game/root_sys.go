@@ -62,10 +62,14 @@ func random(n int) int {
 		pc, _, line, _ := runtime.Caller(1)
 		fmt.Fprintf(os.Stderr, "rng %d %s:%d\n", n, runtime.FuncForPC(pc).Name(), line)
 	}
-	if n <= 0 {
-		return 0
+	r := 0
+	if n > 0 {
+		r = randomWord() % n
 	}
-	return randomWord() % n
+	if dtLog != nil {
+		dtLog("rng", n, r)
+	}
+	return r
 }
 
 // setBit (ROOT 2881) sets (v true) or clears bit n of a.

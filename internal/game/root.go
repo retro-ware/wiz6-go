@@ -132,6 +132,10 @@ func accessScenarioRecord(typ, index int, buf []byte, write bool) {
 
 // getMessage (ROOT 075b) is message msg of MSG.DBS, decoded; msgNotFound says it is missing.
 func getMessage(msg int) string {
+	if dtLog != nil {
+		dtLog("msg", msg)
+		return ""
+	}
 	b := msgs.Get(msg)
 	msgNotFound = b == nil
 	return string(b)

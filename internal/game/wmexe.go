@@ -136,6 +136,9 @@ func showCombatMsg(n int) {
 // combatDelay (combat_delay, WMEXE 774b) animates the view for tenths of a second; a
 // click or Enter ends it early.
 func combatDelay(tenths int) {
+	if dtLog != nil {
+		return
+	}
 	mexeDelayed = 1
 	flushKeys()
 	for n := tenths * 10; n > 0; n-- {
@@ -186,6 +189,9 @@ func mexeAnimateStep() {
 
 // resetAnimation (reset_animation, WMEXE 773a) runs a whole view cycle.
 func resetAnimation() {
+	if dtLog != nil {
+		return
+	}
 	viewAnimState = -2
 	for {
 		mexeAnimateStep()
@@ -453,7 +459,11 @@ func reduceStamina(c *Combatant, n int) {
 
 // drawCardX (draw_member_card_x, WMEXE 7353) is WMELE's drawCombatCard: the C reads
 // the fighter back from the party group (f5f19) before drawing.
-func drawCardX(i int, hilite bool) { drawCombatCard(i, hilite) }
+func drawCardX(i int, hilite bool) {
+	if dtLog == nil {
+		drawCombatCard(i, hilite)
+	}
+}
 
 // mexeSwapMembers (swap_members, WMEXE c31a) swaps party members i and j and redraws
 // their cards.
@@ -810,4 +820,9 @@ func doAdvanceRetreat(from, to int) {
 }
 
 // itoa is int_to_string.
-func itoa(n int) string { return strconv.Itoa(n) }
+func itoa(n int) string {
+	if dtLog != nil {
+		dtLog("num", n)
+	}
+	return strconv.Itoa(n)
+}
