@@ -328,6 +328,7 @@ func getCombatInput() int {
 			menuClicked = 1
 			return r - 1
 		}
+		paceViewCycle()
 		animateCombatStep()
 		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
 			blinkCursor()

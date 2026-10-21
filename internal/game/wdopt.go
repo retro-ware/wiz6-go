@@ -53,6 +53,7 @@ func wdoptOvmain() {
 // phase and redraws the view.
 func viewAnimStep() {
 	if dpAnimCount == 0 {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {
@@ -82,6 +83,7 @@ func getMenuChoiceView(keys string) int {
 			return r - 1
 		}
 		if dpAnimCount == 0 {
+			animPace(mazeAnimPeriod)
 			animPhase = (animPhase + 1) % 2
 			redrawMazeView()
 			if pvBlinkState != -1 && animPhase == phase {
@@ -511,6 +513,7 @@ func wdoptShowOverheadMap(power int) {
 	clearClickFlag()
 	flushKeys()
 	for waiting := true; waiting; {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		drawMazeView()
 		drvFillBack(win, 0)

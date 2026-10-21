@@ -55,6 +55,7 @@ func trySkillGain(m, skill, difficulty int) {
 // and its kin): every 10th call flips the animation phase and redraws.
 func mzAnimate() {
 	if mzAnimCounter == 0 {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {
@@ -126,6 +127,7 @@ func waitMorePrompt() {
 			return
 		}
 		if mzAnimCounter == 0 {
+			animPace(mazeAnimPeriod)
 			animPhase = (animPhase + 1) % 2
 			redrawMazeView()
 			setCursor(textWin, 39, 4)

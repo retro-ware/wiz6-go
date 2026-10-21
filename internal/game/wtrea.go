@@ -162,6 +162,7 @@ func animateTreasureView() {
 // and draws a frame, else an ambient sound or a pause.
 func trAnimate() {
 	if trAnimCounter == 0 {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		animateTreasureView()
 	} else {
@@ -196,6 +197,7 @@ func trWaitMorePrompt() {
 			return
 		}
 		if trAnimCounter == 0 {
+			animPace(mazeAnimPeriod)
 			animPhase = (animPhase + 1) % 2
 			animateTreasureView()
 			setCursor(trTextWin, 39, 4)
@@ -312,6 +314,7 @@ func getChestInput(keys string, regions []byte) int {
 			return k - 1
 		}
 		if trAnimCounter == 0 {
+			animPace(mazeAnimPeriod)
 			animPhase = (animPhase + 1) % 2
 			animateTreasureView()
 			if trBlink != -1 && animPhase == phase {

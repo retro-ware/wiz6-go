@@ -1,0 +1,6 @@
+Mi. 21 Okt. 2026 08:36:28 CEST start
+Mi. 21 Okt. 2026 08:36:52 CEST measuring orig at cycles=fixed 7800 (party.keys + 12s idle)
+Mi. 21 Okt. 2026 08:41:49 CEST measured orig maze gate-view flip: 56 frames @70.086fps = 0.80s (cycles fixed 7800)
+Mi. 21 Okt. 2026 08:43:18 CEST idle stretch 76-84s gate view: 6 consecutive 2-phase alternations at 60-61 frames = 0.86s; using 860ms. DOSBox sound default (on)
+Mi. 21 Okt. 2026 08:43:41 CEST implemented animPace; testing
+Mi. 21 Okt. 2026 08:53:19 CEST verified: port torch view flips every 17-18 shots*50ms = 0.85-0.9s, same frames as orig; key->view change <=10ms

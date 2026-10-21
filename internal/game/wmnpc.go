@@ -280,6 +280,7 @@ func npcLoadPic(pic, slot int) { loadMonsterPic(pic, slot, 21) }
 // npcWaitKey (WMNPC 578c) animates until a key of class comes.
 func npcWaitKey(class int) int {
 	for !keyAvailable(class) {
+		paceViewCycle()
 		npcAnimStep()
 	}
 	return int(uint8(getKey(class)))
@@ -346,6 +347,7 @@ func npcMenuInput() int {
 			menuClicked = 1
 			return r - 1
 		}
+		paceViewCycle()
 		npcAnimStep()
 		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
 			blinkCursor()
@@ -363,6 +365,7 @@ func npcWait(tenths int) {
 		if keyAvailable(1) && int8(getKey(1)) == 13 {
 			return
 		}
+		paceViewCycle()
 		npcAnimStep()
 	}
 }
@@ -381,6 +384,7 @@ func npcMorePrompt() {
 		if checkScreenClick() {
 			return
 		}
+		paceViewCycle()
 		npcAnimStep()
 		if viewAnimState == -2 {
 			setCursor(npcTextWin, 39, npcTextRows)

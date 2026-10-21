@@ -387,6 +387,7 @@ func choosePartyMember(msg, cancel int) int {
 // get_maze_input).
 func animateStep() {
 	if mzAnimCounter == 0 {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {

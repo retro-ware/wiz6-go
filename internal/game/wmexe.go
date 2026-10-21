@@ -145,6 +145,7 @@ func combatDelay(tenths int) {
 		if keyAvailable(1) && int8(getKey(1)) == 13 {
 			return
 		}
+		paceViewCycle()
 		mexeAnimateStep()
 	}
 }

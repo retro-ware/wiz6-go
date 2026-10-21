@@ -43,6 +43,7 @@ func charIndex(keys string, c int) int { return strings.IndexByte(keys, byte(c))
 // otherwise two delay ticks.
 func campAnimStep() {
 	if campAnimTick == 0 {
+		animPace(mazeAnimPeriod)
 		animPhase = (animPhase + 1) % 2
 		drawCampScene(int(animPhase), campAnimDx, campAnimDy)
 		drvShowWindow(pictureWin)

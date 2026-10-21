@@ -113,3 +113,9 @@ func drawPointer(f []byte) {
 		}
 	}
 }
+
+// ClickPending is whether a click is latched (it stays latched for PollClick).
+func ClickPending() bool {
+	pump()
+	return latched
+}
