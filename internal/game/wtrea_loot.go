@@ -113,7 +113,7 @@ func openTreasure() {
 		}
 		switch e.Kind {
 		case 1:
-			gold += int32(random(int(e.A)-int(e.B)) + int(e.B))
+			gold += int32(int16(random(int(e.A)-int(e.B)) + int(e.B))) // C int sum wraps
 		case 4:
 			exp += int32(e.A) * int32(e.B)
 		case 2:
