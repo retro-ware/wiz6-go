@@ -556,7 +556,7 @@ func wdoptShowOverheadMap(power int) {
 	destroyWindow(win, false)
 	redrawMazeView()
 	dpAnimCount = 0
-	g4330[0], g4326[0] = -1, 0
+	picSlotMonster[4+0], picSlotLoaded[4+0] = -1, false
 }
 
 // f6054 (WDOPT) applies spell s of the given power cast (or used from an item) by member

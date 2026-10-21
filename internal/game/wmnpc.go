@@ -944,7 +944,7 @@ func runNPCEncounter() {
 	destroyWindow(combatWinB, false)
 	eraseWindow(mainWindow, false)
 	resumeWindowDraw(g4fb0)
-	g4326 = [3]byte{}
+	clear(picSlotLoaded[4:7]) // g4326
 	viewPosGroup = [2][5]int16{} // ba00, which also frees the sprites
 }
 
@@ -958,7 +958,7 @@ func initNPCEncounter() {
 	spriteCount = 0
 	viewAnimState = -2
 	viewPosGroup = [2][5]int16{}
-	g4330 = [3]int8{-1, -1, -1}
+	picSlotMonster[4], picSlotMonster[5], picSlotMonster[6] = -1, -1, -1 // g4330
 	npcSeqForce = [10][5]int16{}
 	npcPicAlt = 0
 	npcRec = npcRecord[NPCRec](dbs.RecNPC, npcID)

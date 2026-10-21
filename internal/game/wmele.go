@@ -57,6 +57,9 @@ func sidePanel(i int) *Window {
 // waitAnimatingView (wait_animating_view, WMELE 45a6) animates the view for tenths of
 // a second; a click or Enter ends it early.
 func waitAnimatingView(tenths int) {
+	if dtLog != nil {
+		return
+	}
 	flushKeys()
 	for n := tenths * 10; n > 0; n-- {
 		if checkScreenClick() {
@@ -114,7 +117,9 @@ func findMonsterPicSlot(mon int) int {
 	}
 	if free != -1 {
 		picSlotMonster[free] = -1
-		loadMonsterPicSlot(mon, free) // load_monster_pic_mele (46cd) is the same
+		if dtLog == nil {
+			loadMonsterPicSlot(mon, free) // load_monster_pic_mele (46cd) is the same
+		}
 	}
 	return free
 }
@@ -129,7 +134,9 @@ func generateMonsterGroup(mon, n int) {
 	grp.PicSlot = uint8(findMonsterPicSlot(int(rec.Pic)))
 	if n == 1 {
 		if rec.Sound > 0 {
-			loadSound(int(rec.Sound)) // load_sound_mele (45f1) is the same
+			if dtLog == nil {
+				loadSound(int(rec.Sound)) // load_sound_mele (45f1) is the same
+			}
 		} else {
 			curSound = -1
 		}
@@ -365,7 +372,10 @@ func checkGroupSurprise() {
 // loadGroupPics (load_group_pics, WMELE 5574) finds the pictures of all groups and loads
 // group 1's sound.
 func loadGroupPics() {
-	g4326 = [3]byte{}
+	if dtLog != nil {
+		return
+	}
+	clear(picSlotLoaded[4:7]) // g4326
 	for g := 1; g <= monsterGroupCount; g++ {
 		monsterGroups[g].PicSlot = uint8(findMonsterPicSlot(int(groupMonsterRec[g].Pic)))
 	}
@@ -436,11 +446,11 @@ func advanceMonsterGroups() {
 			hurt := 0
 			for s := range c.Status {
 				if c.Status[s] > 0 {
-					hurt += int(c.HP / 4)
+					hurt = int(int16(hurt + int(c.HP/4))) // C ints wrap
 				}
 			}
 			if int(c.HP) > hurt {
-				p += int(c.HP) - hurt
+				p = int(int16(p + int(c.HP) - hurt))
 			}
 		}
 		if rec.Unk168[0] > 0 {
@@ -466,10 +476,7 @@ func advanceMonsterGroups() {
 		waitAnimatingView(1)
 		grp := monsterGroups[g]
 		name := monsterName(g, grp.Count != 1)
-		msg := getMessage(3511)
-		if grp.Count == 1 {
-			msg = getMessage(3510)
-		}
+		msg := getMessage(3511 - b2i(grp.Count == 1))
 		setCursor(partyPictureWin, 20-(len(name)+len(msg)+1)/2, 0)
 		printString(partyPictureWin, name, 6)
 		printString(partyPictureWin, msg, 14)
@@ -595,6 +602,9 @@ func setUpEncounter() {
 // endEncounter (end_encounter, WMELE 6fb6) closes the combat windows and frees the
 // combat buffers.
 func endEncounter() {
+	if dtLog != nil {
+		return
+	}
 	destroyWindow(combatWinA, false)
 	destroyWindow(combatWinB, false)
 	resumeWindowDraw(mainWindow)
@@ -612,7 +622,7 @@ func endEncounter() {
 	for g := range 7 {
 		groupMonsterRec[g], monsterGroups[g] = nil, nil
 	}
-	g4326 = [3]byte{}
+	clear(picSlotLoaded[4:7]) // g4326
 }
 
 // redrawCombatScreen (redraw_combat_screen, WMELE 70ce) redraws the party and the
@@ -703,7 +713,7 @@ func beginCombat() {
 	for s := range spriteList {
 		spriteList[s] = Sprite{Depth: 255}
 	}
-	g4326 = [3]byte{}
+	clear(picSlotLoaded[4:7]) // g4326
 	monsterJitterX[0], monsterJitterY[0] = [5]uint8{}, [5]uint8{}
 	deferWindowDraw(g4fb0)
 	combatWinA = createWindow(0, 19, 19, 5, 11, -4, 0, false)

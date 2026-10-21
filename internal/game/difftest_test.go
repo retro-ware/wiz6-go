@@ -85,6 +85,9 @@ func getInt(v reflect.Value) int64 {
 }
 
 func setInt(v reflect.Value, n int64) {
+	if !v.CanSet() { // padding (_ fields)
+		return
+	}
 	if v.Kind() == reflect.Bool {
 		v.SetBool(n != 0)
 		return
@@ -115,6 +118,11 @@ func resetDiffState() {
 	}
 	if partyPictureWin == nil {
 		partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
+	}
+	for _, w := range []**Window{&mainWindow, &bottomLineWin, &combatWinA, &combatWinB, &g4fb8, &g4fba} {
+		if *w == nil {
+			*w = createWindow(0, 0, 40, 5, 8, -1, 0, false)
+		}
 	}
 }
 

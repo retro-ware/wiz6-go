@@ -148,8 +148,6 @@ var (
 var (
 	partyCount        int    // party_count
 	memberPcfileIndex [6]int // PCFILE slot of each member (member_pcfile_index)
-	g4330             [3]int8
-	g4326             [3]byte
 	g433a             int
 	msgBlockNum       int
 

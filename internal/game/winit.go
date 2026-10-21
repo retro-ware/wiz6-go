@@ -326,8 +326,8 @@ func initMainScreen() {
 	for i := range memberPcfileIndex {
 		memberPcfileIndex[i] = -1
 	}
-	for j := range g4330 {
-		g4330[j], g4326[j] = -1, 0
+	for j := range 3 {
+		picSlotMonster[4+j], picSlotLoaded[4+j] = -1, false
 	}
 	g433a = 0
 	gameState = 4

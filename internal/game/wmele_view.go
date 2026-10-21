@@ -6,12 +6,24 @@ package game
 // same code as WPOPS's: animateCombatStep, animateUntilReset, insertSprite,
 // drawSprite and buildMonsterAnimFrames.
 
-func animateViewStep()      { animateCombatStep() }
-func redrawViewBackground() { animateUntilReset() }
+func animateViewStep() {
+	if dtLog == nil {
+		animateCombatStep()
+	}
+}
+
+func redrawViewBackground() {
+	if dtLog == nil {
+		animateUntilReset()
+	}
+}
 
 // queueMonsterSprite (queue_monster_sprite, WMELE 66bf) queues the monster at view row,
 // col shifted dx pixels (the encounter flash); WPOPS's copy has no shift.
 func queueMonsterSprite(row, col, dx int) {
+	if dtLog != nil {
+		return
+	}
 	g := int(viewPosGroup[row][col])
 	if g < 1 || g > 3 || row > int(viewRowsOpen) {
 		return
@@ -126,6 +138,9 @@ func arrangeMonsterPositions() {
 // showEncounterView (show_encounter_view, WMELE 6e12) flashes the newly placed monsters
 // in over four frames; wide (1) swings them in from further out.
 func showEncounterView(wide int) {
+	if dtLog != nil {
+		return
+	}
 	if meleAnnounce == 1 {
 		eraseWindow(mainWindow, true)
 		printCentered(mainWindow, getMessage(2025), 0, 18)

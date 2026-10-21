@@ -450,8 +450,8 @@ func setupGameWindows() {
 	curEvent = [4]int16{}
 	g4f86 = 0
 	mazeA, mazeB = nil, nil
-	for i := range g4330 {
-		g4330[i], g4326[i] = -1, 0
+	for i := range 3 {
+		picSlotMonster[4+i], picSlotLoaded[4+i] = -1, false
 	}
 }
 
