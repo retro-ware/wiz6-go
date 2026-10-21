@@ -13,31 +13,31 @@ import (
 // ovmain (WPCVW 4572).
 func wpcvwOvmain() {
 	pvBlinkState = -1
-	if gameState == 17 {
+	if gameState == stateViewCharacter {
 		viewCharacter(int(curMember))
 	}
-	if gameState == 22 {
+	if gameState == stateLevelUp {
 		levelUpEntry()
 	}
 }
 
 // WPCVW bss (0x553c..0x583a).
 var (
-	pvBlinkState   = -1       // g553c: -1 no blinking cursor, else which of pvBlinkText shows next
-	pvItemNames    [10]string // 0x55de: the inventory's item names
-	pvItemRowColor [10]int    // item_row_color: the colour each inventory row is printed in
-	pvSwagNames    [12]string // 0x5692: the swag bag's item names
-	pvCardWin      *Window    // g5752: the member card window on the right
-	pvBlinkWin     *Window    // g5754: where the blinking cursor is
-	pvBlinkX       int        // g5756
-	pvBlinkY       int        // g5758
-	pvBlinkText    [2]string  // 0x575a, 0x5772: the two blink phases
-	pvBlinkColor   [2]int     // g578a, g578c
-	pvSpellTarget  int        // g578e: the member a spell is cast on
-	pvNamesLoaded  bool       // g57fc: pvItemNames holds the shown member's names
-	pvSkillShown   [30]bool   // g57fe..g583a: the skills the skills page lists
-	pvClassAllowed [14]bool   // class_allowed (0x57e0)
-	pvChosenItem   int        // g43ca (root): the item the last choose_item picked
+	pvBlinkState   = -1              // g553c: -1 no blinking cursor, else which of pvBlinkText shows next
+	pvItemNames    [packSlots]string // 0x55de: the inventory's item names
+	pvItemRowColor [packSlots]int    // item_row_color: the colour each inventory row is printed in
+	pvSwagNames    [swagSlots]string // 0x5692: the swag bag's item names
+	pvCardWin      *Window           // g5752: the member card window on the right
+	pvBlinkWin     *Window           // g5754: where the blinking cursor is
+	pvBlinkX       int               // g5756
+	pvBlinkY       int               // g5758
+	pvBlinkText    [2]string         // 0x575a, 0x5772: the two blink phases
+	pvBlinkColor   [2]int            // g578a, g578c
+	pvSpellTarget  int               // g578e: the member a spell is cast on
+	pvNamesLoaded  bool              // g57fc: pvItemNames holds the shown member's names
+	pvSkillShown   [skillCount]bool  // g57fe..g583a: the skills the skills page lists
+	pvClassAllowed [classCount]bool  // class_allowed (0x57e0)
+	pvChosenItem   int               // g43ca (root): the item the last choose_item picked
 )
 
 // WPCVW data segment strings (0x4fee..0x549e).
@@ -47,14 +47,88 @@ const (
 	wpcvwACOpen     = " ("              // 0x5192
 )
 
+// Character numbers WPCMK and WPCVW share.
+const (
+	// Equip positions (messages 351+): PC.Equipped and PC.AC indexes; the two hands are
+	// also PC.Hands indexes.
+	equipPrimary   = 0
+	equipSecondary = 1
+	equipMisc      = 2 // its AC applies to the whole body
+	equipHelmet    = 3
+	equipBody      = 4
+	equipLegs      = 5
+	equipGauntlets = 6
+	equipBoots     = 7
+	equipSlots     = 8
+	acBase         = 0 // PC.AC[0]: the bare armour class, AC[1] what the hands' items add
+	acHands        = 1
+
+	// Item.Flags bits besides itemEquipped (wmnpc.go).
+	itemCursed    = 2  // cannot be dropped; spell 73 (REMOVE CURSE) destroys it
+	itemOffHand   = 4  // may go in the secondary hand (record bit recItemOffHand)
+	itemTwoHanded = 8  // a weapon that takes both hands (record bit recItemTwoHanded)
+	itemKept      = 64 // an important item (record bit itemImportant): cannot be dropped
+	// ItemRec.Flags bits besides itemImportant (wmnpc.go).
+	recItemTwoHanded = 4
+	recItemOffHand   = 8
+
+	// Item types (ItemRec.Type, messages 1550+) that are tested one by one.
+	itemTypeLauncher = 3 // WEAPON (L): bows and slings
+	itemTypeMissile  = 4 // goes with its launcher
+	itemTypeMisc     = 5 // the first of the armour types, misc. item .. boots
+	itemTypeShield   = 11
+
+	// Hand.Flags attack kinds (bit b is message 3050+b) and the Hand.Data powers
+	// (message 470+i).
+	handPunch    = 32
+	handKick     = 64
+	handCritical = 6
+
+	// Spell books: PC.SpellsLearn indexes.
+	bookMage      = 0
+	bookPriest    = 1
+	bookAlchemist = 2
+	bookPsionic   = 3
+	bookCount     = 4
+
+	maxPower          = 6   // the highest power level of a spell
+	realmCount        = 6   // fire, water, air, earth, mental, magic (messages 3950+)
+	spellTargetMember = 1   // Spell.Target: cast on a chosen member
+	unlimitedSP       = 999 // a realm's spell points while a spell to learn is picked
+
+	// Skills: 0..9 weaponry, 10..16 physical, 17..21 personal, 22..29 academia (messages
+	// 5500+), shown a page each (messages 600+).
+	firstPhysicalSkill = 10
+	firstPersonalSkill = 17
+	firstAcademiaSkill = 22
+	skillPageWeaponry  = 0
+	skillPagePersonal  = 2
+	skillPageCount     = 4 // also the skills menu's exit
+	maxSkill           = 100
+
+	swagSlots     = itemSlots - packSlots // Items[packSlots..] the swag bag
+	portraitCount = 42
+	nameLength    = 7 // the letters of a PC.Name
+	maxResist     = 125
+	daysPerYear   = 365
+	highStat      = 15 // a stat above this gives a bonus
+	veryHighStat  = 17 // and above this another
+	lowStat       = 8  // a stat below this gives a penalty
+)
+
+var (
+	spellBookBits   = [bookCount]uint8{8, 4, 1, 2} // the Spell.Books bit of each book
+	skillGroupStart = [4]int{0, firstPhysicalSkill, firstPersonalSkill, firstAcademiaSkill}
+)
+
 // The stat tables are a letter per stat, 'A' being 0: STR INT PIE VIT DEX SPD PER.
 var (
 	// classReqs (0x5006, and WPCMK's copy): the stats each class needs. The equal table at
 	// 0x5084 is the floor a new class raises the stats to; it is this one too.
-	classReqs = [14]string{"MAAAAAAA", "AMAAAAAA", "AAMAAAIA", "AAAAMIAA", "KIILKIIA", "ANAANAAA", "AKAAMIMA",
+	classReqs = [classCount]string{"MAAAAAAA", "AMAAAAAA", "AAMAAAIA", "AAAAMIAA", "KIILKIIA", "ANAANAAA", "AKAAMIMA",
 		"KOAOAAKA", "KALLKLIA", "APPAAAIA", "MJMMJJOA", "MLAJMOIA", "NINAKNIA", "MKKMMMAA"}
 	// raceMinStats (0x5102): the race's starting stats, the floor after a class change.
-	raceMinStats = [11]string{"JIIJJIIA", "HKKHJJIA", "LGKMHHHA", "KHNKIGGA", "IHGJKHNA", "FLGGKOMA",
+	raceMinStats = [raceCount]string{"JIIJJIIA", "HKKHJJIA", "LGKMHHHA", "KHNKIGGA", "IHGJKHNA", "FLGGKOMA",
 		"MFFOIKDA", "KHGMKIGA", "HKHHKMKA", "IGMKIIKA", "KKGKHHJA"}
 	// resistTables (0x5195..0x52c0): per class group, the base resistances (letter, 'A' 0,
 	// times 4) and their growth per level (digit).
@@ -65,9 +139,9 @@ var (
 		{"ACICIBHCCFKFFA", "02323112113330"}, {"ACECCEGCCIFKFA", "02222222122220"},
 		{"ACKCGDHCCFKIDA", "02322212112320"}, {"ACHCHHGCCCECHA", "02322322112230"},
 	}
-	// classSkills (0x52c1): per class, which weapon, physical, academic and personal skills
-	// the skills pages always list ('1').
-	classSkills = [14][4]string{
+	// classSkills (0x52c1): per class, which weaponry, physical, personal and academia
+	// skills the skills pages always list ('1').
+	classSkills = [classCount][4]string{
 		{"1111111110", "0100000", "00000", "11100000"}, {"1000111100", "0101000", "00000", "11100010"},
 		{"0001101010", "0101000", "00000", "11101000"}, {"1111111110", "0101111", "00000", "11100000"},
 		{"1111111110", "0100111", "00000", "11110000"}, {"1001110000", "0100000", "00000", "11110000"},
@@ -86,7 +160,7 @@ func setRegion(i, x1, y1, x2, y2 int) {
 }
 
 // endRegions ends the click region table at i.
-func endRegions(i int) { setClickRegion(i, 255, 0, 0, 0) }
+func endRegions(i int) { setClickRegion(i, clickRegionsEnd, 0, 0, 0) }
 
 // copyThroughChar (ROOT 0c82) is s up to and including the first ch.
 func copyThroughChar(s string, ch byte) string {
@@ -137,8 +211,8 @@ func getMenuInputBlink() int {
 	}
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if k := strings.IndexByte(menuKeys, byte(getKey(1))); k >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if k := strings.IndexByte(menuKeys, byte(getKey(keyClassMenu))); k >= 0 {
 				return k
 			}
 			continue
@@ -177,7 +251,7 @@ func waitEnterOrClick() {
 		if checkScreenClick() {
 			wait = false
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			wait = false
 		}
 	}
@@ -193,7 +267,7 @@ func showCenteredMsg(w *Window, s string, beep bool) {
 	setCursor(w, 20-(len(s)+1)/2, 1)
 	printStringHi(w, s, 3)
 	if beep {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	waitSecondsOrEnter(messageDelay)
 }
@@ -210,7 +284,7 @@ func inputNumber(w *Window, msg, max int) int32 {
 	resumeWindowDraw(w)
 	refreshAllWindows()
 	setCursor(w, x, y)
-	s := inputText(w, max, 5, 1)
+	s := inputText(w, max, 5, inputDigits)
 	n, _ := strconv.ParseInt(s, 10, 32) // atol: digits only, at most 8
 	return int32(n)
 }

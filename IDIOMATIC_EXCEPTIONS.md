@@ -238,3 +238,29 @@ No identifiers renamed (the goldens name `npcRec`, `npcWares`, `npcPilfered`, ..
 - npcReact's gold sums `a<<8 + b` and npcGiveGold's `n/256`, `n%256`: the reaction entry stores the amount as a high and a low byte.
 - Script args packed as `slot*256 + position` (ops 4 and 43) and spells as `power*256 + spell` (npcCastSpell, npcUseItem): the record and item formats.
 - npcScroll copies the window's cell array a row up, as the C.
+
+## internal/game: character (wpcmk, wpcvw)
+
+Renamed (no golden paths change; `newPC`, `bonusPoints`, `classEligible`, `pcmkSkillShown`, `pvClassAllowed`, `pvSpellTarget` keep their names): `LoadCategory.A`/`B`/`CapA`/`CapB` -> `PrimaryToHit`/`SecondaryToHit`/`PrimaryAttacksCap`/`SecondaryAttacksCap` (wmexe_attack.go follows), `classValk` -> `classValkyrie`, `raceLizard` -> `raceLizardman`, `hasAcademicSkills` -> `hasPersonalSkills` (skills 17..21 are the PERSONAL page, message 602; the old comments had personal and academia swapped), `addSkillBonus` -> `addResistance`, `addClassRating` -> `addNewPCResistance`, `setSixRatings` -> `setSpellRegen`, `initClassRatings` -> `initSpellRegen`, `initClassRaceModifiers` -> `initResistsHandsAC`, `isNameTaken` (int -1/0) -> `nameTaken` (bool). The duplicated class switches of resetCombatValues/levelUpCombat are `setClassAttackCounts` and `naturalAC`.
+
+New names, from the game's messages (MSG.DBS 100+, 120+, 140+, 351+, 1550+, 3050+, 4000+, 5500+): in wpcvw.go the equip positions `equipPrimary`..`equipBoots`/`equipSlots`, `acBase`/`acHands`, Item.Flags bits `itemCursed`/`itemOffHand`/`itemTwoHanded`/`itemKept`, ItemRec.Flags bits `recItemTwoHanded`/`recItemOffHand`, item types `itemTypeLauncher`/`itemTypeMissile`/`itemTypeMisc`/`itemTypeShield`, Hand bits `handPunch`/`handKick` and `handCritical` (Data[6]), spell books `bookMage`..`bookPsionic`/`spellBookBits`, `realmCount`, `maxPower`, `spellTargetMember`, `unlimitedSP`, skill groups `firstPhysicalSkill`/`firstPersonalSkill`/`firstAcademiaSkill`/`skillGroupStart` and pages `skillPage...`, `swagSlots`, `portraitCount`, `nameLength`, `maxSkill`, `maxResist`, `daysPerYear`, `highStat`/`veryHighStat`/`lowStat`; in wpcmk_create.go all races `raceHuman`..`raceMook`/`raceCount`, `sexMale`/`sexFemale` and the creation values (`maxBonusPoints`, `adultAge`, `neutralKarma`, `baseAttitude`, `baseAC`, `bareHandDamage`, `loadPerStat`, ...); menu entries `charMenu...`, `sheetMenu...`, `swagMenu...`, `editMenu...`; `use...` (ItemRec.Unk69 kinds), `power...` (equip powers), `spell...` (castSpell's spells), `effect...` (partyCounters indexes), `maxCombatLevel`, `maxRaisedSkill`. Added to wmaze.go's PC set: `conditionStoned`, `statusParalyzed`, `statusInsane`, `statPiety`, `statVitality`, `statCount`, `skillSword`, `skillPoleStaff`, `skillBows`, `skillAlchemy`..`skillKirijutsu`, `skillCount`, the remaining classes and `classCount`; to wbase.go `rosterSlotFree`. Existing names stand for the skills they are: `skillNoticeSecret` scouting, `skillInstrument` music, `skillPilfer` legerdemain, `skillPickLock` skulduggery, `skillHide` ninjutsu, `skillUnarmed` hands & feet. Menu keys `menuKey...`, game states, `keyClassMenu`/`keyEnter`, `inputPrintable`/`inputDigits`, `clickRegionsEnd`, `noEquippedItem`, `soundBeep`, `packSlots`/`itemSlots`/`maxStackQty`/`maxStat`/`itemEquipped`/`itemImportant` and `dbs.RecClassExp` replace literals.
+
+### Hex/binary literals in code
+
+- None.
+
+### Unclear names kept
+
+- `Resist[0..13]` indexes in the race and stat bonuses (addNewPCResistance/addResistance) and `resistTables`/`classResists`: which element each is was not checked; left as numbers.
+- `Status[1]`, `[4]`, `[6]`, `[8]`, `[9]` (spell 51 and the sheet's glyphs), `PC.Flags` bits 0..2 (drawStatsPanel's glyph 10), Item.Flags 16/32 and ItemRec.Flags 16/32 (copied through), `Hand.B0C`/`B0D`, `ItemRec.Unk62`/`Unk63`/`Unk68`/`Unk69`/`Unk73`, `PC.Unk026`: meaning not known.
+- `effect...`: partyCounters indexes named by the spell castSpell sets each with; wmaze's section guessed [0] and [5] differently (levitation-like, trap ward). state.go's `Spell.Books` comment says "2 alchemist 1 psionic", but chooseStartingSpell/learnNewSpell use bit 1 for the alchemist book and 2 for the psionic one (`spellBookBits`).
+- Item types 0..2 (WEAPON S/E/T), 6..10 (armour), 12..16 (magical, special) stay numbers in the type switches; `useDirectionOnMap8`/`useReadWithItem388` and the item ids 388/395/403, maps 8, text messages: the original's data.
+- The class/race rule tables (HP, to-hit and skill rolls, attack steps in setClassAttackCounts, rank levels, resistance growth level 16, karma 9, monk AC cap 20, equip power stat cap 20, `p.Level < 250`), the load percentages of getLoadCategory, the weapon icon table of weaponSkill and canEquipItem's launcher/ammunition icons (11/22, 13/23, 12/83): game rules and data, left as numbers.
+- Message numbers, sound 1 (the adjust click), colours, window positions/priorities, glyph and icon numbers (frames, cursor marks 98/100/99/23, gauges 86/99, portraits 72, class 58), click region indexes and rectangles: the original's arguments, as elsewhere.
+
+### Low-level code kept
+
+- `int16(...)` casts in addNewPCResistance, addResistance, clampToward, castSpell, staminaPct, levelUpHPStamina, raiseSkill, learnNewSpell: the C's 16-bit int wrap, kept for parity.
+- Spell numbers packed as `power<<8 + spell` (chooseSheetSpell, ItemRec.Spell) and `mask16` for the 16-bit class/race masks read with test_bit: the record and return formats.
+- `PC.AC` is written through `uint8` (naturalAC's int is stored as a byte), as the C.
+- Duplicates kept as in the overlays: WPCMK's drawSkillPage/distributeSkillPoints/selectSpell/chooseStartingSpell and WPCVW's drawSkillsPage/spendSkillPage/chooseSheetSpell/learnNewSpell, initResistsHandsAC and resetCombatValues, printSkillValue and printNumberCol16.

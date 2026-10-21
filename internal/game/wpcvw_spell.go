@@ -33,94 +33,127 @@ func refreshCard(w *Window, m int) {
 	deferWindowDraw(w)
 }
 
+// The spells castSpell carries out (messages 4000+).
+const (
+	spellStamina        = 10
+	spellCureParalysis  = 15
+	spellCurePoison     = 26
+	spellLevitate       = 30
+	spellDirection      = 38
+	spellArmorplate     = 41
+	spellCureStone      = 46
+	spellCureLesserCnd  = 51
+	spellDetectSecret   = 53
+	spellIdentify       = 54
+	spellSaneMind       = 57
+	spellHealWounds     = 64
+	spellEnchantedBlade = 68
+	spellMagicScreen    = 70
+	spellRemoveCurse    = 73
+	spellResurrection   = 77
+	spellHelpFood       = 80
+	spellMagicFood      = 81
+)
+
+// partyCounters indexes: the party's lasting spell effects, by the spell castSpell sets
+// each with.
+const (
+	effectDirection      = 0
+	effectArmorplate     = 1
+	effectDetectSecret   = 2
+	effectEnchantedBlade = 3
+	effectMagicScreen    = 4
+	effectLevitate       = 5
+)
+
 // castSpell (cast_spell, WPCVW 6b3c) casts spell s at power of caster m on member t.
 func castSpell(m, s, power, t int, sheet, menu *Window) {
 	c := &partyCounters
 	q := &party[t]
 	lower := func(v *uint8, by int) { *v = uint8(max(int(int16(int(*v)-by)), 0)) } // C int wraps
 	switch s {
-	case 53:
-		c[2].A += int16(power * 50)
-		c[2].B = int16(clampToward(power*5+70, int(c[2].B), 0))
-	case 68:
-		c[3].A += int16(power * 35)
-		c[3].B = int16(clampToward((power-1)/2+1, int(c[3].B), 0))
-	case 41:
-		c[1].A += int16(power * 50)
-		c[1].B = int16(clampToward((power-1)/2+1, int(c[1].B), 0))
-	case 30:
-		c[5].A += int16(power * 5)
-	case 38:
-		c[0].A += int16(100 * power)
-	case 70:
-		c[4].A += int16(power * 50)
-		c[4].B = int16(clampToward(power*5, int(c[4].B), 0))
-	case 10:
+	case spellDetectSecret:
+		c[effectDetectSecret].A += int16(power * 50)
+		c[effectDetectSecret].B = int16(clampToward(power*5+70, int(c[effectDetectSecret].B), 0))
+	case spellEnchantedBlade:
+		c[effectEnchantedBlade].A += int16(power * 35)
+		c[effectEnchantedBlade].B = int16(clampToward((power-1)/2+1, int(c[effectEnchantedBlade].B), 0))
+	case spellArmorplate:
+		c[effectArmorplate].A += int16(power * 50)
+		c[effectArmorplate].B = int16(clampToward((power-1)/2+1, int(c[effectArmorplate].B), 0))
+	case spellLevitate:
+		c[effectLevitate].A += int16(power * 5)
+	case spellDirection:
+		c[effectDirection].A += int16(100 * power)
+	case spellMagicScreen:
+		c[effectMagicScreen].A += int16(power * 50)
+		c[effectMagicScreen].B = int16(clampToward(power*5, int(c[effectMagicScreen].B), 0))
+	case spellStamina:
 		q.Stamina = min(q.Stamina+int16(rollDice(formatDice(power<<1, 8, power))), q.StaminaMax)
 		refreshCard(pvCardWin, t)
-	case 15:
-		lower(&q.Status[3], power*25)
+	case spellCureParalysis:
+		lower(&q.Status[statusParalyzed], power*25)
 		refreshCard(pvCardWin, t)
-	case 26:
+	case spellCurePoison:
 		if int16(int(q.PoisonStr)-power) <= 0 { // C int wraps
-			q.PoisonStr, q.Status[5] = 0, 0
+			q.PoisonStr, q.Status[statusPoisoned] = 0, 0
 		} else {
 			q.PoisonStr -= uint8(power)
 		}
-		if int16(int(q.Status[5])-power*5) <= 0 { // C int wraps
-			q.Status[5], q.PoisonStr = 0, 0
+		if int16(int(q.Status[statusPoisoned])-power*5) <= 0 { // C int wraps
+			q.Status[statusPoisoned], q.PoisonStr = 0, 0
 		} else {
-			q.Status[5] -= uint8(power * 5)
+			q.Status[statusPoisoned] -= uint8(power * 5)
 		}
 		refreshCard(pvCardWin, t)
-	case 46:
-		if q.Condition == 2 && int(int16(power*3)) > 21-int(q.Stats[3]) { // C int wraps
-			q.Stats[3]--
-			if random(21) > int(q.Stats[3]) {
-				q.Condition, q.HP, q.Stamina = 3, 0, 0
+	case spellCureStone:
+		if q.Condition == conditionStoned && int(int16(power*3)) > 21-int(q.Stats[statVitality]) { // C int wraps
+			q.Stats[statVitality]--
+			if random(21) > int(q.Stats[statVitality]) {
+				q.Condition, q.HP, q.Stamina = conditionDead, 0, 0
 			} else {
-				q.Condition = 0
+				q.Condition = conditionOK
 			}
 			refreshCard(pvCardWin, t)
 		}
-	case 57:
-		lower(&q.Status[7], power*25)
+	case spellSaneMind:
+		lower(&q.Status[statusInsane], power*25)
 		refreshCard(pvCardWin, t)
-	case 51:
-		for _, k := range []int{1, 2, 4, 8, 9} {
+	case spellCureLesserCnd:
+		for _, k := range []int{1, statusAsleep, 4, 8, 9} {
 			lower(&q.Status[k], power<<1)
 		}
 		refreshCard(pvCardWin, t)
-	case 64:
+	case spellHealWounds:
 		q.HP = min(q.HP+int16(rollDice(formatDice(power, 7, power))), q.HPMax)
 		refreshCard(pvCardWin, t)
-	case 77:
-		if q.Condition == 3 && int(int16(power*3)) > 18-int(q.Stats[3]) { // C int wraps
-			q.Stats[3]--
-			q.Condition, q.HP, q.Stamina = 0, 1, q.StaminaMax/10
+	case spellResurrection:
+		if q.Condition == conditionDead && int(int16(power*3)) > 18-int(q.Stats[statVitality]) { // C int wraps
+			q.Stats[statVitality]--
+			q.Condition, q.HP, q.Stamina = conditionOK, 1, q.StaminaMax/10
 			q.Unk026++
 			refreshCard(pvCardWin, t)
 		}
-	case 80:
+	case spellHelpFood:
 		p := &party[m]
 		p.Stamina = min(p.Stamina+int16(rollDice(formatDice(power, 8, power))), p.StaminaMax)
 		p.HP = min(p.HP+int16(rollDice(formatDice(power, 2, 0))), p.HPMax)
-	case 81:
+	case spellMagicFood:
 		p := &party[m]
 		for r := range p.SP {
 			p.SP[r].Cur = min(p.SP[r].Cur+int16(rollDice(formatDice(power, 10, 0))), p.SP[r].Max)
 		}
-	case 54:
+	case spellIdentify:
 		if party[m].ItemCount > 0 {
 			refreshAllWindows()
 			if pvChosenItem = chooseItem(sheet, menu, 481, m, false); pvChosenItem != -1 {
 				showItemInfo(menu, m, pvChosenItem, power)
 			}
 		}
-	case 73:
+	case spellRemoveCurse:
 		// As in the C, removing shifts the list, so the next item is skipped.
 		for i := 0; i < int(q.ItemCount); i++ {
-			if q.Items[i].Flags&2 != 0 {
+			if q.Items[i].Flags&itemCursed != 0 {
 				removeItemShown(t, i)
 			}
 		}
@@ -154,7 +187,7 @@ func pvSetBlink(w *Window, x, y int, a string, ca int, b string, cb int) {
 func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 	p := &party[m]
 	if dtLog != nil { // stubbed in the difftest: the lowest known spell
-		for s := range 82 {
+		for s := range spellTable {
 			if testBit(p.KnownSpells[:], s) {
 				return s
 			}
@@ -174,7 +207,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 	drawListBox(list, true)
 	refreshWindow(menu)
 	realm := 0
-	for r := 0; r < 6; r++ {
+	for r := range realmCount {
 		x, y := int(sheet.X)+r/3*10+1, int(sheet.Y)+r%3<<1+14
 		setRegion(r, x, y, x, y)
 	}
@@ -209,18 +242,18 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 			if menuClicked == 1 {
 				switch {
 				case k == realm:
-					k = 5
-				case k < 6:
+					k = menuKeyEnter
+				case k < realmCount:
 					unhighlightSheetRealm(sheet, book, realm)
-					realm, k = k, 0
+					realm, k = k, menuKeyEscape
 				default:
 					unhighlightSheetRealm(sheet, book, realm)
-					realm, k, n = -1, 5, -1
+					realm, k, n = -1, menuKeyEnter, -1
 				}
 				redraw = true
 			} else {
 				switch k {
-				case 1:
+				case menuKeyLeft:
 					if realm == -1 {
 						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = 4, true
@@ -228,27 +261,27 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm-3, true
 					}
-				case 2:
+				case menuKeyUp:
 					if realm != -1 && realm%3 > 0 {
 						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm-1, true
 					}
-				case 3:
+				case menuKeyRight:
 					if realm != -1 {
 						unhighlightSheetRealm(sheet, book, realm)
 						redraw = true
-						if realm += 3; realm >= 6 {
+						if realm += 3; realm >= realmCount {
 							realm = -1
 						}
 					}
-				case 4:
+				case menuKeyDown:
 					if realm != -1 && realm%3+1 < 3 {
 						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm+1, true
 					}
 				}
 			}
-			if k == 5 && n != 0 {
+			if k == menuKeyEnter && n != 0 {
 				break
 			}
 		}
@@ -266,7 +299,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		setRegion(9, lx+1, ly+3, lx+18, ly+3)
 		endRegions(10)
 		k := 0
-		for k != 5 && !back {
+		for k != menuKeyEnter && !back {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[at] + 4000)
 			pvBlinkColor[1] = realmColors[realm]
@@ -281,26 +314,26 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 			k = getMenuInputBlink()
 			if menuClicked == 1 {
 				switch {
-				case k < 6:
-					realm, k = k, 1
+				case k < realmCount:
+					realm, k = k, menuKeyLeft
 				case k == 6:
 					return done(-1)
 				case k == 7:
-					k = 2
+					k = menuKeyUp
 				case k == 8:
-					k = 4
+					k = menuKeyDown
 				case k == 9:
-					k = 5
+					k = menuKeyEnter
 				}
 			}
 			switch k {
-			case 1:
+			case menuKeyLeft:
 				back = true
-			case 2:
+			case menuKeyUp:
 				if at > 0 {
 					at--
 				}
-			case 4:
+			case menuKeyDown:
 				if at+1 < n {
 					at++
 				}
@@ -322,7 +355,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		resumeWindowDraw(list)
 		refreshWindow(list)
 		power := 1
-		most := min(max(int(p.Level)-int(spellTable[spell].Level)+1, 1), 6)
+		most := min(max(int(p.Level)-int(spellTable[spell].Level)+1, 1), maxPower)
 		bx, by := int(book.X), int(book.Y)
 		for i := 0; i < most; i++ {
 			setRegion(i, bx+i+3, by+12, bx+i+3, by+12)
@@ -358,28 +391,28 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 			k := getMenuInputBlink()
 			if menuClicked == 1 {
 				if k+1 == power {
-					k = 5
+					k = menuKeyEnter
 				} else {
 					unmark()
 					power = 0
 					if k < most {
 						power = k + 1
 					}
-					k = 0
+					k = menuKeyEscape
 					if power == 0 {
-						k = 5
+						k = menuKeyEnter
 					}
 				}
 				redraw = true
 			} else {
 				switch k {
-				case 1:
+				case menuKeyLeft:
 					if power > 0 {
 						unmark()
 						power--
 						redraw = true
 					}
-				case 3:
+				case menuKeyRight:
 					if power == 0 {
 						unhighlightSheetRealm(sheet, book, -1)
 						clearWindowArea(book, 11, 12, 18, 12)
@@ -394,7 +427,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 				}
 			}
 			// The cost is the one before this key, as in the C.
-			if k == 5 && int(p.SP[realm].Cur) >= cost {
+			if k == menuKeyEnter && int(p.SP[realm].Cur) >= cost {
 				break
 			}
 		}
@@ -402,7 +435,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		if power == 0 {
 			return -1
 		}
-		if spellTable[spell].Target == 1 {
+		if spellTable[spell].Target == spellTargetMember {
 			if pvSpellTarget = chooseMember(menu, 502, -1); pvSpellTarget == -1 {
 				return -1
 			}
@@ -411,13 +444,12 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 	}
 }
 
-// learnNewSpell (WPCVW 8353) lets member m learn a spell of book b (0 mage, 1 priest,
-// 2 psionic, 3 alchemist) at level up, among those it does not know and its book skill
-// reaches.
+// learnNewSpell (WPCVW 8353) lets member m learn a spell of book b (bookMage..bookPsionic)
+// at level up, among those it does not know and its book skill reaches.
 func learnNewSpell(sheet, menu *Window, m, b int) {
 	p := &party[m]
-	bs := [4][2]int{{8, 28}, {4, 26}, {1, 25}, {2, 27}}[b] // book bit, skill
-	bit, skill := bs[0], bs[1]
+	bit := int(spellBookBits[b])
+	skill := [bookCount]int{skillThaumaturgy, skillTheology, skillAlchemy, skillTheosophy}[b]
 	known := p.KnownSpells
 	p.KnownSpells = [12]uint8{}
 	lv := int(p.Skills[skill])/18 + 1
@@ -444,9 +476,9 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	setCursor(menu, 1, 1)
 	printMessage(703, menu, 18)
 	resumeWindowDraw(menu)
-	var saved [6]int16
+	var saved [realmCount]int16
 	for r := range p.SP {
-		saved[r], p.SP[r].Cur = p.SP[r].Cur, 999
+		saved[r], p.SP[r].Cur = p.SP[r].Cur, unlimitedSP
 	}
 	s := -1
 	for s == -1 {
@@ -493,7 +525,7 @@ func doCastMenu(sheet, menu *Window, m int, canCast bool) {
 	p.Stamina -= int16(random(power) + int(spellTable[s].Level) + power)
 	if p.Stamina < 0 {
 		p.Stamina = 0
-		p.Status[2] = uint8(random(6) + 6)
+		p.Status[statusAsleep] = uint8(random(6) + 6)
 	}
 	castSpell(m, s, power, pvSpellTarget, sheet, menu)
 }

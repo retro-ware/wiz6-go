@@ -9,14 +9,14 @@ import "github.com/retro-ware/wiz6-go/internal/dbs"
 // STR..KAR, 'A' = 0.
 var (
 	// classResists are the resistances, 'A' = 0 in steps of 4, by class.
-	classResists = [14]string{
+	classResists = [classCount]string{
 		0: "ACBCBCCCCHCHBA", 4: "ACCCCDCCCHHKDA", 8: "ACCCCDCCCHHKDA", 10: "ACCCCDCCCIFKEA",
 		11: "ACHCHDCCCHFIDA", 13: "ACKCHHGCCIECBA", 1: "ACBCCDECCEEEGA", 5: "ACBCCDECCEEEGA",
 		7: "ACICIBHCCFKFFA", 2: "ACECCEGCCIFKFA", 9: "ACECCEGCCIFKFA", 12: "ACKCGDHCCFKIDA",
 		3: "ACHCHHGCCCECHA", 6: "ACHCHHGCCCECHA",
 	}
 	// classItems are the items each class starts with (give_class_items).
-	classItems = [14][5]int{
+	classItems = [classCount][5]int{
 		{8, 135, 132, 130, 141}, {18, 122, 123, 130, 335}, {24, 122, 123, 130, 316},
 		{6, 120, 121, 131, 27}, {31, 33, 126, 127, 131}, {18, 122, 123, 130, 326},
 		{29, 30, 120, 121, 55}, {1, 122, 123, 130, 241}, {22, 124, 125, 130, 138},
@@ -25,23 +25,47 @@ var (
 	}
 )
 
-// Race, sex and class numbers the rules test.
+// Race (message 100+), sex (140+) and class (120+) numbers; the other classes are in
+// wmaze.go.
 const (
-	raceHuman  = 0
-	raceFaerie = 5
-	raceLizard = 6
-	sexFemale  = 1
-	classMonk  = 12
-	classNinja = 13
-	classValk  = 8
+	raceHuman     = 0
+	raceElf       = 1
+	raceDwarf     = 2
+	raceGnome     = 3
+	raceHobbit    = 4
+	raceFaerie    = 5
+	raceLizardman = 6
+	raceDracon    = 7
+	raceFelpurr   = 8
+	raceRawulf    = 9
+	raceMook      = 10
+	raceCount     = 11
+	sexMale       = 0
+	sexFemale     = 1
+	classValkyrie = 8
+	classMonk     = 12
+	classNinja    = 13
+)
+
+// Character creation values.
+const (
+	maxBonusPoints = 21          // the bonus points with maxBonus
+	adultAge       = 18          // years: a new character's age, the youth power's floor
+	startAgeSpread = 1000        // days added at random to the starting age
+	neutralKarma   = 9           // initNPCAttitudes: the karma NPCs like best
+	baseAttitude   = 40          // an NPC's attitude to a character of neutral karma
+	baseAC         = 10          // the armour class before speed, race and class
+	bareHandDamage = 2           // a bare hand does Count d Sides of this
+	minSpellRegen  = 1           // the least spell regeneration of a realm
+	loadPerStat    = 15          // MaxLoad per point of (2 STR + VIT) * 3
+	karmaRoll      = maxStat + 1 // karma is rolled 0..maxStat
 )
 
 // setClassSkillMasks (WPCMK 55ad) marks the skills the class can learn, or already has.
 func setClassSkillMasks(masks [4]string) {
-	base := [4]int{0, 10, 17, 22}
 	for g, m := range masks {
 		for i := range len(m) {
-			s := base[g] + i
+			s := skillGroupStart[g] + i
 			pcmkSkillShown[s] = m[i] == '1' || newPC.Skills[s] > 0
 		}
 	}
@@ -88,7 +112,8 @@ func drawSkillPage(win *Window, page int) []int {
 		left, right byte
 		first, last int
 		color       int
-	}{{1, 1, 0, 9, 2}, {36, 37, 10, 16, 14}, {36, 37, 17, 21, 12}, {33, 33, 22, 29, 11}}
+	}{{1, 1, 0, firstPhysicalSkill - 1, 2}, {36, 37, firstPhysicalSkill, firstPersonalSkill - 1, 14},
+		{36, 37, firstPersonalSkill, firstAcademiaSkill - 1, 12}, {33, 33, firstAcademiaSkill, skillCount - 1, 11}}
 	p := pages[page]
 	putIconAt(win, 2, 1, p.left+1)
 	putIconAt(win, 17, 1, p.right+1)
@@ -116,7 +141,7 @@ func drawSkillPage(win *Window, page int) []int {
 func distributeSkillPoints(win, skillWin *Window, skills []int) {
 	points := int(newPC.SkillPoints)
 	count := len(skills)
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	refreshWindow(win)
 	setCursor(win, 7, 1)
 	printMessage(610, win, 18)
@@ -132,7 +157,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 	setClickRegion(2, x+22, y+2, x+22, y+2)
 	setClickRegion(3, x+23, y+2, x+23, y+2)
 	setClickRegion(4, x+13, y+3, x+13, y+3)
-	setClickRegion(5, 255, 0, 0, 0)
+	setClickRegion(5, clickRegionsEnd, 0, 0, 0)
 	mark := func(ch byte, color int) {
 		setCursor(skillWin, 15, row+3)
 		putChar(skillWin, ch, color)
@@ -148,11 +173,11 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 		setClickRegion(4, x+ex, y+3, x+ex, y+3)
 		key := menuInput()
 		if menuClicked == 1 && key >= 0 && key <= 4 {
-			key = [5]int{1, 3, 2, 4, 5}[key]
+			key = [5]int{menuKeyLeft, menuKeyRight, menuKeyUp, menuKeyDown, menuKeyEnter}[key]
 		}
 		s := &newPC.Skills[skills[row]]
 		switch key {
-		case 1:
+		case menuKeyLeft:
 			if added[row] > 0 {
 				*s--
 				added[row]--
@@ -161,18 +186,18 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 				printSkillValue(skillWin, row+3, int(*s))
 				printSkillValue(skillWin, 14, points)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 2:
-			mark(32, 7)
+		case menuKeyUp:
+			mark(' ', 7)
 			if row > 0 {
 				row--
 			} else {
 				row = count - 1
 			}
 			mark(100, 4)
-		case 3:
-			if *s < 100 && points > 0 {
+		case menuKeyRight:
+			if *s < maxSkill && points > 0 {
 				*s++
 				added[row]++
 				points--
@@ -180,10 +205,10 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 				printSkillValue(skillWin, row+3, int(*s))
 				printSkillValue(skillWin, 14, points)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 4:
-			mark(32, 7)
+		case menuKeyDown:
+			mark(' ', 7)
 			if row+1 < count {
 				row++
 			} else {
@@ -191,31 +216,31 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 			}
 			mark(100, 4)
 		}
-		if key == 5 {
+		if key == menuKeyEnter {
 			break
 		}
 	}
-	mark(32, 7)
+	mark(' ', 7)
 	newPC.SkillPoints = uint8(points)
 }
 
 // skillPointsScreen (WPCMK 604d) goes through the skill pages until the skill points are
 // spent; the personal page only when the character has a personal skill.
 func skillPointsScreen(win *Window) {
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	refreshWindow(win)
 	skillWin := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	personal := false
-	for i := 17; i < 22; i++ {
+	for i := firstPersonalSkill; i < firstAcademiaSkill; i++ {
 		if newPC.Skills[i] > 0 {
 			personal = true
 		}
 	}
-	for page := 0; ; {
+	for page := skillPageWeaponry; ; {
 		list := drawSkillPage(skillWin, page)
 		distributeSkillPoints(win, skillWin, list)
-		page = (page + 1) % 4
-		if page == 2 && !personal {
+		page = (page + 1) % skillPageCount
+		if page == skillPagePersonal && !personal {
 			page++
 		}
 		if newPC.SkillPoints == 0 {
@@ -227,7 +252,7 @@ func skillPointsScreen(win *Window) {
 
 // raiseStatsToMinimum (WPCMK 71df) raises each stat to its minimum in min.
 func raiseStatsToMinimum(min string) {
-	for i := range 8 {
+	for i := range statCount {
 		if v := min[i] - 'A'; newPC.Stats[i] < v {
 			newPC.Stats[i] = v
 		}
@@ -238,7 +263,7 @@ func raiseStatsToMinimum(min string) {
 // minimums; with apply it raises the stats, paying the points.
 func checkClassEligible(class int, min string, apply bool) {
 	points := bonusPoints
-	for stat := range 8 {
+	for stat := range statCount {
 		for v := int(newPC.Stats[stat]); int(min[stat])-'A' > v; v++ {
 			points--
 			if apply {
@@ -253,8 +278,8 @@ func checkClassEligible(class int, min string, apply bool) {
 
 // computeEligibleClasses (WPCMK 7274) sets classEligible; only women may be valkyries.
 func computeEligibleClasses() {
-	for c := range 14 {
-		if c == classValk && newPC.Sex != sexFemale {
+	for c := range classCount {
+		if c == classValkyrie && newPC.Sex != sexFemale {
 			classEligible[c] = false
 			continue
 		}
@@ -265,25 +290,25 @@ func computeEligibleClasses() {
 // applySexModifiers (WPCMK 75d2): women have 2 less strength, 1 more personality and karma.
 func applySexModifiers(sex int) {
 	if sex == sexFemale {
-		newPC.Stats[0] -= 2
-		newPC.Stats[6]++
-		newPC.Stats[7]++
+		newPC.Stats[statStrength] -= 2
+		newPC.Stats[statPersonality]++
+		newPC.Stats[statKarma]++
 	}
 }
 
 // chooseFromMenu shows the prompt msg at column x, the status title status and the menu
 // of messages first.. in menuWin; the chosen one.
 func chooseFromMenu(x, msg, status, first int, enabled []int) int {
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, x, 1)
 	printMessage(msg, promptWin, 18)
-	fillWindow(menuWin, 32, 3)
+	fillWindow(menuWin, ' ', 3)
 	refreshWindow(menuWin)
 	printStatusCentered(status)
 	c := menuSelect(menuWin, first, enabled, 1, 1, 10, 11, 5, 0, menuInput)
 	clearStatusLine()
-	fillWindow(menuWin, 32, 3)
+	fillWindow(menuWin, ' ', 3)
 	refreshWindow(menuWin)
 	return c
 }
@@ -304,7 +329,7 @@ func chooseSex() {
 	newPC.Sex = uint8(s)
 	setCursor(sheetWin, 13, 1)
 	putChar(sheetWin, getMessage(int(newPC.Sex) + 140)[0], 1)
-	putChar(sheetWin, 45, 1)
+	putChar(sheetWin, '-', 1)
 	applySexModifiers(s)
 	drawStats()
 }
@@ -313,13 +338,13 @@ func chooseSex() {
 // the stats to its minimums.
 func chooseClass() {
 	computeEligibleClasses()
-	enabled := make([]int, 15)
-	for c := range 14 {
+	enabled := make([]int, classCount+1)
+	for c := range classCount {
 		if classEligible[c] {
 			enabled[c] = 1
 		}
 	}
-	enabled[14] = -1
+	enabled[classCount] = -1
 	c := chooseFromMenu(7, 1106, 1118, 120, enabled)
 	newPC.Class = uint8(c)
 	printMsgAt(int(newPC.Class)+120, sheetWin, 13, 2, 1)
@@ -331,7 +356,7 @@ func chooseClass() {
 // the stats. The cursor only reaches the first seven; karma is cast after.
 func distributeBonusPoints() {
 	w := promptWin
-	fillWindow(w, 32, 3)
+	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	setCursor(w, 7, 1)
 	printMessage(1120, w, 18)
@@ -351,25 +376,26 @@ func distributeBonusPoints() {
 	setClickRegion(1, x+2, y+2, x+2, y+2)
 	setClickRegion(2, x+21, y+2, x+21, y+2)
 	setClickRegion(3, x+22, y+2, x+22, y+2)
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
+	lastStat := statKarma - 1
 	for {
 		setCursor(w, 12, 3)
 		if bonusPoints == 0 {
 			printMessage(1110, w, 18)
 			setClickRegion(4, x+18, y+3, x+18, y+3)
-			setClickRegion(5, 255, 0, 0, 0)
+			setClickRegion(5, clickRegionsEnd, 0, 0, 0)
 		} else {
 			for w.CurX < 38 {
-				putCharHi(w, 32, 3)
+				putCharHi(w, ' ', 3)
 			}
-			setClickRegion(4, 255, 0, 0, 0)
+			setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 		}
 		key := menuInput()
 		if menuClicked == 1 && key >= 0 && key <= 4 {
-			key = [5]int{1, 3, 2, 4, 5}[key]
+			key = [5]int{menuKeyLeft, menuKeyRight, menuKeyUp, menuKeyDown, menuKeyEnter}[key]
 		}
 		switch key {
-		case 1:
+		case menuKeyLeft:
 			if added[stat] > 0 {
 				newPC.Stats[stat]--
 				added[stat]--
@@ -377,62 +403,62 @@ func distributeBonusPoints() {
 				playSound(1)
 				drawStats()
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 2:
-			mark(32)
+		case menuKeyUp:
+			mark(' ')
 			if stat > 0 {
 				stat--
 			} else {
-				stat = 6
+				stat = lastStat
 			}
 			mark(98)
-		case 3:
-			if newPC.Stats[stat] < 18 && bonusPoints > 0 {
+		case menuKeyRight:
+			if newPC.Stats[stat] < maxStat && bonusPoints > 0 {
 				newPC.Stats[stat]++
 				added[stat]++
 				bonusPoints--
 				playSound(1)
 				drawStats()
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 4:
-			mark(32)
-			if stat < 6 {
+		case menuKeyDown:
+			mark(' ')
+			if stat < lastStat {
 				stat++
 			} else {
 				stat = 0
 			}
 			mark(98)
 		}
-		if key == 5 && bonusPoints > 0 {
-			playSound(0)
+		if key == menuKeyEnter && bonusPoints > 0 {
+			playSound(soundBeep)
 		}
-		if key == 5 && bonusPoints <= 0 {
+		if key == menuKeyEnter && bonusPoints <= 0 {
 			break
 		}
 	}
-	mark(32)
+	mark(' ')
 }
 
 // rollKarma (WPCMK 7d9b) rolls karma until Enter or a click (women get one more).
 func rollKarma() {
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
 	printMessage(1111, promptWin, 18)
 	for rolling := true; rolling; {
-		newPC.Stats[7] = uint8(random(19))
+		newPC.Stats[statKarma] = uint8(random(karmaRoll))
 		if newPC.Sex == sexFemale {
-			newPC.Stats[7]++
+			newPC.Stats[statKarma]++
 		}
 		setCursor(sheetWin, 5, 12)
-		printInt(sheetWin, int(newPC.Stats[7]), 2, 1)
+		printInt(sheetWin, int(newPC.Stats[statKarma]), 2, 1)
 		if checkScreenClick() {
 			rolling = false
 		}
-		if keyAvailable(1) && byte(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && byte(getKey(keyClassMenu)) == keyEnter {
 			rolling = false
 		}
 	}
@@ -443,11 +469,11 @@ func rollKarma() {
 // 4 per point away from 9.
 func initNPCAttitudes() {
 	for i := range newPC.NPCAttitude {
-		d := int(newPC.Stats[7]) - 9
+		d := int(newPC.Stats[statKarma]) - neutralKarma
 		if d < 0 {
 			d = -d
 		}
-		newPC.NPCAttitude[i] = int8(40 - d<<2)
+		newPC.NPCAttitude[i] = int8(baseAttitude - d<<2)
 	}
 }
 
@@ -466,7 +492,7 @@ func addStartingItem(id int) {
 		Icon:   rec.Icon,
 		Qty:    uint8(int(rec.Charges.Count)*int(rec.Charges.Sides) + int(rec.Charges.Base)),
 	}
-	for _, f := range [][2]uint8{{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}} {
+	for _, f := range [][2]uint8{{recItemOffHand, itemOffHand}, {recItemTwoHanded, itemTwoHanded}, {16, 16}, {32, 32}, {itemImportant, itemKept}} {
 		if rec.Flags&f[0] != 0 {
 			it.Flags |= f[1]
 		}
@@ -478,152 +504,152 @@ func addStartingItem(id int) {
 	}
 }
 
-// addClassRating (WPCMK 837b) adds delta to resistance i, kept in 0..125.
-func addClassRating(i, delta int) {
-	newPC.Resist[i] = uint8(min(max(int(int16(int(newPC.Resist[i])+delta)), 0), 125)) // C int sum wraps
+// addNewPCResistance (WPCMK 837b) adds delta to resistance i, kept in 0..125.
+func addNewPCResistance(i, delta int) {
+	newPC.Resist[i] = uint8(min(max(int(int16(int(newPC.Resist[i])+delta)), 0), maxResist)) // C int sum wraps
 }
 
-// initClassRaceModifiers (WPCMK 83f0) sets the resistances by class, race and stats, the
+// initResistsHandsAC (WPCMK 83f0) sets the resistances by class, race and stats, the
 // bare hands, and the armour class.
-func initClassRaceModifiers() {
+func initResistsHandsAC() {
 	if s := classResists[newPC.Class]; s != "" {
-		for i := range 14 {
+		for i := range newPC.Resist {
 			newPC.Resist[i] = 0
-			addClassRating(i, int(s[i])<<2-260)
+			addNewPCResistance(i, int(s[i])<<2-260)
 		}
 	}
-	vit := int(newPC.Stats[3])
+	vit := int(newPC.Stats[statVitality])
 	switch newPC.Race {
-	case 0:
-		addClassRating(11, 20)
-	case 2, 4:
-		addClassRating(6, vit/5*5)
-		addClassRating(12, vit/5*5)
-	case 3:
-		addClassRating(12, vit/5*5)
-	case 1:
-		addClassRating(9, 20)
-	case 5:
+	case raceHuman:
+		addNewPCResistance(11, 20)
+	case raceDwarf, raceHobbit:
+		addNewPCResistance(6, vit/5*5)
+		addNewPCResistance(12, vit/5*5)
+	case raceGnome:
+		addNewPCResistance(12, vit/5*5)
+	case raceElf:
+		addNewPCResistance(9, 20)
+	case raceFaerie:
 		for _, i := range []int{12, 4, 7, 10, 11} {
-			addClassRating(i, 25)
+			addNewPCResistance(i, 25)
 		}
-	case 6, 7:
-		addClassRating(10, 25)
-		addClassRating(8, 10)
-		addClassRating(3, -20)
-	case 8:
-		addClassRating(7, 15)
-		addClassRating(4, 20)
-		addClassRating(3, 20)
-	case 9:
-		addClassRating(3, 20)
-	case 10:
-		addClassRating(12, 25)
-		addClassRating(3, 15)
+	case raceLizardman, raceDracon:
+		addNewPCResistance(10, 25)
+		addNewPCResistance(8, 10)
+		addNewPCResistance(3, -20)
+	case raceFelpurr:
+		addNewPCResistance(7, 15)
+		addNewPCResistance(4, 20)
+		addNewPCResistance(3, 20)
+	case raceRawulf:
+		addNewPCResistance(3, 20)
+	case raceMook:
+		addNewPCResistance(12, 25)
+		addNewPCResistance(3, 15)
 	}
-	if vit > 15 {
-		addClassRating(6, 5)
-		addClassRating(11, 5)
+	if vit > highStat {
+		addNewPCResistance(6, 5)
+		addNewPCResistance(11, 5)
 	}
-	if newPC.Stats[1] > 15 {
-		addClassRating(9, 5)
+	if newPC.Stats[statIntelligence] > highStat {
+		addNewPCResistance(9, 5)
 	}
-	if newPC.Stats[5] > 15 {
-		addClassRating(7, 5)
-		addClassRating(4, 5)
+	if newPC.Stats[statSpeed] > highStat {
+		addNewPCResistance(7, 5)
+		addNewPCResistance(4, 5)
 	}
 	for h := range newPC.Hands {
 		hd := &newPC.Hands[h]
 		hd.B0D, hd.B0C = 0, 0
 		hd.Data = [8]uint8{}
 		hd.ToHit = 0
-		hd.Damage = Dice{Base: 0, Count: 2, Sides: 2}
-		hd.Flags = 32 // bare hand
+		hd.Damage = Dice{Base: 0, Count: bareHandDamage, Sides: bareHandDamage}
+		hd.Flags = handPunch // bare hand
 	}
-	hands := int(newPC.Skills[9]) / 5 // hands & feet
-	kiri := int(newPC.Skills[29]) / 5 // kirijutsu
-	h0 := &newPC.Hands[0]
+	hands := int(newPC.Skills[skillUnarmed]) / 5 // hands & feet
+	kiri := int(newPC.Skills[skillKirijutsu]) / 5
+	h0 := &newPC.Hands[equipPrimary]
 	if newPC.Class == classNinja || newPC.Class == classMonk {
 		h0.Damage.Sides = uint8(hands/3 + 2)
-		h0.Flags |= 64
-		h0.Data[6] = uint8(kiri + 5)
+		h0.Flags |= handKick
+		h0.Data[handCritical] = uint8(kiri + 5)
 	} else {
 		if hands > 0 {
 			h0.Damage.Sides = uint8(hands/4 + 1)
-			h0.Flags |= 64
+			h0.Flags |= handKick
 		}
 		if kiri > 0 {
-			h0.Data[6] = uint8(kiri)
+			h0.Data[handCritical] = uint8(kiri)
 		}
 	}
-	if newPC.Stats[0] > 15 {
+	if newPC.Stats[statStrength] > highStat {
 		h0.Damage.Base++
 	}
-	if newPC.Stats[0] > 17 {
+	if newPC.Stats[statStrength] > veryHighStat {
 		h0.Damage.Base++
 	}
-	if newPC.Stats[4] > 15 {
+	if newPC.Stats[statDexterity] > highStat {
 		h0.ToHit -= 5
 	}
-	if newPC.Stats[4] > 17 {
+	if newPC.Stats[statDexterity] > veryHighStat {
 		h0.ToHit -= 5
-		newPC.Hands[1].ToHit -= 5
+		newPC.Hands[equipSecondary].ToHit -= 5
 	}
-	newPC.AC[0] = 10
-	if newPC.Stats[5] > 15 {
-		newPC.AC[0]--
+	newPC.AC[acBase] = baseAC
+	if newPC.Stats[statSpeed] > highStat {
+		newPC.AC[acBase]--
 	}
-	if newPC.Stats[5] > 17 {
-		newPC.AC[0]--
+	if newPC.Stats[statSpeed] > veryHighStat {
+		newPC.AC[acBase]--
 	}
 	if newPC.Race == raceFaerie {
-		newPC.AC[0] -= 2
+		newPC.AC[acBase] -= 2
 	}
-	newPC.AC[2] = 0
-	for i := 3; i < 8; i++ {
-		newPC.AC[i] = newPC.AC[0]
+	newPC.AC[equipMisc] = 0
+	for i := equipHelmet; i < equipSlots; i++ {
+		newPC.AC[i] = newPC.AC[acBase]
 	}
 }
 
 // initClassSkills (WPCMK 8786) rolls the skill points and the class's starting skills,
 // which come out of the skill points.
 func initClassSkills() {
-	in, pi, vi := int(newPC.Stats[1]), int(newPC.Stats[2]), int(newPC.Stats[3])
-	dx, sp := int(newPC.Stats[4]), int(newPC.Stats[5])
+	in, pi, vi := int(newPC.Stats[statIntelligence]), int(newPC.Stats[statPiety]), int(newPC.Stats[statVitality])
+	dx, sp := int(newPC.Stats[statDexterity]), int(newPC.Stats[statSpeed])
 	newPC.SkillPoints = uint8(random(9) + 10)
 	sk := &newPC.Skills
 	roll := 0
 	set := func(skill, n int) { roll = n; sk[skill] = uint8(n) }
 	first := func(skill, n int) { set(skill, n); newPC.SkillPoints -= uint8(n) }
 	switch newPC.Class {
-	case 1:
-		set(28, random(4)+in/3+3)
-	case 2:
-		set(26, random(4)+pi/3+3)
-	case 3:
-		set(15, random(4)+(in+dx)/2/3+3)
-	case 4:
-		first(11, random(3)+(in+vi)/2/5+2)
-		set(7, random(3)+(dx+sp)/2/5+2)
-	case 6:
-		set(12, random(4)+(in+dx)/2/3+3)
-	case 5:
-		set(25, random(4)+in/3+3)
-	case 7:
-		set(27, random(4)+(in+pi)/2/3+3)
-	case 9:
-		first(28, random(3)+in/5+2)
-		set(26, random(3)+pi/5+2)
-	case 8:
-		set(4, random(4)+(dx+sp)/2/3+3)
-	case 10, 11:
-		set(1, random(4)+(dx+sp)/2/3+3)
-	case 12:
-		first(9, random(3)+(dx+sp)/2/5+2)
-		set(27, random(3)+(in+pi)/2/5+2)
-	case 13:
-		first(9, random(3)+(dx+sp)/2/5+2)
-		set(16, random(3)+(dx+sp)/2/5+2)
+	case classMage:
+		set(skillThaumaturgy, random(4)+in/3+3)
+	case classPriest:
+		set(skillTheology, random(4)+pi/3+3)
+	case classThief:
+		set(skillPickLock, random(4)+(in+dx)/2/3+3)
+	case classRanger:
+		first(skillNoticeSecret, random(3)+(in+vi)/2/5+2)
+		set(skillBows, random(3)+(dx+sp)/2/5+2)
+	case classBard:
+		set(skillInstrument, random(4)+(in+dx)/2/3+3)
+	case classAlchemist:
+		set(skillAlchemy, random(4)+in/3+3)
+	case classPsionic:
+		set(skillTheosophy, random(4)+(in+pi)/2/3+3)
+	case classBishop:
+		first(skillThaumaturgy, random(3)+in/5+2)
+		set(skillTheology, random(3)+pi/5+2)
+	case classValkyrie:
+		set(skillPoleStaff, random(4)+(dx+sp)/2/3+3)
+	case classLord, classSamurai:
+		set(skillSword, random(4)+(dx+sp)/2/3+3)
+	case classMonk:
+		first(skillUnarmed, random(3)+(dx+sp)/2/5+2)
+		set(skillTheosophy, random(3)+(in+pi)/2/5+2)
+	case classNinja:
+		first(skillUnarmed, random(3)+(dx+sp)/2/5+2)
+		set(skillHide, random(3)+(dx+sp)/2/5+2)
 	}
 	if int(newPC.SkillPoints) > roll {
 		newPC.SkillPoints -= uint8(roll)
@@ -636,103 +662,103 @@ func initClassSkills() {
 func initHPStamina() {
 	newPC.RestHPRoll = 1
 	newPC.RestStaminaPct = 10
-	newPC.AgeDays = int32(random(1000) + 6570)
-	str, vit := int(newPC.Stats[0]), int(newPC.Stats[3])
+	newPC.AgeDays = int32(random(startAgeSpread) + adultAge*daysPerYear)
+	str, vit := int(newPC.Stats[statStrength]), int(newPC.Stats[statVitality])
 	var hp int
 	switch newPC.Class {
-	case 0:
+	case classFighter:
 		hp = random(5) + 6
-	case 1:
+	case classMage:
 		hp = random(3) + 2
-	case 2, 12:
+	case classPriest, classMonk:
 		hp = random(4) + 4
-	case 3, 5, 9:
+	case classThief, classAlchemist, classBishop:
 		hp = random(4) + 3
-	case 4, 11:
+	case classRanger, classSamurai:
 		hp = random(4) + random(4) + 6
-	case 6:
+	case classBard:
 		hp = random(4) + 2
-	case 7:
+	case classPsionic:
 		hp = random(3) + 3
-	case 8:
+	case classValkyrie:
 		hp = random(5) + 5
-	case 10:
+	case classLord:
 		hp = random(7) + 8
-	case 13:
+	case classNinja:
 		hp = random(5) + 4
 	}
 	initClassSkills()
 	stm := (vit<<1 + str) * 3
 	load := (str<<1 + vit) * 3
-	if vit < 8 {
+	if vit < lowStat {
 		hp--
 	}
-	if vit > 15 {
+	if vit > highStat {
 		hp++
 		stm += vit
 	}
-	if vit > 17 {
+	if vit > veryHighStat {
 		hp++
 		stm += vit
 	}
-	if str > 15 {
+	if str > highStat {
 		load += str
 	}
-	if str > 17 {
+	if str > veryHighStat {
 		load += str
 	}
 	newPC.HP, newPC.HPMax = int16(hp), int16(hp)
 	newPC.Stamina, newPC.StaminaMax = int16(stm), int16(stm)
 	newPC.Carried = 0
-	newPC.MaxLoad = int16(load * 15)
+	newPC.MaxLoad = int16(load * loadPerStat)
 	if newPC.Race == raceFaerie {
 		newPC.MaxLoad = newPC.MaxLoad << 1 / 3
 	}
 }
 
-// setSixRatings (WPCMK 8de0) sets the six realms' spell regeneration, at least 1 each.
-func setSixRatings(r [6]int) {
+// setSpellRegen (WPCMK 8de0) sets the six realms' spell regeneration, at least 1 each.
+func setSpellRegen(r [realmCount]int) {
 	for i, v := range r {
-		newPC.SpellRegen[i] = uint8(max(v, 1))
+		newPC.SpellRegen[i] = uint8(max(v, minSpellRegen))
 	}
 }
 
-// initClassRatings (WPCMK 8e47) sets the spell regeneration and the spells to pick per
+// initSpellRegen (WPCMK 8e47) sets the spell regeneration and the spells to pick per
 // spell book (mage, priest, alchemist, psionic).
-func initClassRatings() {
+func initSpellRegen() {
 	b := 0
-	if newPC.Stats[3] > 15 {
+	if newPC.Stats[statVitality] > highStat {
 		b++
 	}
 	if newPC.Race == raceFaerie {
 		b++
 	}
-	if newPC.Race == raceLizard {
+	if newPC.Race == raceLizardman {
 		b--
 	}
 	r := func(a ...int) {
-		var v [6]int
+		var v [realmCount]int
 		for i := range v {
 			v[i] = b + a[i]
 		}
-		setSixRatings(v)
+		setSpellRegen(v)
 	}
 	switch newPC.Class {
-	case 1:
-		newPC.SpellsLearn[0] = 2
+	case classMage:
+		newPC.SpellsLearn[bookMage] = 2
 		r(3, 3, 2, 2, 2, 3)
-	case 2:
-		newPC.SpellsLearn[1] = 2
+	case classPriest:
+		newPC.SpellsLearn[bookPriest] = 2
 		r(2, 2, 3, 3, 2, 3)
-	case 5:
-		newPC.SpellsLearn[2] = 2
+	case classAlchemist:
+		newPC.SpellsLearn[bookAlchemist] = 2
 		r(3, 2, 3, 3, 2, 2)
-	case 7:
-		newPC.SpellsLearn[3] = 2
+	case classPsionic:
+		newPC.SpellsLearn[bookPsionic] = 2
 		r(2, 2, 2, 2, 4, 2)
-	case 9:
-		newPC.SpellsLearn[0] = 1
-		newPC.SpellsLearn[1] = 1
+	case classBishop:
+		newPC.SpellsLearn[bookMage] = 1
+		newPC.SpellsLearn[bookPriest] = 1
 		r(1, 1, 1, 1, 3, 3)
 	default:
 		r(1, 1, 1, 1, 1, 1)
@@ -741,9 +767,9 @@ func initClassRatings() {
 
 // choosePortrait (WPCMK 9111) lets the player page through the 42 portraits.
 func choosePortrait() {
-	fillWindow(menuWin, 32, 3)
+	fillWindow(menuWin, ' ', 3)
 	refreshWindow(menuWin)
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
 	printMessage(1112, promptWin, 18)
@@ -755,7 +781,7 @@ func choosePortrait() {
 	setClickRegion(0, x+9, y+1, x+9, y+1)
 	setClickRegion(1, x+10, y+1, x+10, y+1)
 	setClickRegion(2, x+18, y+2, x+18, y+2)
-	setClickRegion(3, 255, 0, 0, 0)
+	setClickRegion(3, clickRegionsEnd, 0, 0, 0)
 	for {
 		if int(newPC.Portrait) != shown {
 			loadPortrait(int(newPC.Portrait), 0)
@@ -764,22 +790,22 @@ func choosePortrait() {
 		drawPortrait(menuWin, 0, 8, 3)
 		k := menuInput()
 		if menuClicked == 1 && k >= 0 && k <= 2 {
-			k = [3]int{1, 3, 5}[k]
+			k = [3]int{menuKeyLeft, menuKeyRight, menuKeyEnter}[k]
 		}
 		switch k {
-		case 1:
-			newPC.Portrait = uint8((int(newPC.Portrait) + 41) % 42)
-		case 3:
-			newPC.Portrait = uint8((int(newPC.Portrait) + 1) % 42)
+		case menuKeyLeft:
+			newPC.Portrait = uint8((int(newPC.Portrait) + portraitCount - 1) % portraitCount)
+		case menuKeyRight:
+			newPC.Portrait = uint8((int(newPC.Portrait) + 1) % portraitCount)
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
 	clearStatusLine()
-	fillWindow(menuWin, 32, 3)
+	fillWindow(menuWin, ' ', 3)
 	refreshWindow(menuWin)
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	drawPortrait(sheetWin, 0, 1, 1)
 }
@@ -788,17 +814,17 @@ func choosePortrait() {
 func initNewCharacter() {
 	newPC.PrimaryAttacks = 1
 	newPC.SecondaryAttacks = 1
-	newPC.AttackPower = newPC.Stats[5] + 1
+	newPC.AttackPower = newPC.Stats[statSpeed] + 1
 	newPC.ToHit = 100
 	initHPStamina()
-	initClassRatings()
+	initSpellRegen()
 	newPC.Regen, newPC.Drain, newPC.LoadCat, newPC.Rank = 0, 0, 0, 0
 	newPC.Level, newPC.Unk026 = 1, 1
 	newPC.ItemCount = 0
 	for i := range newPC.Equipped {
-		newPC.Equipped[i] = 255
+		newPC.Equipped[i] = noEquippedItem
 	}
-	initClassRaceModifiers()
+	initResistsHandsAC()
 	drawStats()
 }
 
@@ -821,7 +847,7 @@ func createCharacter(name string, slot int) {
 		bonusPoints += 8
 	}
 	if maxBonus {
-		bonusPoints = 21
+		bonusPoints = maxBonusPoints
 	}
 	drawStats()
 	chooseClass()
@@ -840,18 +866,18 @@ func createCharacter(name string, slot int) {
 	if newPC.SkillPoints > 0 {
 		skillPointsScreen(promptWin)
 	}
-	for book := 0; book < 4; book++ {
+	for book := range bookCount {
 		for newPC.SpellsLearn[book] > 0 {
 			chooseStartingSpell(sheetWin, promptWin, book)
 		}
 	}
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 6, 1)
 	printMessage(1103, promptWin, 18)
 	if yesNo(1114, 0) {
 		pcfileRecordIO(&newPC, slot, true)
-		rosterSlotUsed[slot] = 1
+		rosterSlotUsed[slot] = rosterSlotAvailable
 		stopSound()
 		writePcfileHeader()
 	}
@@ -859,7 +885,7 @@ func createCharacter(name string, slot int) {
 
 // pcmkSkillShown (WPCMK set_class_skill_masks' table) marks the skills the new character
 // can learn.
-var pcmkSkillShown [30]bool
+var pcmkSkillShown [skillCount]bool
 
 // putCharAt (WPCMK 611b) puts ch at x, y of win in color 5.
 func putCharAt(win *Window, x, y int, ch byte) {
@@ -929,7 +955,7 @@ func drawSheetSpellWindow(w *Window) {
 	blank := func(x, y, n int) {
 		setCursor(w, x, y)
 		for range n {
-			putCharHi(w, 32, 3)
+			putCharHi(w, ' ', 3)
 		}
 	}
 	blank(10, 14, 10)
@@ -942,7 +968,7 @@ func drawSheetSpellWindow(w *Window) {
 // listRealmSpells (WPCMK 66ea) is the known spells of realm.
 func listRealmSpells(realm int) []int {
 	var l []int
-	for s := range 82 {
+	for s := range spellTable {
 		if int(spellTable[s].Realm) == realm && testBit(newPC.KnownSpells[:], s) {
 			l = append(l, s)
 		}
@@ -968,7 +994,7 @@ func drawSheetSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
 		printMessage(spells[i]+4000, w, color)
 		if cursor && d == 0 {
 			for w.CurX < 18 {
-				putChar(w, 32, realmColors[realm])
+				putChar(w, ' ', realmColors[realm])
 			}
 		}
 	}
@@ -983,19 +1009,19 @@ func selectSpell(sheet, win *Window) int {
 	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
 	defer destroyWindow(list, false)
 	defer destroyWindow(w, false)
-	fillWindow(list, 32, 3)
+	fillWindow(list, ' ', 3)
 	drawSheetSpellWindow(w)
 	drawListBox(list, true)
 	refreshWindow(win)
 	realm := 0
-	for r := range 6 {
+	for r := range realmCount {
 		x, y := sheet.X+byte(r/3*10+1), sheet.Y+byte(r%3<<1+14)
 		setClickRegion(r, x, y, x, y)
 	}
 	setClickRegion(6, w.X+1, w.Y+12, w.X+1, w.Y+12)
 	var spells []int
 	for {
-		setClickRegion(7, 255, 0, 0, 0)
+		setClickRegion(7, clickRegionsEnd, 0, 0, 0)
 		redraw := true
 		none := false // l10 == 0: an empty realm cannot be entered
 		var key int
@@ -1023,18 +1049,18 @@ func selectSpell(sheet, win *Window) int {
 			if menuClicked == 1 {
 				switch {
 				case key == realm:
-					key = 5
-				case key < 6:
+					key = menuKeyEnter
+				case key < realmCount:
 					unhighlightSheetRealm(sheet, w, realm)
-					realm, key = key, 0
+					realm, key = key, menuKeyEscape
 				default:
 					unhighlightSheetRealm(sheet, w, realm)
-					realm, key, none = -1, 5, false
+					realm, key, none = -1, menuKeyEnter, false
 				}
 				redraw = true
 			} else {
 				switch key {
-				case 1:
+				case menuKeyLeft:
 					if realm == -1 {
 						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = 4, true
@@ -1042,29 +1068,29 @@ func selectSpell(sheet, win *Window) int {
 						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm-3, true
 					}
-				case 2:
+				case menuKeyUp:
 					if realm != -1 && realm%3 > 0 {
 						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm-1, true
 					}
-				case 3:
+				case menuKeyRight:
 					if realm != -1 {
 						unhighlightSheetRealm(sheet, w, realm)
 						redraw = true
-						if realm+3 < 6 {
+						if realm+3 < realmCount {
 							realm += 3
 						} else {
 							realm = -1
 						}
 					}
-				case 4:
+				case menuKeyDown:
 					if realm != -1 && realm%3+1 < 3 {
 						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm+1, true
 					}
 				}
 			}
-			if key == 5 && !none {
+			if key == menuKeyEnter && !none {
 				break
 			}
 		}
@@ -1076,7 +1102,7 @@ func selectSpell(sheet, win *Window) int {
 		setClickRegion(7, list.X, list.Y, list.X, list.Y)
 		setClickRegion(8, list.X, list.Y+6, list.X, list.Y+6)
 		setClickRegion(9, list.X+1, list.Y+3, list.X+18, list.Y+3)
-		setClickRegion(10, 255, 0, 0, 0)
+		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		for {
 			drawSheetSpellList(list, realm, sel, true, spells)
 			cost := int(spellTable[spells[sel]].Cost)
@@ -1089,31 +1115,31 @@ func selectSpell(sheet, win *Window) int {
 			key = menuInput()
 			if menuClicked == 1 {
 				switch {
-				case key <= 5:
-					realm, key = key, 1
+				case key < realmCount:
+					realm, key = key, menuKeyLeft
 				case key == 6:
 					return -1
 				case key == 7:
-					key = 2
+					key = menuKeyUp
 				case key == 8:
-					key = 4
+					key = menuKeyDown
 				case key == 9:
-					key = 5
+					key = menuKeyEnter
 				}
 			}
 			switch key {
-			case 1:
+			case menuKeyLeft:
 				back = true
-			case 2:
+			case menuKeyUp:
 				if sel > 0 {
 					sel--
 				}
-			case 4:
+			case menuKeyDown:
 				if sel+1 < len(spells) {
 					sel++
 				}
 			}
-			if key == 5 || back {
+			if key == menuKeyEnter || back {
 				break
 			}
 		}
@@ -1126,11 +1152,11 @@ func selectSpell(sheet, win *Window) int {
 // chooseStartingSpell (WPCMK 6e38) lets the player learn one first-level spell of spell
 // book book (0 mage, 1 priest, 2 alchemist, 3 psionic) and raises its realm's points.
 func chooseStartingSpell(sheet, win *Window, book int) {
-	bit := [4]uint8{8, 4, 1, 2}[book]
+	bit := spellBookBits[book]
 	saved := newPC.KnownSpells
 	newPC.KnownSpells = [12]uint8{}
 	n := 0
-	for s := range 82 {
+	for s := range spellTable {
 		sp := spellTable[s]
 		if sp.Books&bit != 0 && sp.Level <= 1 && !testBit(saved[:], s) {
 			setBit(newPC.KnownSpells[:], s, true)
@@ -1141,22 +1167,22 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 		newPC.KnownSpells = saved
 		return // ponytail: as in the original, the pick is never used up, so this loops forever
 	}
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	deferWindowDraw(win)
 	setCursor(win, 1, 1)
 	printMessage(703, win, 18)
 	resumeWindowDraw(win)
-	var savedSP [6]int16
-	for r := range 6 {
+	var savedSP [realmCount]int16
+	for r := range realmCount {
 		savedSP[r] = newPC.SP[r].Cur
-		newPC.SP[r].Cur = 999
+		newPC.SP[r].Cur = unlimitedSP
 	}
 	spell := -1
 	for spell == -1 {
 		spell = selectSpell(sheet, win)
 	}
 	newPC.KnownSpells = saved
-	for r := range 6 {
+	for r := range realmCount {
 		newPC.SP[r].Cur = savedSP[r]
 	}
 	setBit(newPC.KnownSpells[:], spell, true)

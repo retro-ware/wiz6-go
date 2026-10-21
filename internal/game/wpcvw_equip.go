@@ -3,7 +3,7 @@ package game
 // WPCVW: equipping and the derived combat values (resistances, AC, hands, load).
 
 // canEquipItem (WPCVW c8c2) lists in out the inventory items member m may put in equip
-// position pos (0 primary, 1 secondary, 2 armour .. 7) and returns how many.
+// position pos (equipPrimary..equipBoots) and returns how many.
 func canEquipItem(m, pos int, out *[10]int) int {
 	p := &party[m]
 	for i := range out {
@@ -15,38 +15,38 @@ func canEquipItem(m, pos int, out *[10]int) int {
 		slot := -1
 		switch it.Type {
 		case 0, 1, 2, 3, 12, 16:
-			if pos == 0 {
-				slot = 0
-			} else if pos == 1 && it.Flags&4 != 0 {
-				slot = 1
+			if pos == equipPrimary {
+				slot = equipPrimary
+			} else if pos == equipSecondary && it.Flags&itemOffHand != 0 {
+				slot = equipSecondary
 			}
-		case 4, 11:
-			slot = 1
-		case 5, 6, 7, 8, 9, 10:
-			slot = int(it.Type) - 3
+		case itemTypeMissile, itemTypeShield:
+			slot = equipSecondary
+		case itemTypeMisc, 6, 7, 8, 9, 10:
+			slot = int(it.Type) - itemTypeMisc + equipMisc
 		case 13, 14, 15:
-			if it.Flags&4 != 0 {
-				slot = 1
+			if it.Flags&itemOffHand != 0 {
+				slot = equipSecondary
 			}
 		}
-		if pos == 1 {
+		if pos == equipSecondary {
 			// Ammunition only goes with its launcher, and only ammunition does.
-			if e := p.Equipped[0]; e != 255 {
+			if e := p.Equipped[equipPrimary]; e != noEquippedItem {
 				w := &p.Items[e]
-				if w.Type == 3 {
+				if w.Type == itemTypeLauncher {
 					if w.Icon == 11 && it.Icon != 22 || w.Icon == 13 && it.Icon != 23 || w.Icon == 12 && it.Icon != 83 {
 						slot = -1
-					} else if it.Type != 4 {
+					} else if it.Type != itemTypeMissile {
 						slot = -1
 					}
-				} else if it.Type == 4 {
+				} else if it.Type == itemTypeMissile {
 					slot = -1
 				}
-			} else if it.Type == 4 {
+			} else if it.Type == itemTypeMissile {
 				slot = -1
 			}
 		}
-		for s := 0; s < 8; s++ {
+		for s := range equipSlots {
 			if int(p.Equipped[s]) == i {
 				slot = -1
 			}
@@ -69,9 +69,9 @@ func canEquipItem(m, pos int, out *[10]int) int {
 func sortEquippedFirst(m int) {
 	p := &party[m]
 	top := 0
-	for s := 0; s < 8; s++ {
+	for s := range equipSlots {
 		i := int(p.Equipped[s])
-		if i == 255 {
+		if i == noEquippedItem {
 			continue
 		}
 		it, name, color := p.Items[i], pvItemNames[i], pvItemRowColor[i]
@@ -79,7 +79,7 @@ func sortEquippedFirst(m int) {
 			p.Items[j] = p.Items[j-1]
 			pvItemNames[j] = pvItemNames[j-1]
 			pvItemRowColor[j] = pvItemRowColor[j-1]
-			for t := s + 1; t < 8; t++ {
+			for t := s + 1; t < equipSlots; t++ {
 				if int(p.Equipped[t]) == j-1 {
 					p.Equipped[t] = uint8(j)
 				}
@@ -91,11 +91,11 @@ func sortEquippedFirst(m int) {
 	}
 }
 
-// addSkillBonus (add_skill_bonus, WPCVW cbf4) adds v to resistance r of member m, kept
+// addResistance (add_skill_bonus, WPCVW cbf4) adds v to resistance r of member m, kept
 // to 0..125.
-func addSkillBonus(m, r, v int) {
+func addResistance(m, r, v int) {
 	p := &party[m]
-	p.Resist[r] = uint8(min(max(int(int16(int(p.Resist[r])+v)), 0), 125)) // C int sum wraps
+	p.Resist[r] = uint8(min(max(int(int16(int(p.Resist[r])+v)), 0), maxResist)) // C int sum wraps
 }
 
 // levelCap is member m's level capped at limit, or its level before a class
@@ -118,134 +118,165 @@ func levelCap(p *PC, limit int, minus1 bool) int {
 // base letter*4 plus growth digit per level.
 func setBaseResists(m int, t [2]string) {
 	p := &party[m]
-	lv := levelCap(p, 16, true)
-	for r := 0; r < 14; r++ {
+	lv := levelCap(p, 16, true) // the resistances grow until level 16
+	for r := range p.Resist {
 		p.Resist[r] = 0
-		addSkillBonus(m, r, int(t[1][r]-'0')*lv+int(t[0][r]-'A')*4)
+		addResistance(m, r, int(t[1][r]-'0')*lv+int(t[0][r]-'A')*4)
 	}
 }
 
 // setAttackCounts (WPCVW ccd2) sets member m's attacks per round (PrimaryAttacks and
-// SecondaryAttacks, at most most) and AttackPower.
-func setAttackCounts(m, most, a, b, c, d int) {
+// SecondaryAttacks, at most most) and AttackPower: one more every step levels from
+// level step-shift+1 on.
+func setAttackCounts(m, most, primaryStep, primaryShift, secondaryStep, secondaryShift int) {
 	p := &party[m]
-	lv := levelCap(p, 20, false)
-	f := func(stat, x, y int) uint8 {
-		v := uint8(stat/6 + (lv+x-y)/x - 1)
+	lv := levelCap(p, maxCombatLevel, false)
+	f := func(stat, step, shift int) uint8 {
+		v := uint8(stat/6 + (lv+step-shift)/step - 1)
 		if v < 1 {
 			v = 1
 		}
 		return min(v, uint8(most))
 	}
-	p.PrimaryAttacks = f(int(p.Stats[4]), a, b)
-	p.SecondaryAttacks = f(int(p.Stats[5]), c, d)
-	p.AttackPower = p.Stats[5] + uint8(lv)
+	p.PrimaryAttacks = f(int(p.Stats[statDexterity]), primaryStep, primaryShift)
+	p.SecondaryAttacks = f(int(p.Stats[statSpeed]), secondaryStep, secondaryShift)
+	p.AttackPower = p.Stats[statSpeed] + uint8(lv)
+}
+
+// setClassAttackCounts (in WPCVW cdb3 and eff8) is setAttackCounts with member m's
+// class's steps.
+func setClassAttackCounts(m int) {
+	switch party[m].Class {
+	case classFighter, classRanger, classValkyrie, classLord, classSamurai, classMonk, classNinja:
+		setAttackCounts(m, 4, 7, 5, 6, 3)
+	case classMage, classAlchemist, classPsionic, classBishop:
+		setAttackCounts(m, 2, 12, 12, 7, 7)
+	case classPriest, classThief, classBard:
+		setAttackCounts(m, 3, 10, 8, 7, 5)
+	}
+}
+
+// naturalAC is member m's armour class before items: baseAC, less for speed, faeries and
+// a monk's or ninja's level and ninjutsu (as in WPCVW cdb3 and eff8).
+func naturalAC(p *PC) int {
+	ac := baseAC
+	if p.Stats[statSpeed] > highStat {
+		ac--
+	}
+	if p.Stats[statSpeed] > veryHighStat {
+		ac--
+	}
+	if p.Race == raceFaerie {
+		ac -= 2
+	}
+	if p.Class == classNinja || p.Class == classMonk {
+		l := 20 // past maxCombatLevel, as in the C
+		if p.Level <= maxCombatLevel {
+			l = int(p.Level) / 2
+		}
+		ac -= l + int(p.Skills[skillHide])/10
+	}
+	return ac
 }
 
 // resetCombatValues (WPCVW cdb3) recomputes member m's bare resistances, attacks, hands
 // and AC from class, race, stats and level.
 func resetCombatValues(m int) {
 	p := &party[m]
-	g := map[uint8]int{0: 0, 4: 1, 8: 1, 10: 2, 11: 3, 13: 4, 1: 5, 5: 5, 7: 6, 2: 7, 9: 7, 12: 8, 3: 9, 6: 9}
+	g := map[uint8]int{
+		classFighter: 0, classRanger: 1, classValkyrie: 1, classLord: 2, classSamurai: 3, classNinja: 4,
+		classMage: 5, classAlchemist: 5, classPsionic: 6, classPriest: 7, classBishop: 7, classMonk: 8,
+		classThief: 9, classBard: 9,
+	}
 	setBaseResists(m, resistTables[g[p.Class]])
-	vit := int(p.Stats[3]) / 5 * 5
+	vit := int(p.Stats[statVitality]) / 5 * 5
 	switch p.Race {
-	case 0:
-		addSkillBonus(m, 11, 20)
-	case 2, 4:
-		addSkillBonus(m, 6, vit)
-		addSkillBonus(m, 12, vit)
-	case 3:
-		addSkillBonus(m, 12, vit)
-	case 1:
-		addSkillBonus(m, 9, 20)
-	case 5:
+	case raceHuman:
+		addResistance(m, 11, 20)
+	case raceDwarf, raceHobbit:
+		addResistance(m, 6, vit)
+		addResistance(m, 12, vit)
+	case raceGnome:
+		addResistance(m, 12, vit)
+	case raceElf:
+		addResistance(m, 9, 20)
+	case raceFaerie:
 		for _, r := range []int{12, 4, 7, 10, 11} {
-			addSkillBonus(m, r, 25)
+			addResistance(m, r, 25)
 		}
-	case 6, 7:
-		addSkillBonus(m, 10, 25)
-		addSkillBonus(m, 8, 10)
-		addSkillBonus(m, 3, -20)
-	case 8:
-		addSkillBonus(m, 7, 15)
-		addSkillBonus(m, 4, 20)
-		addSkillBonus(m, 3, 20)
-	case 9:
-		addSkillBonus(m, 3, 20)
-	case 10:
-		addSkillBonus(m, 12, 25)
-		addSkillBonus(m, 3, 15)
+	case raceLizardman, raceDracon:
+		addResistance(m, 10, 25)
+		addResistance(m, 8, 10)
+		addResistance(m, 3, -20)
+	case raceFelpurr:
+		addResistance(m, 7, 15)
+		addResistance(m, 4, 20)
+		addResistance(m, 3, 20)
+	case raceRawulf:
+		addResistance(m, 3, 20)
+	case raceMook:
+		addResistance(m, 12, 25)
+		addResistance(m, 3, 15)
 	}
-	if p.Stats[3] > 15 {
-		addSkillBonus(m, 6, 5)
-		addSkillBonus(m, 11, 5)
+	if p.Stats[statVitality] > highStat {
+		addResistance(m, 6, 5)
+		addResistance(m, 11, 5)
 	}
-	if p.Stats[1] > 15 {
-		addSkillBonus(m, 9, 5)
+	if p.Stats[statIntelligence] > highStat {
+		addResistance(m, 9, 5)
 	}
-	if p.Stats[5] > 15 {
-		addSkillBonus(m, 7, 5)
-		addSkillBonus(m, 4, 5)
+	if p.Stats[statSpeed] > highStat {
+		addResistance(m, 7, 5)
+		addResistance(m, 4, 5)
 	}
-	switch p.Class {
-	case 0, 4, 8, 10, 11, 12, 13:
-		setAttackCounts(m, 4, 7, 5, 6, 3)
-	case 1, 5, 7, 9:
-		setAttackCounts(m, 2, 12, 12, 7, 7)
-	case 2, 3, 6:
-		setAttackCounts(m, 3, 10, 8, 7, 5)
-	}
-	clearHandAttack(m, 0)
-	h1 := &p.Hands[1]
-	*h1 = Hand{Damage: Dice{Count: 2, Sides: 2}, Flags: 32}
-	h0 := &p.Hands[0]
-	if p.Stats[0] > 15 {
+	setClassAttackCounts(m)
+	clearHandAttack(m, equipPrimary)
+	h1 := &p.Hands[equipSecondary]
+	*h1 = Hand{Damage: Dice{Count: bareHandDamage, Sides: bareHandDamage}, Flags: handPunch}
+	h0 := &p.Hands[equipPrimary]
+	if p.Stats[statStrength] > highStat {
 		h0.Damage.Base++
 	}
-	if p.Stats[0] > 17 {
+	if p.Stats[statStrength] > veryHighStat {
 		h0.Damage.Base++
 	}
-	if p.Stats[4] > 15 {
+	if p.Stats[statDexterity] > highStat {
 		h0.ToHit -= 5
 	}
-	if p.Stats[4] > 17 {
+	if p.Stats[statDexterity] > veryHighStat {
 		h0.ToHit -= 5
 		h1.ToHit -= 5
 	}
-	p.AC[0] = 10
-	if p.Stats[5] > 15 {
-		p.AC[0]--
-	}
-	if p.Stats[5] > 17 {
-		p.AC[0]--
-	}
-	if p.Race == 5 {
-		p.AC[0] -= 2
-	}
-	if p.Class == 13 || p.Class == 12 {
-		l := 20
-		if p.Level <= 20 {
-			l = int(p.Level) / 2
-		}
-		p.AC[0] -= uint8(l + int(p.Skills[16])/10)
-	}
-	p.AC[1], p.AC[2] = 0, 0
-	for s := 3; s < 8; s++ {
-		p.AC[s] = p.AC[0]
+	p.AC[acBase] = uint8(naturalAC(p))
+	p.AC[acHands], p.AC[equipMisc] = 0, 0
+	for s := equipHelmet; s < equipSlots; s++ {
+		p.AC[s] = p.AC[acBase]
 	}
 }
+
+// The special powers (ItemRec.Unk68) doEquipItems may invoke.
+const (
+	powerLastStat         = statCount // 1..statCount raise stat power-1
+	powerPrimaryAttacks   = 9
+	powerSecondaryAttacks = 10
+	powerRestore          = 11 // cures and restores hit points and stamina
+	powerYouth            = 12
+	powerHitPoints        = 13
+)
+
+// maxCombatLevel is the last level that improves the attacks and to-hit.
+const maxCombatLevel = 20
 
 // doEquipItems (WPCVW d399) re-equips member m position by position, rebuilds its
 // combat values from what it wears, then offers to invoke the special powers.
 func doEquipItems(sheet, menu *Window, m int) {
 	p := &party[m]
-	var power [8]int
+	var power [equipSlots]int
 	for s := range p.Equipped {
-		p.Equipped[s] = 255
+		p.Equipped[s] = noEquippedItem
 	}
 	for i := 0; i < int(p.ItemCount); i++ {
-		p.Items[i].Flags &^= 1
+		p.Items[i].Flags &^= itemEquipped
 	}
 	p.Regen, p.Drain = 0, 0
 	p.Resist = [14]uint8{}
@@ -259,8 +290,8 @@ func doEquipItems(sheet, menu *Window, m int) {
 	resetCombatValues(m)
 	drawInventoryPanel(sheet, m)
 	cancel := getMessage(359)
-	for s := 0; s < 8; s++ {
-		var cand [10]int
+	for s := 0; s < equipSlots; s++ {
+		var cand [packSlots]int
 		n := canEquipItem(m, s, &cand)
 		if n <= 0 {
 			continue
@@ -304,43 +335,43 @@ func doEquipItems(sheet, menu *Window, m int) {
 				}
 				break
 			}
-			if k == 2 || k == 4 {
+			if k == menuKeyUp || k == menuKeyDown {
 				if sel == -1 {
 					setCursor(menu, cx, cy)
 					printStringHi(menu, cancel, 3)
 					sel = 0
 				} else {
 					unhighlightItemRow(sheet, cand[sel], 4, false)
-					if k == 2 {
+					if k == menuKeyUp {
 						sel--
 					} else if sel++; sel >= n {
 						sel = -1
 					}
 				}
 			}
-			if k == 5 {
+			if k == menuKeyEnter {
 				break
 			}
 		}
 		if sel != -1 {
 			i := cand[sel]
 			p.Equipped[s] = uint8(i)
-			p.Items[i].Flags |= 1
+			p.Items[i].Flags |= itemEquipped
 			rec := itemRec(int(p.Items[i].ID))
 			power[s] = int(rec.Unk68)
-			if s <= 1 {
+			if s <= equipSecondary {
 				h := &p.Hands[s]
-				p.AC[1] -= rec.AC
+				p.AC[acHands] -= rec.AC
 				h.B0D = rec.HandD
 				h.Data = rec.HandData
-				kiri := int(p.Skills[29]) / 5
-				if p.Class == 12 || p.Class == 13 {
-					h.Data[6] += uint8(kiri + 5)
+				kiri := int(p.Skills[skillKirijutsu]) / 5
+				if p.Class == classMonk || p.Class == classNinja {
+					h.Data[handCritical] += uint8(kiri + 5)
 				} else if kiri > 0 {
-					h.Data[6] += uint8(kiri)
+					h.Data[handCritical] += uint8(kiri)
 				}
 				h.B0C = rec.HandC
-				if rec.Type == 4 {
+				if rec.Type == itemTypeMissile {
 					h.ToHit = -int8(rec.ToHitPen) * 5
 				} else {
 					h.ToHit -= int8(rec.ToHitPen) * 5
@@ -352,20 +383,20 @@ func doEquipItems(sheet, menu *Window, m int) {
 			} else {
 				p.AC[s] -= rec.AC
 			}
-			for r := 1; r < 14; r++ {
-				addSkillBonus(m, r, int(rec.SkillBonus[r]))
+			for r := 1; r < len(p.Resist); r++ {
+				addResistance(m, r, int(rec.SkillBonus[r]))
 			}
 			p.Regen = max(p.Regen, rec.Regen)
 			p.Drain = max(p.Drain, rec.Drain)
-			if s == 0 && p.Items[i].Flags&8 != 0 {
-				s++ // the C skips the secondary position after an identified weapon
+			if s == equipPrimary && p.Items[i].Flags&itemTwoHanded != 0 {
+				s++ // a two-handed weapon leaves no secondary position
 			}
 			sortEquippedFirst(m)
 		}
 		drawInventoryPanel(sheet, m)
 	}
 
-	for s := 0; s < 8; s++ {
+	for s := range equipSlots {
 		if power[s] <= 0 {
 			continue
 		}
@@ -384,26 +415,26 @@ func doEquipItems(sheet, menu *Window, m int) {
 			continue
 		}
 		switch v := power[s]; {
-		case v < 9:
+		case v <= powerLastStat: // stat v-1
 			if p.Stats[v-1] < 20 {
 				p.Stats[v-1]++
 			}
-		case v == 9:
+		case v == powerPrimaryAttacks:
 			p.PrimaryAttacks = max(p.PrimaryAttacks, 4)
-		case v == 10:
+		case v == powerSecondaryAttacks:
 			p.SecondaryAttacks = max(p.SecondaryAttacks, 4)
-		case v == 11:
-			p.Condition = 0
+		case v == powerRestore:
+			p.Condition = conditionOK
 			p.Status = [10]uint8{}
 			p.HP, p.Stamina = p.HPMax, p.StaminaMax
-		case v == 12:
-			if p.AgeDays/365 > 18 {
-				p.AgeDays -= 365
+		case v == powerYouth:
+			if p.AgeDays/daysPerYear > adultAge {
+				p.AgeDays -= daysPerYear
 			}
-			if p.Stats[3] < 18 {
-				p.Stats[3]++
+			if p.Stats[statVitality] < maxStat {
+				p.Stats[statVitality]++
 			}
-		case v == 13:
+		case v == powerHitPoints:
 			n := int16(random(5) + 2)
 			p.HPMax += n
 			p.HP += n

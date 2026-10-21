@@ -14,16 +14,16 @@ func drawMemberCard(w *Window, m int) {
 	}
 	drawPortrait(w, int(memberPortrait[m]), x, y+1)
 	g := conditionGlyph[p.Condition]
-	if g == 0 && p.Status[2] > 0 {
+	if g == 0 && p.Status[statusAsleep] > 0 {
 		g = 1
 	}
-	if g < 2 && p.Status[3] > 0 {
+	if g < 2 && p.Status[statusParalyzed] > 0 {
 		g = 2
 	}
 	setCursor(w, x+3, y+3)
 	putCharHi(w, byte(g+37), 1)
 	g = -1
-	for i := 0; i < 10; i++ {
+	for i := range p.Status {
 		if p.Status[i] > 0 && statusGlyph[i] > g {
 			g = statusGlyph[i]
 		}
@@ -38,8 +38,8 @@ func drawMemberCard(w *Window, m int) {
 		putCharHi(w, byte(int(p.Class)<<1+i+58), 1)
 	}
 	setCursor(w, x+3, y+1)
-	for i := 0; i < 2; i++ {
-		if e := p.Equipped[i]; e != 255 && p.Items[e].ID > 0 {
+	for i := equipPrimary; i <= equipSecondary; i++ {
+		if e := p.Equipped[i]; e != noEquippedItem && p.Items[e].ID > 0 {
 			putCharHi(w, p.Items[e].Icon+1, 4)
 		} else {
 			putCharHi(w, byte(i+37), 4)
@@ -122,32 +122,32 @@ func drawSheetFrame(w *Window) {
 
 // LoadCategory is get_load_category's result: what carrying the current load costs.
 type LoadCategory struct {
-	AC           int // w[0]: armour class penalty
-	A, B         int // w[1], w[2]
-	CapA, CapB   int // w[3], w[4]: caps on PC.PrimaryAttacks, SecondaryAttacks
-	StaminaDrain int // w[5]
-	Color        int // w[6]: the load's colour on the sheet
+	AC                                     int // w[0]: armour class penalty
+	PrimaryToHit, SecondaryToHit           int // w[1], w[2]: to-hit penalties of the two hands
+	PrimaryAttacksCap, SecondaryAttacksCap int // w[3], w[4]: caps on PC.PrimaryAttacks, SecondaryAttacks
+	StaminaDrain                           int // w[5]
+	Color                                  int // w[6]: the load's colour on the sheet
 }
 
 // getLoadCategory (WPCVW 518e) rates member m's load against his capacity.
 func getLoadCategory(m int) LoadCategory {
 	p := &party[m]
-	l := LoadCategory{CapA: int(p.PrimaryAttacks), CapB: int(p.SecondaryAttacks), Color: 9}
+	l := LoadCategory{PrimaryAttacksCap: int(p.PrimaryAttacks), SecondaryAttacksCap: int(p.SecondaryAttacks), Color: 9}
 	pct := int32(p.Carried) * 100 / int32(p.MaxLoad)
 	switch {
 	case pct <= 50:
 	case pct <= 66:
-		l.A, l.B = 5, 10
-		l.CapA, l.CapB = min(l.CapA, 3), min(l.CapB, 3)
+		l.PrimaryToHit, l.SecondaryToHit = 5, 10
+		l.PrimaryAttacksCap, l.SecondaryAttacksCap = min(l.PrimaryAttacksCap, 3), min(l.SecondaryAttacksCap, 3)
 	case pct <= 75:
-		l.AC, l.A, l.B = 1, 10, 20
-		l.CapA, l.CapB = min(l.CapA, 2), min(l.CapB, 2)
+		l.AC, l.PrimaryToHit, l.SecondaryToHit = 1, 10, 20
+		l.PrimaryAttacksCap, l.SecondaryAttacksCap = min(l.PrimaryAttacksCap, 2), min(l.SecondaryAttacksCap, 2)
 		l.StaminaDrain, l.Color = int(p.StaminaMax)/100, -7
 	case pct <= 90:
-		l.AC, l.A, l.B, l.CapA, l.CapB = 2, 20, 40, 1, 1
+		l.AC, l.PrimaryToHit, l.SecondaryToHit, l.PrimaryAttacksCap, l.SecondaryAttacksCap = 2, 20, 40, 1, 1
 		l.StaminaDrain, l.Color = int(p.StaminaMax)/50, -5
 	default:
-		l.AC, l.A, l.B, l.CapA, l.CapB = 4, 40, 80, 1, 1
+		l.AC, l.PrimaryToHit, l.SecondaryToHit, l.PrimaryAttacksCap, l.SecondaryAttacksCap = 4, 40, 80, 1, 1
 		l.StaminaDrain, l.Color = int(p.StaminaMax)/25, -4
 	}
 	return l
@@ -174,14 +174,14 @@ func calcCarriedWeight(m int) {
 		p.Carried += getItemWeight(i, m)
 	}
 	for i := 0; i < int(p.SwagCount); i++ {
-		p.Carried += getItemWeight(i+10, m)
+		p.Carried += getItemWeight(i+packSlots, m)
 	}
 }
 
 // draw_spell_points (WPCMK 50d1, WPCVW 53fa) prints pc's six realms' spell points on
 // the sheet w.
 func drawSpellPoints(w *Window, pc *PC) {
-	for r := 0; r < 6; r++ {
+	for r := range realmCount {
 		x := 13
 		if r < 3 {
 			x = 3
@@ -206,7 +206,7 @@ func drawStatsPanel(w *Window, m int) {
 	printMsgColor(int(p.Race)+100, w, 1)
 	setCursor(w, 4, 2)
 	putChar(w, 30, 5)
-	printInt(w, int(p.AgeDays/365), 3, 14)
+	printInt(w, int(p.AgeDays/daysPerYear), 3, 14)
 	w.CurX++
 	if testBit(p.Flags[:], 0) || testBit(p.Flags[:], 1) || testBit(p.Flags[:], 2) {
 		putChar(w, 10, 5)
@@ -228,7 +228,7 @@ func drawStatsPanel(w *Window, m int) {
 	printMsgAt(203, w, 25, 3, 14)
 	w.CurX++
 	printLong(w, p.Kills, 10, 6)
-	for i := 0; i < 8; i++ {
+	for i := range statCount {
 		printMsgAt(i+204, w, 1, i+5, 5)
 		w.CurX++
 		printInt(w, int(p.Stats[i]), 2, 1)
@@ -247,10 +247,10 @@ func drawStatsPanel(w *Window, m int) {
 	w.CurX++
 	x := w.CurX
 	g := conditionGlyph[p.Condition]
-	if g == 0 && p.Status[2] > 0 {
+	if g == 0 && p.Status[statusAsleep] > 0 {
 		g = 1
 	}
-	if g < 2 && p.Status[3] > 0 {
+	if g < 2 && p.Status[statusParalyzed] > 0 {
 		g = 2
 	}
 	if g != 0 {
@@ -262,8 +262,8 @@ func drawStatsPanel(w *Window, m int) {
 	if p.Status[4] > 0 {
 		putCharHi(w, byte(statusGlyph[4]+47), 1)
 	}
-	if p.Status[5] > 0 || p.Status[6] > 0 || p.Status[8] > 0 {
-		putCharHi(w, byte(statusGlyph[5]+47), 1)
+	if p.Status[statusPoisoned] > 0 || p.Status[6] > 0 || p.Status[8] > 0 {
+		putCharHi(w, byte(statusGlyph[statusPoisoned]+47), 1)
 	}
 	if w.CurX == x {
 		putCharHi(w, byte(conditionGlyph[0]+47), 1)
@@ -283,7 +283,7 @@ func drawStatsPanel(w *Window, m int) {
 	printInt(w, int(p.Carried)/10, 3, c)
 	putChar(w, '/', c8)
 	printInt(w, int(p.MaxLoad)/10, 3, c)
-	for r := 0; r < 6; r++ {
+	for r := range realmCount {
 		putGlyphAt(w, r/3*10+1, r%3*2+14, byte(r+35))
 	}
 	drawSpellPoints(w, &party[m])
@@ -296,11 +296,11 @@ func drawInventoryPanel(w *Window, m int) {
 		return
 	}
 	p := &party[m]
-	mod := int(int8(p.AC[1])) + getLoadCategory(m).AC
+	mod := int(int8(p.AC[acHands])) + getLoadCategory(m).AC
 	setCursor(w, 21, 5)
 	printMsgColor(217, w, 15)
 	w.CurX++
-	printInt(w, int(int8(p.AC[0]))+mod, 2, 4)
+	printInt(w, int(int8(p.AC[acBase]))+mod, 2, 4)
 	printString(w, wpcvwACOpen, 15)
 	if mod >= 0 {
 		c := 4
@@ -314,10 +314,10 @@ func drawInventoryPanel(w *Window, m int) {
 	}
 	putChar(w, ')', 15)
 	setCursor(w, 21, 6)
-	for i := 0; i < 6; i++ {
+	for i := range equipSlots - equipMisc {
 		putCharHi(w, ' ', 3)
 		icon := 120
-		if e := p.Equipped[2+i]; e != 255 {
+		if e := p.Equipped[equipMisc+i]; e != noEquippedItem {
 			icon = int(p.Items[e].Icon)
 		} else if i != 0 {
 			icon = i + 120
@@ -330,13 +330,13 @@ func drawInventoryPanel(w *Window, m int) {
 		}
 	}
 	c := 11
-	for i := 0; i < 6; i++ {
+	for i := range equipSlots - equipMisc {
 		add := 0
 		if i != 0 {
-			add = int(int8(p.AC[2])) + mod
+			add = int(int8(p.AC[equipMisc])) + mod
 		}
 		setCursor(w, i*3+21, 7)
-		printInt(w, int(int8(p.AC[2+i]))+add, 3, (c+8)%16)
+		printInt(w, int(int8(p.AC[equipMisc+i]))+add, 3, (c+8)%16)
 		c = 15
 	}
 	for i := 0; i < int(p.ItemCount); i++ {
@@ -345,13 +345,13 @@ func drawInventoryPanel(w *Window, m int) {
 			pvItemNames[i] = cstr(rec.Name[:])
 		}
 		mark, color := byte(' '), 9
-		for s := 0; s < 8; s++ {
+		for s := range equipSlots {
 			if int(p.Equipped[s]) == i {
 				mark = 23
 				switch {
-				case s < 2:
+				case s <= equipSecondary:
 					color = 6
-				case s == 2:
+				case s == equipMisc:
 					color = 3
 				default:
 					color = 7
@@ -372,10 +372,10 @@ func drawInventoryPanel(w *Window, m int) {
 		setCursor(w, 38, i+9)
 		putCharHi(w, p.Items[i].Icon+1, 4)
 	}
-	if p.ItemCount < 10 {
+	if p.ItemCount < packSlots {
 		clearWindowArea(w, 21, int(p.ItemCount)+9, 36, 18)
 	}
-	for i := int(p.ItemCount); i < 10; i++ {
+	for i := int(p.ItemCount); i < packSlots; i++ {
 		setCursor(w, 38, i+9)
 		putCharHi(w, ' ', 3)
 	}
@@ -402,12 +402,12 @@ func drawSheet(sheet, menu *Window, m int) {
 func closeSheet(menu, sheet *Window) {
 	destroyWindow(menu, false)
 	destroyWindow(sheet, false)
-	switch returnCmd {
-	case 5:
+	switch gameStateID(returnCmd) {
+	case stateExplore:
 		eraseCursorMark(bottomLineWin, false)
-	case 4:
+	case stateMasterOptions:
 		eraseWindow(bottomLineWin, false)
-	case 13:
+	case stateRunCombatRound:
 		eraseCursorMark(bottomLineWin, false)
 		deferWindowDraw(bottomLineWin)
 	}
@@ -417,11 +417,27 @@ func closeSheet(menu, sheet *Window) {
 // asleep nor paralysed.
 func isMemberAbleQuiet(m int) bool {
 	p := &party[m]
-	return p.Condition == 0 && p.Status[2] == 0 && p.Status[3] == 0
+	return p.Condition == conditionOK && p.Status[statusAsleep] == 0 && p.Status[statusParalyzed] == 0
 }
 
+// The character sheet's menu entries (messages 301+).
+const (
+	sheetMenuEquip = iota
+	sheetMenuSpell
+	sheetMenuTrade
+	sheetMenuAssay // show an item
+	sheetMenuSwag
+	sheetMenuMerge
+	sheetMenuUse
+	sheetMenuDrop
+	sheetMenuSkills
+	sheetMenuEdit   // doModifyMenu
+	sheetMenuMember // show another member
+	sheetMenuExit
+)
+
 // viewCharacter (view_character, WPCVW ad5a) runs member m's character sheet until
-// Exit; returnCmd says where from (4 the start menu, 13 combat, else the maze).
+// Exit; returnCmd says where from (stateMasterOptions, stateRunCombatRound, else the maze).
 func viewCharacter(m int) {
 	gameState = gameStateID(returnCmd)
 	menuKeys = getMessage(300)
@@ -437,73 +453,71 @@ func viewCharacter(m int) {
 	for {
 		drawSheet(sheet, menu, m)
 		canCast := true
-		// Entries: equip, cast, trade, inspect, swag, merge, use, drop, skills, modify,
-		// other member, exit.
 		enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
-		switch returnCmd {
-		case 4:
-			for i := 0; i < 11; i++ {
+		switch gameStateID(returnCmd) {
+		case stateMasterOptions:
+			for i := range sheetMenuExit {
 				enabled[i] = 0
 			}
-			enabled[0], enabled[3], enabled[8], enabled[10], enabled[1], enabled[4] = 1, 1, 1, 1, 1, 1
+			enabled[sheetMenuEquip], enabled[sheetMenuAssay], enabled[sheetMenuSkills], enabled[sheetMenuMember], enabled[sheetMenuSpell], enabled[sheetMenuSwag] = 1, 1, 1, 1, 1, 1
 			canCast = false
-		case 13:
-			for i := 0; i < 11; i++ {
+		case stateRunCombatRound:
+			for i := range sheetMenuExit {
 				enabled[i] = 0
 			}
-			enabled[0], enabled[7], enabled[3], enabled[8], enabled[1], enabled[4] = 1, 1, 1, 1, 1, 1
+			enabled[sheetMenuEquip], enabled[sheetMenuDrop], enabled[sheetMenuAssay], enabled[sheetMenuSkills], enabled[sheetMenuSpell], enabled[sheetMenuSwag] = 1, 1, 1, 1, 1, 1
 			canCast = false
 		}
 		p := &party[m]
 		if partyCount < 2 {
-			enabled[10], enabled[2] = 0, 0
+			enabled[sheetMenuMember], enabled[sheetMenuTrade] = 0, 0
 		}
 		if p.ItemCount == 0 {
-			enabled[3], enabled[7], enabled[6] = 0, 0, 0
+			enabled[sheetMenuAssay], enabled[sheetMenuDrop], enabled[sheetMenuUse] = 0, 0, 0
 		}
 		if p.ItemCount < 2 {
-			enabled[5] = 0
+			enabled[sheetMenuMerge] = 0
 		}
 		if p.Gold == 0 && p.ItemCount == 0 {
-			enabled[2] = 0
+			enabled[sheetMenuTrade] = 0
 		}
 		if !isMemberAbleQuiet(m) {
-			enabled[1], enabled[6] = 0, 0
+			enabled[sheetMenuSpell], enabled[sheetMenuUse] = 0, 0
 		}
 		flushKeys()
-		choice := menuSelect(menu, 301, enabled, 2, 1, 6, 2, 5, countEnabledItems(enabled, 11), getMenuInputBlink)
+		choice := menuSelect(menu, 301, enabled, 2, 1, 6, 2, 5, countEnabledItems(enabled, sheetMenuExit), getMenuInputBlink)
 		switch choice {
-		case 0:
+		case sheetMenuEquip:
 			doEquipItems(sheet, menu, m)
-		case 1:
+		case sheetMenuSpell:
 			doCastMenu(sheet, menu, m, canCast)
-		case 2:
+		case sheetMenuTrade:
 			doTradeItems(sheet, menu, m)
-		case 3:
+		case sheetMenuAssay:
 			if pvChosenItem = chooseItem(sheet, menu, 450, m, false); pvChosenItem != -1 {
 				showItemInfo(menu, m, pvChosenItem, 0)
 			}
-		case 7:
+		case sheetMenuDrop:
 			if pvChosenItem = chooseItem(sheet, menu, 402, m, false); pvChosenItem != -1 {
-				if p.Items[pvChosenItem].Flags&(1|2|64) != 0 {
-					playSound(0)
+				if p.Items[pvChosenItem].Flags&(itemEquipped|itemCursed|itemKept) != 0 {
+					playSound(soundBeep)
 				} else {
 					removeItemShown(m, pvChosenItem)
 				}
 			}
-		case 6:
+		case sheetMenuUse:
 			if pvChosenItem = chooseItem(sheet, menu, 400, m, false); pvChosenItem != -1 {
 				useItemOnSheet(sheet, menu, m, pvChosenItem)
 			}
-		case 5:
+		case sheetMenuMerge:
 			doMergeItems(sheet, menu, m)
-		case 9:
+		case sheetMenuEdit:
 			doModifyMenu(sheet, menu, m)
-		case 4:
+		case sheetMenuSwag:
 			doSwagMenu(sheet, menu, m)
-		case 8:
+		case sheetMenuSkills:
 			doSkillsMenu(menu, m)
-		case 10:
+		case sheetMenuMember:
 			if c := chooseMember(menu, 500, m); c != -1 {
 				curMember = int16(c)
 				m = c
@@ -512,7 +526,7 @@ func viewCharacter(m int) {
 				curMember = int16(m)
 			}
 		}
-		if choice == 11 {
+		if choice == sheetMenuExit {
 			break
 		}
 	}
@@ -601,7 +615,7 @@ func chooseMember(w *Window, title, sel int) int {
 			break
 		}
 		switch k {
-		case 1:
+		case menuKeyLeft:
 			if sel != -1 {
 				drawMemberNameRight(w, sel)
 				if sel%2 > 0 {
@@ -610,12 +624,12 @@ func chooseMember(w *Window, title, sel int) int {
 					sel = -1
 				}
 			}
-		case 2:
+		case menuKeyUp:
 			if sel != -1 && sel-2 >= 0 {
 				drawMemberNameRight(w, sel)
 				sel -= 2
 			}
-		case 3:
+		case menuKeyRight:
 			if sel == -1 {
 				setCursor(w, cx, cy)
 				printStringHi(w, cancel, 3)
@@ -624,13 +638,13 @@ func chooseMember(w *Window, title, sel int) int {
 				drawMemberNameRight(w, sel)
 				sel++
 			}
-		case 4:
+		case menuKeyDown:
 			if sel != -1 && sel+2 < partyCount {
 				drawMemberNameRight(w, sel)
 				sel += 2
 			}
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}

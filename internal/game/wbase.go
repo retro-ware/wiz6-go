@@ -46,6 +46,7 @@ const (
 
 // rosterSlotUsed values.
 const (
+	rosterSlotFree      = 0
 	rosterSlotAvailable = 1 // a character that can join
 	rosterSlotInParty   = 2 // a character in the party
 )

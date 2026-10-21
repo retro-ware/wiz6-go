@@ -11,22 +11,22 @@ func clearHandAttack(m, h int) {
 	hd.B0D, hd.B0C = 0, 0
 	hd.Data = [8]uint8{}
 	hd.ToHit = 0
-	hd.Damage = Dice{Base: 0, Count: 2, Sides: 2}
-	hd.Flags = 32
-	hand := int(p.Skills[9]) / 5
-	kiri := int(p.Skills[29]) / 5
-	if p.Class == 13 || p.Class == 12 {
+	hd.Damage = Dice{Base: 0, Count: bareHandDamage, Sides: bareHandDamage}
+	hd.Flags = handPunch
+	hand := int(p.Skills[skillUnarmed]) / 5
+	kiri := int(p.Skills[skillKirijutsu]) / 5
+	if p.Class == classNinja || p.Class == classMonk {
 		hd.Damage.Sides = uint8(hand/3 + 2)
-		hd.Flags |= 64
-		hd.Data[6] = uint8(kiri + 5)
+		hd.Flags |= handKick
+		hd.Data[handCritical] = uint8(kiri + 5)
 		return
 	}
 	if hand > 0 {
 		hd.Damage.Sides = uint8(hand/4 + 1)
-		hd.Flags |= 64
+		hd.Flags |= handKick
 	}
 	if kiri > 0 {
-		hd.Data[6] = uint8(kiri)
+		hd.Data[handCritical] = uint8(kiri)
 	}
 }
 
@@ -34,19 +34,19 @@ func clearHandAttack(m, h int) {
 // also moves the sheet's item names and row colours up with the items.
 func removeItemShown(m, i int) {
 	p := &party[m]
-	for s := 0; s < 8; s++ {
+	for s := range equipSlots {
 		if int(p.Equipped[s]) != i {
 			continue
 		}
 		switch s {
-		case 0, 1:
+		case equipPrimary, equipSecondary:
 			clearHandAttack(m, s)
-		case 2:
-			p.AC[2] = 0
+		case equipMisc:
+			p.AC[equipMisc] = 0
 		default:
-			p.AC[s] = p.AC[0]
+			p.AC[s] = p.AC[acBase]
 		}
-		p.Equipped[s] = 255
+		p.Equipped[s] = noEquippedItem
 	}
 	p.Items[i].ID = 0
 	p.ItemCount--
@@ -54,7 +54,7 @@ func removeItemShown(m, i int) {
 		p.Items[j] = p.Items[j+1]
 		pvItemNames[j] = pvItemNames[j+1]
 		pvItemRowColor[j] = pvItemRowColor[j+1]
-		for s := 0; s < 8; s++ {
+		for s := range equipSlots {
 			if int(p.Equipped[s]) == j+1 {
 				p.Equipped[s] = uint8(j)
 			}
@@ -67,7 +67,7 @@ func removeSwagItem(m, i int) {
 	p := &party[m]
 	p.SwagCount--
 	for j := i; j < int(p.SwagCount); j++ {
-		p.Items[j+10] = p.Items[j+11]
+		p.Items[packSlots+j] = p.Items[packSlots+j+1]
 		pvSwagNames[j] = pvSwagNames[j+1]
 	}
 }
@@ -152,7 +152,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 			break
 		}
 		switch k {
-		case 2, 4:
+		case menuKeyUp, menuKeyDown:
 			if sel == -1 {
 				setCursor(w, cx, cy)
 				printStringHi(w, cancel, 3)
@@ -160,7 +160,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 				break
 			}
 			unhighlightItemRow(sheet, sel, pvItemRowColor[sel], swag)
-			if k == 2 {
+			if k == menuKeyUp {
 				if sel--; sel < 0 {
 					sel = -1
 				}
@@ -168,7 +168,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 				sel = -1
 			}
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
@@ -177,6 +177,14 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 	}
 	return sel
 }
+
+// doSwagMenu's entries (messages 751+).
+const (
+	swagMenuAdd = iota
+	swagMenuRemove
+	swagMenuDrop
+	swagMenuExit
+)
 
 // doSwagMenu (WPCVW 6317) runs the swag bag of member m: put in, take out, drop.
 func doSwagMenu(sheet, menu *Window, m int) {
@@ -215,7 +223,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		putIconAt(w, 2, 1, 100)
 		putIconAt(w, 17, 1, 100)
 		for i := 0; i < int(p.SwagCount); i++ {
-			it := p.Items[i+10]
+			it := p.Items[packSlots+i]
 			if !loaded {
 				rec := itemRec(int(it.ID))
 				pvSwagNames[i] = cstr(rec.Name[:])
@@ -232,10 +240,10 @@ func doSwagMenu(sheet, menu *Window, m int) {
 			setCursor(w, 18, i+3)
 			putCharHi(w, it.Icon+1, 4)
 		}
-		if p.SwagCount < 12 {
+		if p.SwagCount < swagSlots {
 			clearWindowArea(w, 1, int(p.SwagCount)+3, 16, 14)
 		}
-		for i := int(p.SwagCount); i < 12; i++ {
+		for i := int(p.SwagCount); i < swagSlots; i++ {
 			setCursor(w, 18, i+3)
 			putCharHi(w, ' ', 3)
 		}
@@ -244,30 +252,29 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		fillWindow(menu, ' ', 3)
 		refreshWindow(w)
 		refreshWindow(menu)
-		// Entries: put in, take out, drop, exit.
 		enabled := []int{1, 1, 1, 1, -1}
-		if !(p.SwagCount < 12 && p.ItemCount != 0) {
-			enabled[0] = 0
+		if !(p.SwagCount < swagSlots && p.ItemCount != 0) {
+			enabled[swagMenuAdd] = 0
 		}
-		if !(p.SwagCount != 0 && p.ItemCount < 10) {
-			enabled[1] = 0
+		if !(p.SwagCount != 0 && p.ItemCount < packSlots) {
+			enabled[swagMenuRemove] = 0
 		}
 		if p.SwagCount == 0 {
-			enabled[2] = 0
+			enabled[swagMenuDrop] = 0
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		switch menuSelect(menu, 751, enabled, 2, 1, 8, 2, 5, countEnabledItems(enabled, 3), getMenuInputBlink) {
-		case 0:
+		switch menuSelect(menu, 751, enabled, 2, 1, 8, 2, 5, countEnabledItems(enabled, swagMenuExit), getMenuInputBlink) {
+		case swagMenuAdd:
 			deferWindowDraw(w)
 			fillWindow(menu, ' ', 3)
 			refreshAllWindows()
 			pvChosenItem = chooseItem(sheet, menu, 760, m, false)
 			if pvChosenItem != -1 {
-				if p.Items[pvChosenItem].Flags&1 != 0 {
-					playSound(0)
+				if p.Items[pvChosenItem].Flags&itemEquipped != 0 {
+					playSound(soundBeep)
 				} else {
-					p.Items[int(p.SwagCount)+10] = p.Items[pvChosenItem]
+					p.Items[packSlots+int(p.SwagCount)] = p.Items[pvChosenItem]
 					pvSwagNames[p.SwagCount] = pvItemNames[pvChosenItem]
 					p.SwagCount++
 					removeItemShown(m, pvChosenItem)
@@ -277,23 +284,23 @@ func doSwagMenu(sheet, menu *Window, m int) {
 				}
 			}
 			resumeWindowDraw(w)
-		case 1:
+		case swagMenuRemove:
 			if i := chooseItem(w, menu, 761, m, true); i != -1 {
-				p.Items[p.ItemCount] = p.Items[i+10]
+				p.Items[p.ItemCount] = p.Items[packSlots+i]
 				pvItemNames[p.ItemCount] = pvSwagNames[i]
 				p.ItemCount++
 				removeSwagItem(m, i)
 				drawInventoryPanel(sheet, m)
 			}
-		case 2:
+		case swagMenuDrop:
 			if i := chooseItem(w, menu, 762, m, true); i != -1 {
-				if p.Items[i+10].Flags&64 != 0 {
-					playSound(0)
+				if p.Items[packSlots+i].Flags&itemKept != 0 {
+					playSound(soundBeep)
 				} else {
 					removeSwagItem(m, i)
 				}
 			}
-		case 3:
+		case swagMenuExit:
 			fillWindow(menu, ' ', 3)
 			destroyWindow(w, true)
 			return
@@ -316,11 +323,11 @@ func doTradeItems(sheet, menu *Window, m int) {
 				q.Gold += n
 				break
 			}
-			playSound(0)
+			playSound(soundBeep)
 		}
 	}
 	drawSheet(sheet, menu, m)
-	for int(q.ItemCount)+int(q.SwagCount) < 22 && p.ItemCount > 0 {
+	for int(q.ItemCount)+int(q.SwagCount) < itemSlots && p.ItemCount > 0 {
 		pvChosenItem = chooseItem(sheet, menu, 403, m, false)
 		if pvChosenItem == -1 {
 			return
@@ -328,15 +335,15 @@ func doTradeItems(sheet, menu *Window, m int) {
 		it := &p.Items[pvChosenItem]
 		whole, give := true, true
 		n := int(it.Qty)
-		if it.Flags&1 != 0 || it.Flags&2 != 0 {
+		if it.Flags&itemEquipped != 0 || it.Flags&itemCursed != 0 {
 			whole, give = false, false
-			playSound(0)
+			playSound(soundBeep)
 		} else if stackable[it.Type] == 1 {
 			for {
 				n = int(int16(inputNumber(menu, 405, 3)))
 				if int(it.Qty) < n {
 					n = -1
-					playSound(0)
+					playSound(soundBeep)
 				}
 				if n != -1 {
 					break
@@ -356,18 +363,18 @@ func doTradeItems(sheet, menu *Window, m int) {
 		add, slot := 1, int(q.ItemCount)
 		stacks := func(s int) bool {
 			o := q.Items[s]
-			return o.ID == it.ID && stackable[o.Type] == 1 && int(o.Qty)+n <= 250
+			return o.ID == it.ID && stackable[o.Type] == 1 && int(o.Qty)+n <= maxStackQty
 		}
 		for s := slot - 1; s >= 0; s-- {
 			if stacks(s) {
 				slot, add = s, 0
 			}
 		}
-		if slot >= 10 {
-			add, slot = 2, int(q.SwagCount)+10
+		if slot >= packSlots {
+			add, slot = 2, packSlots+int(q.SwagCount)
 			for s := int(q.SwagCount) - 1; s >= 0; s-- {
-				if stacks(s + 10) {
-					slot, add = s+10, 0
+				if stacks(packSlots + s) {
+					slot, add = packSlots+s, 0
 				}
 			}
 		}
@@ -375,7 +382,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		if add > 0 {
 			o = *it
 			o.Qty = uint8(n)
-			o.Flags &^= 1
+			o.Flags &^= itemEquipped
 			if add == 1 {
 				q.ItemCount++
 			} else {
@@ -419,7 +426,7 @@ func replaceItem(sheet *Window, m, id, i, other int) {
 	padToColumn(sheet, 37, 0)
 	setCursor(sheet, 38, i+9)
 	putCharHi(sheet, p.Items[i].Icon+1, 4)
-	playSound(0)
+	playSound(soundBeep)
 	waitSecondsOrEnter(messageDelay)
 }
 
@@ -451,30 +458,40 @@ func doMergeItems(sheet, menu *Window, m int) {
 		return
 	}
 	if b == pvChosenItem {
-		playSound(0)
+		playSound(soundBeep)
 		return
 	}
-	if p.Items[b].Flags&1 != 0 {
+	if p.Items[b].Flags&itemEquipped != 0 {
 		pvChosenItem, b = b, pvChosenItem
-		if p.Items[b].Flags&1 != 0 {
-			playSound(0)
+		if p.Items[b].Flags&itemEquipped != 0 {
+			playSound(soundBeep)
 			return
 		}
 	}
 	a := pvChosenItem
 	if p.Items[a].ID == p.Items[b].ID && stackable[p.Items[a].Type] == 1 {
-		if n := int(p.Items[a].Qty) + int(p.Items[b].Qty); n <= 250 {
+		if n := int(p.Items[a].Qty) + int(p.Items[b].Qty); n <= maxStackQty {
 			p.Items[a].Qty = uint8(n)
 			removeItemShown(m, b)
 		} else {
-			p.Items[a].Qty = 250
-			p.Items[b].Qty = uint8(n - 250)
+			p.Items[a].Qty = maxStackQty
+			p.Items[b].Qty = uint8(n - maxStackQty)
 		}
 	} else if !tryCombineRecipe(sheet, m, a, b) {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	drawSheet(sheet, menu, m)
 }
+
+// ItemRec.Unk69 values: what using an item does instead of casting its spell.
+const (
+	useReadWithItem    = 1 // pick an item to read (395, 403) with this one
+	useShowText        = 2 // show the text pages of message Price
+	useSpellBook       = 3 // learn the spell
+	useSwitchMapFlags  = 4 // a key: switch two event flags of a map
+	useDirectionOnMap8 = 5 // on map 8 set the direction effect's B
+	useReadWithItem388 = 6 // pick item 388 to read with this one
+)
 
 // useItemOnSheet (do_use_item, WPCVW 8fbf) uses item i of member m: the item record's
 // Unk69 picks a reading or key action, else Spell is a spell it casts.
@@ -487,16 +504,16 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 			return j >= 0 && p.Items[j].ID == id // the C reads slot -1 on cancel
 		}
 		switch rec.Unk69 {
-		case 1:
+		case useReadWithItem:
 			j := chooseItem(sheet, menu, 408, m, false)
 			if j >= 0 && p.Items[j].ID == 395 {
 				showTextPages(menu, 11350)
 			} else if j >= 0 && p.Items[j].ID == 403 {
 				showTextPages(menu, 12200)
 			}
-		case 2:
+		case useShowText:
 			showTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
-		case 3: // a spell book: Spell is the spell
+		case useSpellBook: // Spell is the spell
 			if testBit(mask16(rec.ClassMask), int(p.Class)) {
 				s := int(rec.Spell) % 256
 				if int(spellTable[s].Level)<<1 > int(p.Level) {
@@ -509,7 +526,7 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 			} else {
 				showTextPages(menu, 730)
 			}
-		case 4: // on map Damage.Base, clear event flag Damage.Count and set Damage.Sides
+		case useSwitchMapFlags: // on map Damage.Base, clear event flag Damage.Count and set Damage.Sides
 			if mp := int(rec.Damage.Base); gameStateArg == mp {
 				setBit(levelFlags[mp][:], int(rec.Damage.Count), false)
 				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
@@ -517,11 +534,11 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
 				useItemChargeShown(m, i)
 			}
-		case 5:
+		case useDirectionOnMap8:
 			if gameStateArg == 8 {
-				partyCounters[0].B = 1
+				partyCounters[effectDirection].B = 1
 			}
-		case 6:
+		case useReadWithItem388:
 			if pickedIs(388) {
 				showTextPages(menu, 18520)
 			}
@@ -532,7 +549,7 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 		return
 	}
 	power, s := int(rec.Spell)/256, int(rec.Spell)%256
-	if spellTable[s].Target == 1 {
+	if spellTable[s].Target == spellTargetMember {
 		if pvSpellTarget = chooseMember(menu, 504, -1); pvSpellTarget == -1 {
 			return
 		}
@@ -606,13 +623,13 @@ func showItemInfo(menu *Window, m, i, power int) {
 	switch rec.Type {
 	case 0, 1, 2, 3:
 		primary, hands, skill, attackFlags, damage, specials, regen = true, true, true, true, true, true, true
-	case 4:
+	case itemTypeMissile:
 		secondary, damage, specials = true, true, true
-	case 5:
+	case itemTypeMisc:
 		acLine, acColor, resists, regen = true, 3, true, true
 	case 6, 7, 8, 9, 10:
 		acLine, typeName, resists, regen = true, true, true, true
-	case 11:
+	case itemTypeShield:
 		acLine, resists, regen = true, true, true
 	case 12, 16:
 		masks, primary, spell, attackFlags = false, true, true, true
@@ -652,7 +669,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 			centered(s, 6, c)
 		}
 		if attackFlags {
-			if rec.Type == 3 {
+			if rec.Type == itemTypeLauncher {
 				setCursor(w, 3, 7)
 				printString(w, getMessage(3058), 5)
 			} else {
@@ -671,7 +688,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 			s := getMessage(451)
 			putChar(w, byte(byteAt(s, 0)), map[bool]int{true: 6, false: 14}[primary])
 			putChar(w, '/', 14)
-			putChar(w, byte(byteAt(s, 1)), map[bool]int{true: 6, false: 14}[rec.Flags&8 != 0])
+			putChar(w, byte(byteAt(s, 1)), map[bool]int{true: 6, false: 14}[rec.Flags&recItemOffHand != 0])
 		} else if acLine {
 			printString(w, getMessage(452), acColor+8)
 			w.CurX++
@@ -679,7 +696,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 		}
 		if hands {
 			msg := 457
-			if rec.Flags&4 != 0 {
+			if rec.Flags&recItemTwoHanded != 0 {
 				msg = 458
 			}
 			setCursor(w, 8, 10)
@@ -768,7 +785,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 				}
 			}
 		} else if resists {
-			for r := 0; r < 6; r++ {
+			for r := range realmCount {
 				v := min((int(rec.SkillBonus[2*r+1])+int(rec.SkillBonus[2*r+2]))/2, 99)
 				setCursor(w, r/3*9+1, r%3+row)
 				printString(w, getMessage(r+3950), realmColors[r])

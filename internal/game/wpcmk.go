@@ -12,24 +12,34 @@ var (
 	bonusPoints int     // bonus_points: -1 hides them
 	maxBonus    bool    // g56ce: 21 bonus points (never set in the shipped game)
 
-	classEligible [14]bool // class_eligible
+	classEligible [classCount]bool // class_eligible
 
 	// The roster list selectRosterCharacter shows (g5750 sex, g5770 race, g5790 class,
 	// g57b0 slot, names at ds:56d0).
 	rosterList []pclistEntry
 )
 
+// characterMenu's entries (messages 1130+).
+const (
+	charMenuCreate = iota
+	charMenuReview
+	charMenuDelete
+	charMenuRename
+	charMenuPortrait
+	charMenuLeave
+)
+
 // wpcmkMain (WPCMK ovmain) runs the character menu and goes back to the camp.
 func wpcmkMain() {
 	characterMenu()
-	gameState = 4
+	gameState = stateMasterOptions
 }
 
 // clearStatusLine (WPCMK 4b6d) blanks the status line at the sheet's top right.
 func clearStatusLine() {
 	setCursor(sheetWin, 21, 5)
 	for {
-		putCharHi(sheetWin, 32, 3)
+		putCharHi(sheetWin, ' ', 3)
 		if sheetWin.CurX >= 39 {
 			break
 		}
@@ -167,7 +177,7 @@ func drawSexRaceClass() {
 	printStrAt(sheetWin, 4, 1, cstr(newPC.Name[:]), 5)
 	setCursor(sheetWin, 13, 1)
 	putChar(sheetWin, getMessage(int(newPC.Sex) + 140)[0], 1)
-	putChar(sheetWin, 45, 1)
+	putChar(sheetWin, '-', 1)
 	printMsgColor(int(newPC.Race)+100, sheetWin, 1)
 	printMsgAt(int(newPC.Class)+120, sheetWin, 13, 2, 1)
 }
@@ -179,7 +189,7 @@ func drawCharacterSheet() {
 	printStrAt(w, 4, 1, cstr(newPC.Name[:]), 5)
 	setCursor(w, 4, 2)
 	putChar(w, 30, 5)
-	printInt(w, int(newPC.AgeDays/365), 3, 14)
+	printInt(w, int(newPC.AgeDays/daysPerYear), 3, 14)
 	setCursor(w, 4, 3)
 	putChar(w, 31, 5)
 	printInt(w, int(newPC.Unk026), 3, 12)
@@ -211,7 +221,7 @@ func drawStats() {
 		return
 	}
 	w := sheetWin
-	for i := range 8 {
+	for i := range statCount {
 		printMsgAt(i+204, w, 1, i+5, 5)
 		w.CurX++
 		printInt(w, int(newPC.Stats[i]), 2, 1)
@@ -225,13 +235,13 @@ func drawStats() {
 	printMsgAt(212, w, 10, 5, 4)
 	w.CurX++
 	printInt(w, int(newPC.HP), 4, 6)
-	putChar(w, 47, 8)
+	putChar(w, '/', 8)
 	setCursor(w, 14, 6)
 	printInt(w, int(newPC.HPMax), 4, 6)
 	printMsgAt(213, w, 10, 8, 4)
 	w.CurX += 2
 	printInt(w, int(newPC.Stamina), 3, 6)
-	putChar(w, 47, 8)
+	putChar(w, '/', 8)
 	setCursor(w, 15, 9)
 	printInt(w, int(newPC.StaminaMax), 3, 6)
 }
@@ -260,7 +270,7 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 		setClickRegion(n, win.X+byte(x), win.Y+byte(y), byte(len(t)+int(win.X)+x-1), win.Y+byte(y))
 	}
 	n := len(labels)
-	setClickRegion(n, 255, 0, 0, 0)
+	setClickRegion(n, clickRegionsEnd, 0, 0, 0)
 	at := func() { setCursor(win, sel/rows*colWidth+x0, sel%rows+y0) }
 	for {
 		if !mousePresent {
@@ -270,32 +280,32 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 		item := input()
 		if menuClicked == 1 {
 			sel = item
-			item = 5
+			item = menuKeyEnter
 		}
 		plain := func() { at(); printStringHi(win, labels[sel], 3) }
 		switch item {
-		case 1:
+		case menuKeyLeft:
 			if sel-rows >= 0 {
 				plain()
 				sel -= rows
 			}
-		case 2:
+		case menuKeyUp:
 			if sel%rows > 0 {
 				plain()
 				sel--
 			}
-		case 3:
+		case menuKeyRight:
 			if sel+rows < n {
 				plain()
 				sel += rows
 			}
-		case 4:
+		case menuKeyDown:
 			if sel%rows < rows-1 && sel+1 < n {
 				plain()
 				sel++
 			}
 		}
-		if item == 5 {
+		if item == menuKeyEnter {
 			return items[sel]
 		}
 	}
@@ -303,7 +313,7 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 
 // drawListBox (WPCMK 619b, WPCVW 719f) draws the scroll bar of a 7-row list window.
 func drawListBox(win *Window, show bool) {
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	deferWindowDraw(win)
 	putGlyphAt(win, 0, 0, 69)
 	for i := 1; i < 6; i++ {
@@ -319,54 +329,54 @@ func drawListBox(win *Window, show bool) {
 // findFreeRosterSlot (WPCMK 9558) is the first free roster slot, or -1.
 func findFreeRosterSlot() int {
 	for i := 0; i < int(pcfileHdr.Count); i++ {
-		if rosterSlotUsed[i] == 0 {
+		if rosterSlotUsed[i] == rosterSlotFree {
 			return i
 		}
 	}
 	return -1
 }
 
-// isNameTaken (WPCMK 9575) is -1 if a roster character has name, else 0.
-func isNameTaken(name string) int {
+// nameTaken (WPCMK 9575 is_name_taken) is whether a roster character has name.
+func nameTaken(name string) bool {
 	for i := 0; i < int(pcfileHdr.Count); i++ {
-		if rosterSlotUsed[i] > 0 {
+		if rosterSlotUsed[i] != rosterSlotFree {
 			var pc PC
 			pcfileRecordIO(&pc, i, false)
 			if cstr(pc.Name[:]) == name {
-				return -1
+				return true
 			}
 		}
 	}
-	return 0
+	return false
 }
 
 // showErrorMsg (WPCMK 95bf) prints message msg in the prompt at (x, y), beeps and waits.
 func showErrorMsg(msg, x, y int) {
 	setCursor(promptWin, x, y)
 	printMessage(msg, promptWin, 18)
-	playSound(0)
+	playSound(soundBeep)
 	waitSecondsOrEnter(messageDelay)
 }
 
 // drawCreationScreen (WPCMK 95f7) clears the screens and draws the sheet's frame.
 func drawCreationScreen(sheet, prompt *Window) {
 	fillWindow(sheet, 0, 1)
-	fillWindow(prompt, 32, 3)
-	fillWindow(menuWin, 32, 3)
+	fillWindow(prompt, ' ', 3)
+	fillWindow(menuWin, ' ', 3)
 	deferWindowDraw(sheet)
 	drawCreationFrame(sheet)
 	resumeWindowDraw(sheet)
 	refreshAllWindows()
 }
 
-// readName prints message msg in the prompt and reads a name of up to 7 characters.
+// readName prints message msg in the prompt and reads a name of up to nameLength characters.
 func readName(msg int) string {
 	setCursor(promptWin, 1, 1)
 	printMessage(msg, promptWin, 18)
 	x, y := int(promptWin.CurX), int(promptWin.CurY)
-	clearWindowArea(promptWin, x, y, x+7, y)
+	clearWindowArea(promptWin, x, y, x+nameLength, y)
 	setCursor(promptWin, x, y)
-	return inputText(promptWin, 7, 5, 0)
+	return inputText(promptWin, nameLength, 5, inputPrintable)
 }
 
 // doCreateCharacter (WPCMK 9656) asks for a name and makes a character in a free slot.
@@ -381,7 +391,7 @@ func doCreateCharacter() {
 	if name == "" {
 		return
 	}
-	if isNameTaken(name) == -1 {
+	if nameTaken(name) {
 		showErrorMsg(1102, 6, 2)
 		return
 	}
@@ -402,7 +412,7 @@ func loadAndShowCharacter(slot int) {
 
 // wpcmkWaitForKey (WPCMK 9778 wait_for_key) waits for Enter or a click.
 func wpcmkWaitForKey() {
-	fillWindow(promptWin, 32, 3)
+	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 12, 1)
 	printMessage(1110, promptWin, 18)
@@ -410,7 +420,7 @@ func wpcmkWaitForKey() {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && byte(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && byte(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 	}
@@ -427,7 +437,7 @@ func deleteCharacter(slot int) {
 	setCursor(promptWin, 5, 1)
 	printMessage(1125, promptWin, 18)
 	if yesNo(1126, 1) {
-		rosterSlotUsed[slot] = 0
+		rosterSlotUsed[slot] = rosterSlotFree
 		writePcfileHeader()
 	}
 }
@@ -439,7 +449,7 @@ func renameCharacter(slot int) {
 	if name == "" {
 		return
 	}
-	if isNameTaken(name) == -1 {
+	if nameTaken(name) {
 		showErrorMsg(1102, 6, 2)
 		return
 	}
@@ -482,21 +492,21 @@ func drawRosterList(win *Window, top, highlight int) {
 		if highlight == 1 && row == 0 {
 			printString(win, e.name, 5)
 			for win.CurX < 9 {
-				putChar(win, 32, 1)
+				putChar(win, ' ', 1)
 			}
 			putChar(win, getMessage(e.sex + 140)[0], 7)
-			putChar(win, 45, 9)
+			putChar(win, '-', 9)
 			printString(win, getMessage(e.race+100), 6)
-			putChar(win, 32, 1)
+			putChar(win, ' ', 1)
 			printString(win, getMessage(e.class+120), 3)
 			continue
 		}
 		printStringHi(win, e.name, 3)
 		for win.CurX < 9 {
-			putCharHi(win, 32, 3)
+			putCharHi(win, ' ', 3)
 		}
 		putCharHi(win, getMessage(e.sex + 140)[0], 3)
-		putCharHi(win, 45, 3)
+		putCharHi(win, '-', 3)
 		printStringHi(win, getMessage(e.race+100), 3)
 		win.CurX++
 		printStringHi(win, getMessage(e.class+120), 3)
@@ -510,7 +520,7 @@ func drawRosterList(win *Window, top, highlight int) {
 func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 	rosterList = rosterList[:0]
 	for i := 0; i < int(pcfileHdr.Count); i++ {
-		if rosterSlotUsed[i] == 1 {
+		if rosterSlotUsed[i] == rosterSlotAvailable {
 			pcfileRecordIO(&newPC, i, false)
 			rosterList = append(rosterList, pclistEntry{cstr(newPC.Name[:]), int(newPC.Sex), int(newPC.Race), int(newPC.Class), i})
 		}
@@ -519,8 +529,8 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 	if n < 1 {
 		return -1 // the C returns no value; the menu only offers this with a character
 	}
-	fillWindow(win, 32, 3)
-	fillWindow(listWin, 32, 3)
+	fillWindow(win, ' ', 3)
+	fillWindow(listWin, ' ', 3)
 	deferWindowDraw(win)
 	title := getMessage(titleMsg)
 	setCursor(win, 20-(len(title)+1)/2, 1)
@@ -535,7 +545,7 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 	setClickRegion(1, lx, ly, lx, ly)
 	setClickRegion(2, lx, ly+6, lx, ly+6)
 	setClickRegion(3, win.X+17, win.Y+3, byte(len(cancel)+int(win.X)+16), win.Y+3)
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 	for {
 		setCursor(win, 17, 3)
 		if onCancel {
@@ -547,37 +557,37 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 		}
 		k := menuInput()
 		if menuClicked == 1 {
-			switch k {
+			switch k { // the regions: the middle row, the scroll bar's ends, cancel
 			case 0:
-				k = 5
+				k = menuKeyEnter
 			case 1:
-				k = 2
+				k = menuKeyUp
 			case 2:
-				k = 4
+				k = menuKeyDown
 			case 3:
 				onCancel = true
-				k = 5
+				k = menuKeyEnter
 			}
 		}
 		switch k {
-		case 1:
+		case menuKeyLeft:
 			onCancel = true
-		case 2:
+		case menuKeyUp:
 			if onCancel {
 				onCancel = false
 			} else if sel > 0 {
 				sel--
 			}
-		case 3:
+		case menuKeyRight:
 			onCancel = false
-		case 4:
+		case menuKeyDown:
 			if onCancel {
 				onCancel = false
 			} else if sel+1 < n {
 				sel++
 			}
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
@@ -598,34 +608,34 @@ func characterMenu() {
 		drawCreationScreen(sheetWin, promptWin)
 		enabled := []int{1, 1, 1, 1, 1, 1, -1}
 		if findFreeRosterSlot() == -1 {
-			enabled[0] = 0
+			enabled[charMenuCreate] = 0
 		}
 		any := 0
 		for i := 0; i < int(pcfileHdr.Count); i++ {
-			if rosterSlotUsed[i] == 1 {
+			if rosterSlotUsed[i] == rosterSlotAvailable {
 				any = 1
 			}
 		}
-		enabled[1], enabled[2], enabled[3], enabled[4] = any, any, any, any
-		choice := menuSelect(promptWin, 1130, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, 5), menuInput)
+		enabled[charMenuReview], enabled[charMenuDelete], enabled[charMenuRename], enabled[charMenuPortrait] = any, any, any, any
+		choice := menuSelect(promptWin, 1130, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, charMenuLeave), menuInput)
 		pick := func(msg int, f func(int)) {
 			if sel := selectRosterCharacter(promptWin, menuWin, msg); sel != -1 {
 				f(rosterList[sel].slot)
 			}
 		}
 		switch choice {
-		case 0:
+		case charMenuCreate:
 			doCreateCharacter()
-		case 1:
+		case charMenuReview:
 			pick(1129, viewRosterCharacter)
-		case 2:
+		case charMenuDelete:
 			pick(1121, deleteCharacter)
-		case 3:
+		case charMenuRename:
 			pick(1122, renameCharacter)
-		case 4:
+		case charMenuPortrait:
 			pick(1123, changePortrait)
 		}
-		if choice == 5 {
+		if choice == charMenuLeave {
 			break
 		}
 	}

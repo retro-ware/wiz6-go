@@ -569,9 +569,9 @@ func doAttack(c *Combatant, slot, kind int) {
 			mexeRaiseSkill(actMember, skill, 2)
 		}
 		lc := getLoadCategory(actMember)
-		load := lc.B
+		load := lc.SecondaryToHit
 		if slot == 0 {
-			load = lc.A
+			load = lc.PrimaryToHit
 		}
 		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(p.ToHit) + int(p.Hands[slot].ToHit) +
 			int(c.B39)*5 + statDiff + load - int(p.Skills[skill])/3

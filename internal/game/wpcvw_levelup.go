@@ -8,17 +8,16 @@ import "github.com/retro-ware/wiz6-go/internal/dbs"
 // class always shows (t, a '1' per skill of each group) and those it has points in.
 func markShownSkills(m int, t [4]string) {
 	p := &party[m]
-	first := [4]int{0, 10, 17, 22}
 	for g, s := range t {
 		for i := 0; i < len(s); i++ {
-			k := first[g] + i
+			k := skillGroupStart[g] + i
 			pvSkillShown[k] = s[i] == '1' || p.Skills[k] > 0
 		}
 	}
 }
 
-// drawSkillsPage (WPCVW e35f) draws skills page pg (0 weapon, 1 physical, 2 academic,
-// 3 personal) of member m in w, listing in shown the skills of each row. It returns how
+// drawSkillsPage (WPCVW e35f) draws skills page pg (weaponry, physical, personal,
+// academia) of member m in w, listing in shown the skills of each row. It returns how
 // many rows it shows.
 func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	p := &party[m]
@@ -51,7 +50,8 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	setCursor(w, 6, 1)
 	printMessage(pg+600, w, 18)
 	pages := [4][5]int{ // icon left, icon right, first skill, last skill, colour
-		{1, 1, 0, 9, 2}, {36, 37, 10, 16, 14}, {36, 37, 17, 21, 12}, {33, 33, 22, 29, 11},
+		{1, 1, 0, firstPhysicalSkill - 1, 2}, {36, 37, firstPhysicalSkill, firstPersonalSkill - 1, 14},
+		{36, 37, firstPersonalSkill, firstAcademiaSkill - 1, 12}, {33, 33, firstAcademiaSkill, skillCount - 1, 11},
 	}
 	pd := pages[pg]
 	putIconAt(w, 2, 1, byte(pd[0]+1))
@@ -76,9 +76,9 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	return n
 }
 
-// hasAcademicSkills reports whether member m has points in an academic skill (17..21).
-func hasAcademicSkills(m int) bool {
-	for k := 17; k < 22; k++ {
+// hasPersonalSkills reports whether member m has points in a personal skill.
+func hasPersonalSkills(m int) bool {
+	for k := firstPersonalSkill; k < firstAcademiaSkill; k++ {
 		if party[m].Skills[k] > 0 {
 			return true
 		}
@@ -88,18 +88,18 @@ func hasAcademicSkills(m int) bool {
 
 // doSkillsMenu (do_skills_menu, WPCVW 929a) shows member m's skill pages until exit.
 func doSkillsMenu(menu *Window, m int) {
-	academic := hasAcademicSkills(m)
+	personal := hasPersonalSkills(m)
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	var shown [10]int
-	for pg := 0; pg != 4; {
+	for pg := skillPageWeaponry; pg != skillPageCount; {
 		drawSkillsPage(w, m, pg, &shown)
 		enabled := []int{1, 1, 1, 1, 1, -1}
 		enabled[pg] = 0
-		if !academic {
-			enabled[2] = 0
+		if !personal {
+			enabled[skillPagePersonal] = 0
 		}
 		sel := countEnabledItems(enabled, pg+1)
-		if pg+1 == 2 && !academic {
+		if pg+1 == skillPagePersonal && !personal {
 			sel = countEnabledItems(enabled, pg+2)
 		}
 		fillWindow(menu, ' ', 3)
@@ -146,11 +146,11 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 		setRegion(4, mx+x, my+2, mx+x, my+2)
 		k := getMenuInputBlink()
 		if menuClicked == 1 && k >= 0 && k < 5 {
-			k = [5]int{1, 3, 2, 4, 5}[k]
+			k = [5]int{menuKeyLeft, menuKeyRight, menuKeyUp, menuKeyDown, menuKeyEnter}[k]
 		}
 		sk := &p.Skills[shown[row]]
 		switch k {
-		case 1:
+		case menuKeyLeft:
 			if added[row] > 0 {
 				*sk--
 				added[row]--
@@ -159,9 +159,9 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				printNumberCol16(w, row+3, int(*sk))
 				printNumberCol16(w, 14, left)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 2:
+		case menuKeyUp:
 			mark(' ', 7)
 			if row > 0 {
 				row--
@@ -169,8 +169,8 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				row = n - 1
 			}
 			mark(100, 4)
-		case 3:
-			if *sk < 100 && left > 0 {
+		case menuKeyRight:
+			if *sk < maxSkill && left > 0 {
 				*sk++
 				added[row]++
 				left--
@@ -178,9 +178,9 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				printNumberCol16(w, row+3, int(*sk))
 				printNumberCol16(w, 14, left)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
-		case 4:
+		case menuKeyDown:
 			mark(' ', 7)
 			if row+1 < n {
 				row++
@@ -189,7 +189,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 			}
 			mark(100, 4)
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
@@ -207,12 +207,12 @@ func spendSkillPoints(menu *Window, m int) {
 	refreshWindow(menu)
 	showCenteredMsg(menu, getMessage(605), true)
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
-	academic := hasAcademicSkills(m)
+	personal := hasPersonalSkills(m)
 	var shown [10]int
-	for pg := 0; ; {
+	for pg := skillPageWeaponry; ; {
 		n := drawSkillsPage(w, m, pg, &shown)
 		spendSkillPage(menu, w, m, &shown, n)
-		if pg = (pg + 1) % 4; pg == 2 && !academic {
+		if pg = (pg + 1) % skillPageCount; pg == skillPagePersonal && !personal {
 			pg++
 		}
 		if party[m].SkillPoints == 0 {
@@ -223,11 +223,11 @@ func spendSkillPoints(menu *Window, m int) {
 }
 
 // raiseSkill (raise_skill, WPCVW ea25) raises skill k of member m by a level-up roll
-// (random(r) + stat/div - level/3, none past 50) and returns the rise.
+// (random(r) + stat/div - level/3, none past maxRaisedSkill) and returns the rise.
 func raiseSkill(m, stat, div, r, k int) int {
 	p := &party[m]
 	v := int(int16(random(r) + stat/div - int(p.Level)/3)) // C int wraps
-	if v < 0 || p.Skills[k] > 50 {
+	if v < 0 || p.Skills[k] > maxRaisedSkill {
 		v = 0
 	}
 	p.Skills[k] += uint8(v)
@@ -238,34 +238,35 @@ func raiseSkill(m, stat, div, r, k int) int {
 // less what its class's free skill rises take.
 func rollSkillPoints(m int) {
 	p := &party[m]
-	in, pi, vi, dx, sp := int(p.Stats[1]), int(p.Stats[2]), int(p.Stats[3]), int(p.Stats[4]), int(p.Stats[5])
+	in, pi, vi := int(p.Stats[statIntelligence]), int(p.Stats[statPiety]), int(p.Stats[statVitality])
+	dx, sp := int(p.Stats[statDexterity]), int(p.Stats[statSpeed])
 	p.SkillPoints = uint8(random(6) + 5)
 	used := 0
 	switch p.Class {
-	case 1:
-		used = raiseSkill(m, in, 3, 3, 28)
-	case 2:
-		used = raiseSkill(m, pi, 3, 3, 26)
-	case 3:
-		used = raiseSkill(m, (in+dx)/2, 4, 3, 15)
-		used += raiseSkill(m, (dx+sp)/2, 4, 2, 14)
-	case 4:
-		used = raiseSkill(m, (dx+sp)/2, 4, 2, 7)
-		used += raiseSkill(m, (in+vi)/2, 4, 2, 11)
-	case 6:
-		used = raiseSkill(m, (in+dx)/2, 3, 3, 12)
-	case 5:
-		used = raiseSkill(m, in, 3, 3, 25)
-	case 7:
-		used = raiseSkill(m, (in+pi)/2, 3, 3, 27)
-	case 9:
-		used = raiseSkill(m, in, 4, 2, 28)
-		used += raiseSkill(m, pi, 4, 2, 26)
-	case 11:
-		used = raiseSkill(m, (dx+sp)/2, 3, 3, 1)
-	case 13:
-		used = raiseSkill(m, (dx+sp)/2, 4, 3, 9)
-		used += raiseSkill(m, (dx+sp)/2, 4, 2, 16)
+	case classMage:
+		used = raiseSkill(m, in, 3, 3, skillThaumaturgy)
+	case classPriest:
+		used = raiseSkill(m, pi, 3, 3, skillTheology)
+	case classThief:
+		used = raiseSkill(m, (in+dx)/2, 4, 3, skillPickLock)
+		used += raiseSkill(m, (dx+sp)/2, 4, 2, skillPilfer)
+	case classRanger:
+		used = raiseSkill(m, (dx+sp)/2, 4, 2, skillBows)
+		used += raiseSkill(m, (in+vi)/2, 4, 2, skillNoticeSecret)
+	case classBard:
+		used = raiseSkill(m, (in+dx)/2, 3, 3, skillInstrument)
+	case classAlchemist:
+		used = raiseSkill(m, in, 3, 3, skillAlchemy)
+	case classPsionic:
+		used = raiseSkill(m, (in+pi)/2, 3, 3, skillTheosophy)
+	case classBishop:
+		used = raiseSkill(m, in, 4, 2, skillThaumaturgy)
+		used += raiseSkill(m, pi, 4, 2, skillTheology)
+	case classSamurai:
+		used = raiseSkill(m, (dx+sp)/2, 3, 3, skillSword)
+	case classNinja:
+		used = raiseSkill(m, (dx+sp)/2, 4, 3, skillUnarmed)
+		used += raiseSkill(m, (dx+sp)/2, 4, 2, skillHide)
 	}
 	if int(p.SkillPoints) > used {
 		p.SkillPoints -= uint8(used)
@@ -287,21 +288,21 @@ func updateRank(m int) {
 	p.Rank = max(p.Rank, r)
 }
 
-// levelUpStats (WPCVW f568) raises random stats of member m, each at most once, below 18,
-// showing each on the sheet.
+// levelUpStats (WPCVW f568) raises random stats of member m but karma, each at most once,
+// below maxStat, showing each on the sheet.
 func levelUpStats(sheet, menu *Window, m int) {
 	p := &party[m]
-	var done [8]bool
+	var done [statCount]bool
 	for {
 		s, tries := 0, 0
 		for {
-			s = random(7)
+			s = random(statKarma)
 			tries++
-			if !(p.Stats[s] >= 18 || done[s]) || tries >= 3 {
+			if !(p.Stats[s] >= maxStat || done[s]) || tries >= 3 {
 				break
 			}
 		}
-		if p.Stats[s] < 18 && !done[s] {
+		if p.Stats[s] < maxStat && !done[s] {
 			done[s] = true
 			p.Stats[s]++
 			msg := replaceCharWithString(getMessage(5014), getMessage(s+5050), '$')
@@ -323,32 +324,32 @@ func levelUpStats(sheet, menu *Window, m int) {
 // them on the sheet.
 func levelUpHPStamina(sheet, menu *Window, m int) {
 	p := &party[m]
-	str, vit := int(p.Stats[0]), int(p.Stats[3])
+	str, vit := int(p.Stats[statStrength]), int(p.Stats[statVitality])
 	hp := 0
 	switch p.Class {
-	case 0, 4, 10:
+	case classFighter, classRanger, classLord:
 		hp = random(5) + 6
-	case 1:
+	case classMage:
 		hp = random(3) + 2
-	case 2, 5, 12:
+	case classPriest, classAlchemist, classMonk:
 		hp = random(4) + 4
-	case 3:
+	case classThief:
 		hp = random(4) + 3
-	case 6, 7, 9:
+	case classBard, classPsionic, classBishop:
 		hp = random(3) + 3
-	case 8, 11:
+	case classValkyrie, classSamurai:
 		hp = random(5) + 5
-	case 13:
+	case classNinja:
 		hp = random(5) + 4
 	}
 	st := random(4) + (str+vit)/6
-	if vit < 8 {
+	if vit < lowStat {
 		hp--
 	}
-	if vit > 15 {
+	if vit > highStat {
 		hp++
 	}
-	if vit > 17 {
+	if vit > veryHighStat {
 		hp++
 	}
 	hp = max(hp, 1)
@@ -384,24 +385,25 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 	showHP(6)
 }
 
-// levelUpCombat (WPCVW eff8) improves member m's to-hit, attacks and AC, up to level 20.
+// levelUpCombat (WPCVW eff8) improves member m's to-hit, attacks and AC, up to level
+// maxCombatLevel.
 func levelUpCombat(m int) {
 	p := &party[m]
-	if p.Level > 20 {
+	if p.Level > maxCombatLevel {
 		return
 	}
 	th := 0
 	switch p.Class {
-	case 0, 4, 8, 10, 12:
+	case classFighter, classRanger, classValkyrie, classLord, classMonk:
 		th = random(4) + 2
-	case 1, 5, 7, 9:
+	case classMage, classAlchemist, classPsionic, classBishop:
 		th = random(3) + 1
-	case 2, 3, 6:
+	case classPriest, classThief, classBard:
 		th = random(4) + 1
-	case 11, 13:
+	case classSamurai, classNinja:
 		th = random(4) + 3
 	}
-	if p.Stats[4] < 8 {
+	if p.Stats[statDexterity] < lowStat {
 		th--
 	}
 	if int(p.Level) < int(p.LevelBeforeClassChange) {
@@ -410,34 +412,11 @@ func levelUpCombat(m int) {
 	if p.ToHit -= int8(th); p.ToHit < 0 {
 		p.ToHit = 0
 	}
-	switch p.Class {
-	case 0, 4, 8, 10, 11, 12, 13:
-		setAttackCounts(m, 4, 7, 5, 6, 3)
-	case 1, 5, 7, 9:
-		setAttackCounts(m, 2, 12, 12, 7, 7)
-	case 2, 3, 6:
-		setAttackCounts(m, 3, 10, 8, 7, 5)
-	}
-	ac := 10
-	if p.Stats[5] > 15 {
-		ac--
-	}
-	if p.Stats[5] > 17 {
-		ac--
-	}
-	if p.Race == 5 {
-		ac -= 2
-	}
-	if p.Class == 13 || p.Class == 12 {
-		l := 20
-		if p.Level <= 20 {
-			l = int(p.Level) / 2
-		}
-		ac -= l + int(p.Skills[16])/10
-	}
-	if d := ac - int(int8(p.AC[0])); d != 0 {
-		p.AC[0] = uint8(ac)
-		for s := 3; s < 8; s++ {
+	setClassAttackCounts(m)
+	ac := naturalAC(p)
+	if d := ac - int(int8(p.AC[acBase])); d != 0 {
+		p.AC[acBase] = uint8(ac)
+		for s := equipHelmet; s < equipSlots; s++ {
 			p.AC[s] += uint8(d)
 		}
 	}
@@ -447,37 +426,38 @@ func levelUpCombat(m int) {
 // learn and more spell points in each realm it knows spells of.
 func levelUpSpellPoints(m int) {
 	p := &party[m]
-	in, pi, vi, pe := int(p.Stats[1]), int(p.Stats[2]), int(p.Stats[3]), int(p.Stats[6])
+	in, pi := int(p.Stats[statIntelligence]), int(p.Stats[statPiety])
+	vi, pe := int(p.Stats[statVitality]), int(p.Stats[statPersonality])
 	var stat, book, skill, from int
 	switch p.Class {
-	case 1:
-		stat, book, skill, from = (in+pi)/2, 0, 28, 1
-	case 2:
-		stat, book, skill, from = (pi+vi)/2, 1, 26, 1
-	case 4:
-		stat, book, skill, from = (in+pi)/2, 2, 25, 3
-	case 5:
-		stat, book, skill, from = (in+pi)/2, 2, 25, 1
-	case 6:
-		stat, book, skill, from = (in+pi)/2, 0, 28, 3
-	case 7:
-		stat, book, skill, from = (in+pi)/2, 3, 27, 1
-	case 8:
-		stat, book, skill, from = (pi+vi)/2, 1, 26, 3
-	case 9:
+	case classMage:
+		stat, book, skill, from = (in+pi)/2, bookMage, skillThaumaturgy, 1
+	case classPriest:
+		stat, book, skill, from = (pi+vi)/2, bookPriest, skillTheology, 1
+	case classRanger:
+		stat, book, skill, from = (in+pi)/2, bookAlchemist, skillAlchemy, 3
+	case classAlchemist:
+		stat, book, skill, from = (in+pi)/2, bookAlchemist, skillAlchemy, 1
+	case classBard:
+		stat, book, skill, from = (in+pi)/2, bookMage, skillThaumaturgy, 3
+	case classPsionic:
+		stat, book, skill, from = (in+pi)/2, bookPsionic, skillTheosophy, 1
+	case classValkyrie:
+		stat, book, skill, from = (pi+vi)/2, bookPriest, skillTheology, 3
+	case classBishop: // mage and priest spells by turns
 		stat, book, from = (in+pi)/2, int(p.Level)%2, 1
-		skill = 26
-		if book == 0 {
-			skill = 28
+		skill = skillTheology
+		if book == bookMage {
+			skill = skillThaumaturgy
 		}
-	case 10:
-		stat, book, skill, from = (pe+pi)/2, 1, 26, 3
-	case 11:
-		stat, book, skill, from = (in+pi)/2, 0, 28, 3
-	case 12:
-		stat, book, skill, from = (in+pi)/2, 3, 27, 3
-	case 13:
-		stat, book, skill, from = (in+pi)/2, 2, 25, 5
+	case classLord:
+		stat, book, skill, from = (pe+pi)/2, bookPriest, skillTheology, 3
+	case classSamurai:
+		stat, book, skill, from = (in+pi)/2, bookMage, skillThaumaturgy, 3
+	case classMonk:
+		stat, book, skill, from = (in+pi)/2, bookPsionic, skillTheosophy, 3
+	case classNinja:
+		stat, book, skill, from = (in+pi)/2, bookAlchemist, skillAlchemy, 5
 	default:
 		return
 	}
@@ -535,7 +515,7 @@ func doLevelUp(sheet, menu *Window, m int) {
 		spendSkillPoints(menu, m)
 	}
 	levelUpSpellPoints(m)
-	for b := 0; b < 4; b++ {
+	for b := range bookCount {
 		for p.SpellsLearn[b] > 0 {
 			learnNewSpell(sheet, menu, m, b)
 		}
@@ -551,7 +531,7 @@ func checkLevelUp(m int) {
 	resumeWindowDraw(bottomLineWin)
 	eraseWindow(bottomLineWin, false)
 	b := make([]byte, dbs.Size[dbs.ClassExp]())
-	accessScenarioRecord(0, int(p.Class), b, false)
+	accessScenarioRecord(dbs.RecClassExp, int(p.Class), b, false)
 	t, _ := dbs.Decode[dbs.ClassExp](b)
 	pvNamesLoaded = false
 	for {
@@ -570,11 +550,11 @@ func checkLevelUp(m int) {
 	destroyWindow(sheet, false)
 }
 
-// levelUpEntry (level_up_entry, WPCVW fa10): game state 22, after combat or rest. Every
+// levelUpEntry (level_up_entry, WPCVW fa10): stateLevelUp, after combat or rest. Every
 // member levels up as far as its experience goes, then the maze screen comes back.
 func levelUpEntry() {
-	returnCmd = 5
-	gameState = 5
+	returnCmd = int16(stateExplore)
+	gameState = stateExplore
 	menuKeys = getMessage(300)
 	for m := 0; m < partyCount; m++ {
 		checkLevelUp(m)
@@ -597,7 +577,7 @@ func levelUpEntry() {
 // at least t, a letter per stat with 'A' 0.
 func limitStats(m int, t string, lower bool) {
 	p := &party[m]
-	for s := 0; s < 7; s++ {
+	for s := range statKarma {
 		v := t[s] - 'A'
 		if lower && p.Stats[s] > v || !lower && p.Stats[s] < v {
 			p.Stats[s] = v
@@ -606,12 +586,12 @@ func limitStats(m int, t string, lower bool) {
 }
 
 // calcAllowedClasses (calc_allowed_classes, WPCVW a1f9, with check_class_reqs a1a7) marks
-// in pvClassAllowed the classes member m's stats (and, for class 8, sex) qualify for.
+// in pvClassAllowed the classes member m's stats (and, for valkyries, sex) qualify for.
 func calcAllowedClasses(m int) {
 	p := &party[m]
 	for c := range pvClassAllowed {
-		ok := c != 8 || p.Sex == 1
-		for s := 0; ok && s < 7; s++ {
+		ok := c != classValkyrie || p.Sex == sexFemale
+		for s := 0; ok && s < statKarma; s++ {
 			ok = p.Stats[s] >= classReqs[c][s]-'A'
 		}
 		pvClassAllowed[c] = ok
@@ -630,8 +610,8 @@ func doChangeClass(sheet, menu *Window, m int) {
 	resumeWindowDraw(w)
 	fillWindow(menu, ' ', 3)
 	refreshAllWindows()
-	enabled := make([]int, 16)
-	enabled[0], enabled[15] = 1, -1
+	enabled := make([]int, classCount+2) // cancel (message 119), the classes, the end
+	enabled[0], enabled[classCount+1] = 1, -1
 	for c, ok := range pvClassAllowed {
 		if ok {
 			enabled[c+1] = 1
@@ -662,23 +642,24 @@ func doChangeClass(sheet, menu *Window, m int) {
 	doEquipItems(sheet, menu, m)
 }
 
-// doRename (do_rename, WPCVW abd8) asks for a new name of up to 7 letters for member m.
+// doRename (do_rename, WPCVW abd8) asks for a new name of up to nameLength letters for
+// member m.
 func doRename(w *Window, m int) {
 	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	setCursor(w, 1, 1)
 	printMessage(1128, w, 18)
 	x, y := int(w.CurX), int(w.CurY)
-	clearWindowArea(w, x, y, x+7, y)
+	clearWindowArea(w, x, y, x+nameLength, y)
 	setCursor(w, x, y)
-	if s := inputText(w, 7, 5, 0); s != "" {
+	if s := inputText(w, nameLength, 5, inputPrintable); s != "" {
 		party[m].Name = [8]uint8{}
-		copy(party[m].Name[:7], s)
+		copy(party[m].Name[:nameLength], s)
 	}
 }
 
-// doChoosePortrait (do_choose_portrait, WPCVW a920) cycles member m through the 42
-// portraits (left/right) until Enter.
+// doChoosePortrait (do_choose_portrait, WPCVW a920) cycles member m through the
+// portraitCount portraits (left/right) until Enter.
 func doChoosePortrait(w *Window, m int) {
 	p := &party[m]
 	pw := createWindow(20, 4, 20, 16, 30, -1, 0, false)
@@ -706,21 +687,33 @@ func doChoosePortrait(w *Window, m int) {
 		drawPortrait(pw, int(memberPortrait[m]), 8, 6)
 		k := getMenuInputBlink()
 		if menuClicked == 1 && k >= 0 && k < 3 {
-			k = [3]int{1, 3, 5}[k]
+			k = [3]int{menuKeyLeft, menuKeyRight, menuKeyEnter}[k]
 		}
 		switch k {
-		case 1:
-			p.Portrait = (p.Portrait + 41) % 42
-		case 3:
-			p.Portrait = (p.Portrait + 1) % 42
+		case menuKeyLeft:
+			p.Portrait = (p.Portrait + portraitCount - 1) % portraitCount
+		case menuKeyRight:
+			p.Portrait = (p.Portrait + 1) % portraitCount
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
 	destroyWindow(pw, false)
 	// The disk prompts around this (prompt_insert_disk) are no-ops here.
 }
+
+// doModifyMenu's entries (messages 650+).
+const (
+	editMenuRename = iota
+	editMenuPortrait
+	editMenuClass
+	editMenuReplace // REPLACE CHARACTER, always off
+	editMenuExit
+)
+
+// maxRaisedSkill is the skill above which raiseSkill adds nothing.
+const maxRaisedSkill = 50
 
 // doModifyMenu (do_modify_menu, WPCVW ac83): rename, portrait, change class, exit.
 func doModifyMenu(sheet, menu *Window, m int) {
@@ -729,17 +722,17 @@ func doModifyMenu(sheet, menu *Window, m int) {
 		refreshAllWindows()
 		// Entry 3 is off: the C's enabled array overlaps a local it zeroes.
 		enabled := []int{1, 1, 1, 0, 1, -1}
-		k := menuSelect(menu, 650, enabled, 2, 1, 18, 2, 5, countEnabledItems(enabled, 4), getMenuInputBlink)
+		k := menuSelect(menu, 650, enabled, 2, 1, 18, 2, 5, countEnabledItems(enabled, editMenuExit), getMenuInputBlink)
 		switch k {
-		case 0:
+		case editMenuRename:
 			doRename(menu, m)
-		case 1:
+		case editMenuPortrait:
 			doChoosePortrait(menu, m)
-		case 2:
+		case editMenuClass:
 			doChangeClass(sheet, menu, m)
 		}
 		drawSheet(sheet, menu, m)
-		if k == 4 {
+		if k == editMenuExit {
 			return
 		}
 	}
