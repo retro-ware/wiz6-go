@@ -19,6 +19,7 @@ func main() {
 	shots := flag.String("shot", "", "write the game's frame to PNGs: SECONDS:FILE[,SECONDS:FILE...]")
 	input := flag.String("input", "", "replace the keyboard and mouse with a script: SECONDS:ACTION[,...], "+
 		"ACTION kHEX (tap a scan code), pHEX/rHEX (press/release a scan code), aX/Y (put the mouse at X, Y), mDX/DY (move the mouse), bN (click button N), dN/uN (button N down/up)")
+	maze := flag.Bool("maze", false, "testing: boot straight into NEWGAME.DBS's maze with the first six PCFILE.DBS characters")
 	flag.Parse()
 	if *imp != "" {
 		if *data == "" {
@@ -60,7 +61,14 @@ func main() {
 		time.AfterFunc(d, func() { scriptAction(act) })
 	}
 	code := 0
-	if err := host.Run("Wizardry VI", func() { code = game.Main(*data); host.Quit() }); err != nil {
+	if err := host.Run("Wizardry VI", func() {
+		if *maze {
+			code = game.MainMaze(*data)
+		} else {
+			code = game.Main(*data)
+		}
+		host.Quit()
+	}); err != nil {
 		fmt.Fprintln(os.Stderr, "wiz6:", err)
 		os.Exit(1)
 	}
