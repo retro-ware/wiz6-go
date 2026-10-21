@@ -204,7 +204,7 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 	case spellIdentify:
 		if party[m].ItemCount > 0 {
 			refreshAllWindows()
-			if pvChosenItem = chooseItem(sheet, menu, 481, m, false); pvChosenItem != -1 {
+			if pvChosenItem = chooseItem(sheet, menu, msgCastOnWhichItem, m, false); pvChosenItem != -1 {
 				showItemInfo(menu, m, pvChosenItem, power)
 			}
 		}
@@ -282,13 +282,13 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 				setCursor(book, 11, 12)
 				if realm == -1 {
 					pvBlinkWin, pvBlinkX, pvBlinkY = book, 1, 12
-					printMessage(3956, book, 9)
+					printMessage(msgSpellBookCancel, book, 9)
 					clearWindowArea(book, 6, 14, 8, 14)
 					n = -1
 					drawListBox(list, true)
 				} else {
 					pvBlinkWin, pvBlinkX, pvBlinkY = sheet, realm/3*10+1, realm%3<<1+14
-					printMessage(realm+3950, book, realmColors[realm])
+					printMessage(realm+msgRealmBase, book, realmColors[realm])
 					clearWindowArea(book, 6, 14, 8, 14)
 					n = countKnownSpells(m, realm, spells[:])
 					drawSheetSpellList(list, realm, 0, false, spells[:n])
@@ -359,7 +359,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		k := 0
 		for k != menuKeyEnter && !back {
 			pvBlinkState = 1
-			pvBlinkText[1] = getMessage(spells[at] + 4000)
+			pvBlinkText[1] = getMessage(spells[at] + msgSpellNameBase)
 			pvBlinkColor[1] = realmColors[realm]
 			drawSheetSpellList(list, realm, at, true, spells[:n])
 			cost := int(spellTable[spells[at]].Cost)
@@ -409,7 +409,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		drawListBox(list, false)
 		deferWindowDraw(list)
 		setCursor(list, 1, 3)
-		printMessage(spell+4000, list, 18)
+		printMessage(spell+msgSpellNameBase, list, 18)
 		resumeWindowDraw(list)
 		refreshWindow(list)
 		power := 1
@@ -434,7 +434,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 					pvSetBlink(book, 1, 12, "\"", 17, "c", 5)
 					clearWindowArea(book, 11, 12, 18, 12)
 					setCursor(book, 11, 12)
-					printMessage(3956, book, 9)
+					printMessage(msgSpellBookCancel, book, 9)
 					clearWindowArea(book, 6, 14, 8, 14)
 				} else {
 					pvSetBlink(book, power+2, 12, " ", 0, string(rune(power+23)), 7)
@@ -475,7 +475,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 						unhighlightSheetRealm(sheet, book, -1)
 						clearWindowArea(book, 11, 12, 18, 12)
 						setCursor(book, 11, 12)
-						printMessage(realm+3950, book, realmColors[realm])
+						printMessage(realm+msgRealmBase, book, realmColors[realm])
 						power, redraw = 1, true
 					} else if power < most {
 						unmark()
@@ -494,7 +494,7 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 			return -1
 		}
 		if spellTable[spell].Target == spellTargetMember {
-			if pvSpellTarget = chooseMember(menu, 502, -1); pvSpellTarget == -1 {
+			if pvSpellTarget = chooseMember(menu, msgSheetCastOnWho, -1); pvSpellTarget == -1 {
 				return -1
 			}
 		}
@@ -528,11 +528,11 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	}
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
-	showCenteredMsg(menu, replaceCharWithString(getMessage(702), getMessage(int(p.Class)+120), '$'), true)
+	showCenteredMsg(menu, replaceCharWithString(getMessage(msgYouLearnedNewSpell), getMessage(int(p.Class)+msgClassBase), '$'), true)
 	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	setCursor(menu, 1, 1)
-	printMessage(703, menu, 18)
+	printMessage(msgSelectNewSpellFor, menu, 18)
 	resumeWindowDraw(menu)
 	var saved [realmCount]int16
 	for r := range p.SP {
@@ -565,7 +565,7 @@ func doCastMenu(sheet, menu *Window, m int, canCast bool) {
 	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	setCursor(menu, 8, 1)
-	printMessage(701, menu, 18)
+	printMessage(msgSelectSpellCast, menu, 18)
 	resumeWindowDraw(menu)
 	if !canCast {
 		chooseSheetSpell(sheet, menu, m, false)

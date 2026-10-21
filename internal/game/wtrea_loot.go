@@ -30,8 +30,8 @@ const (
 func treasureAfterCombat() {
 	trChestKind = -1
 	trRow = 2
-	trLine = getMessage(5000)
-	trKeys = getMessage(5100)
+	trLine = getMessage(msgYouHaveDefeatedMonsters)
+	trKeys = getMessage(msgTreasureKeys)
 	trAnimCounter = 0
 	flushKeys()
 	deferWindowDraw(movePadWin)
@@ -53,7 +53,7 @@ func treasureAfterCombat() {
 func treasureFound() {
 	trChestKind = -1
 	trRow = 1
-	trKeys = getMessage(5100)
+	trKeys = getMessage(msgTreasureKeys)
 	trAnimCounter = 0
 	flushKeys()
 	deferWindowDraw(movePadWin)
@@ -82,7 +82,7 @@ func trLiving() int {
 // gold as experience.
 func shareCombatGold() {
 	share := combatGold / int32(trLiving())
-	trLine = getMessage(5001)
+	trLine = getMessage(msgEverySurvivorEarnsExp)
 	trNum = itoa(int(share))
 	trLine = replaceCharWithString(trLine, trNum, '$')
 	showCenteredLine(partyPictureWin, 2, trLine, false, 6)
@@ -135,7 +135,7 @@ func openTreasure() {
 	}
 	gold /= int32(living)
 	for i := 0; i < lootCount; i++ {
-		trLine = getMessage(5004)
+		trLine = getMessage(msgYouFound)
 		lootLabel[i] = getMessage(5005)
 		var kind string
 		if lootItem[i] > 0 {
@@ -153,11 +153,11 @@ func openTreasure() {
 			}
 			switch rec.Type {
 			case itemTypePotion:
-				kind = getMessage(5006)
+				kind = getMessage(msgPotion)
 			case itemTypeScroll:
-				kind = getMessage(5007)
+				kind = getMessage(msgScroll)
 			case itemTypePowder:
-				kind = getMessage(5008)
+				kind = getMessage(msgPowder)
 			}
 		}
 		trNum2 = itoa(lootQty[i])
@@ -167,13 +167,13 @@ func openTreasure() {
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 1)
 	}
 	if gold > 0 {
-		msg := getMessage(5002)
+		msg := getMessage(msgEachShareLootWorth)
 		trNum = itoa(int(gold))
 		trLine = replaceCharWithString(msg, trNum, '$')
 		showCenteredLine(partyPictureWin, trRow, trLine, false, 5)
 	}
 	if exp > 0 {
-		msg := getMessage(5003)
+		msg := getMessage(msgEveryoneReceivesExpBonus)
 		trNum = itoa(int(exp))
 		trLine = replaceCharWithString(msg, trNum, '$')
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 4)
@@ -308,10 +308,10 @@ func distributeLoot() {
 	fillWindow(list, ' ', 3)
 	deferWindowDraw(win)
 	setCursor(win, 2, 1)
-	printMessage(5102, win, 18)
+	printMessage(msgTakeItem, win, 18)
 	win.CurX++
 	noneX, noneY := int(win.CurX), int(win.CurY)
-	none := getMessage(5103)
+	none := getMessage(msgLootNone)
 	printStringHi(win, none, 3)
 	g := func(x, y int, ch byte) { putGlyphAtC1(win, x, y, ch) }
 	g(1, 2, 17)
@@ -331,7 +331,7 @@ func distributeLoot() {
 		for sel >= lootCount {
 			sel--
 		}
-		printChestPrompt(5101, 2)
+		printChestPrompt(msgDivvyLoot, 2)
 		deferWindowDraw(list)
 		fillWindow(list, ' ', 3)
 		for i := 0; i < lootCount; i++ {
@@ -359,7 +359,7 @@ func distributeLoot() {
 				setCursor(list, 21, sel)
 				printString(list, lootLabel[sel], -3)
 				setCursor(win, 2, 3)
-				printMessage(5104, win, 11)
+				printMessage(msgWeight, win, 11)
 				setCursor(win, 12, 3)
 				printInt(win, lootWeight[sel]/10, 4, 3)
 				putChar(win, '.', 3)
@@ -415,9 +415,9 @@ func distributeLoot() {
 			}
 		}
 		if sel != -1 {
-			if m := trChooseMember(5105, 0); m != -1 && lootItem[sel] > 0 {
+			if m := trChooseMember(msgWhoTakesIt, 0); m != -1 && lootItem[sel] > 0 {
 				if giveItemToMember(m, sel) == -1 {
-					printChestPrompt(5108, 6)
+					printChestPrompt(msgLootFull, 6)
 					refreshWindow(mainWindow)
 					playSound(soundBeep)
 					trWaitAnimating(messageDelay)
@@ -434,7 +434,7 @@ func distributeLoot() {
 				}
 			}
 			if important {
-				printChestPrompt(5109, 1)
+				printChestPrompt(msgImportantItem, 1)
 				refreshWindow(mainWindow)
 				playSound(soundBeep)
 				trWaitAnimating(messageDelay)

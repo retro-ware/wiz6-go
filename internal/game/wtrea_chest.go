@@ -16,7 +16,7 @@ var (
 
 const (
 	trapCount         = 16   // chest traps 0 (none) .. 15, TreasureRec.Traps bits
-	trapNameMsg       = 5300 // plus the trap: its name
+	msgTrapNameBase   = 5300 // plus the trap: its name
 	trapGuessMax      = 18   // the letters of a trap guess
 	trapLetterGuessed = '$'  // a trTrapPool letter already found
 	trapLetterWrong   = '*'  // a guessed letter found wrong
@@ -36,13 +36,13 @@ func showTrapEffect(member, anim int) {
 		trTrapMember = member
 		trTrapAnim = anim
 	}
-	showCenteredLine(partyPictureWin, trRow, getMessage(5227), false, 7)
+	showCenteredLine(partyPictureWin, trRow, getMessage(msgTrapWasTriggered), false, 7)
 	showCenteredLine(partyPictureWin, trRow, trTrapName, false, 1)
 }
 
 // trLoseMessage tells that member m lost what (message 5266 and then what).
 func trLoseMessage(m, what int) {
-	lost := getMessage(5266)
+	lost := getMessage(msgLost)
 	trNum = getMessage(what)
 	trNum2 = ""
 	trPrintMemberMessage(m, lost, trNum, trNum2, 1, 5, 5, 0)
@@ -54,7 +54,7 @@ func springTrap(trap, member int) {
 	clearWindow(partyPictureWin, false)
 	refreshAllWindows()
 	if trap == 0 {
-		showCenteredLine(partyPictureWin, trRow, getMessage(5228), true, 7)
+		showCenteredLine(partyPictureWin, trRow, getMessage(msgChestWasNotTrapped), true, 7)
 		return
 	}
 	lvl := gameStateArg
@@ -67,14 +67,14 @@ func springTrap(trap, member int) {
 	case 2:
 		showTrapEffect(0, 16)
 		for i := 0; i < partyCount; i++ {
-			trInflictStatus(i, 5253, 10, statusParalyzed, 10, 10, 50)
+			trInflictStatus(i, msgTrapStatusBase+statusParalyzed, 10, statusParalyzed, 10, 10, 50)
 		}
 	case 3, 9:
 		showTrapEffect(0, -1)
 	case 4:
 		showTrapEffect(member, 6)
 		trTrapDamageMember(member, 1, 6)
-		trInflictStatus(member, 5255, 0, statusPoisoned, lvl+2, 10, 50)
+		trInflictStatus(member, msgTrapStatusBase+statusPoisoned, 0, statusPoisoned, lvl+2, 10, 50)
 	case 5:
 		showTrapEffect(0, 2)
 		for i := 0; i < partyCount; i++ {
@@ -85,28 +85,28 @@ func springTrap(trap, member int) {
 			case 0:
 				trTrapDamageMember(i, lvl+1, 8)
 			case 1:
-				trInflictStatus(i, 5254, 2, statusBlinded, 10, 10, 50)
+				trInflictStatus(i, msgTrapStatusBase+statusBlinded, 2, statusBlinded, 10, 10, 50)
 			case 2:
-				trInflictStatus(i, 5252, 9, statusAsleep, 10, 10, 50)
+				trInflictStatus(i, msgTrapStatusBase+statusAsleep, 9, statusAsleep, 10, 10, 50)
 			case 3:
-				trInflictStatus(i, 5253, 4, statusParalyzed, 10, 10, 50)
+				trInflictStatus(i, msgTrapStatusBase+statusParalyzed, 4, statusParalyzed, 10, 10, 50)
 			case 4:
-				trInflictCondition(i, 5260, 11, conditionDead)
+				trInflictCondition(i, msgSlain, 11, conditionDead)
 			case 5:
-				trInflictCondition(i, 5263, 11, conditionStoned)
+				trInflictCondition(i, msgTrapConditionBase+conditionStoned, 11, conditionStoned)
 			}
 		}
 	case 6:
 		showTrapEffect(0, 16)
 		for i := 0; i < partyCount; i++ {
 			p := &party[i]
-			trInflictStatus(i, 5265, 11, 9, 10, 10, 50)
+			trInflictStatus(i, msgWeakened, 11, 9, 10, 10, 50)
 			if random(100) > int(p.Resist[11])+75 && p.Stats[statStrength] > 3 && p.Condition < conditionDead {
 				p.Stats[statStrength]--
-				trLoseMessage(i, 5267)
+				trLoseMessage(i, msgStrength)
 			} else if random(100) > int(p.Resist[11])+75 && p.Stats[statVitality] > 3 && p.Condition < conditionDead {
 				p.Stats[statVitality]--
-				trLoseMessage(i, 5268)
+				trLoseMessage(i, msgVitality)
 			}
 		}
 	case 7:
@@ -123,13 +123,13 @@ func springTrap(trap, member int) {
 				if p.HP > p.HPMax {
 					p.HP = p.HPMax
 				}
-				trLoseMessage(i, 5269)
+				trLoseMessage(i, msgHitPoints)
 			}
 		}
 	case 10:
 		showTrapEffect(0, 16)
 		for i := 0; i < partyCount; i++ {
-			trInflictCondition(i, 5263, 11, conditionStoned)
+			trInflictCondition(i, msgTrapConditionBase+conditionStoned, 11, conditionStoned)
 		}
 	case 11:
 		showTrapEffect(0, 4)
@@ -139,7 +139,7 @@ func springTrap(trap, member int) {
 		showTrapEffect(0, 3)
 		for i := 0; i < partyCount; i++ {
 			trTrapDamageMember(i, lvl+1, 8)
-			trInflictStatus(i, 5275, 5, statusNauseated, 10, 10, 50)
+			trInflictStatus(i, msgNauseated, 5, statusNauseated, 10, 10, 50)
 		}
 	case 14:
 		showTrapEffect(0, 0)
@@ -149,7 +149,7 @@ func springTrap(trap, member int) {
 	case 15:
 		showTrapEffect(0, 4)
 		for i := 0; i < partyCount; i++ {
-			trInflictCondition(i, 5260, 11, conditionDead)
+			trInflictCondition(i, msgSlain, 11, conditionDead)
 		}
 	}
 }
@@ -175,17 +175,17 @@ func phantomHand() {
 		trPrintMemberMessage(i, getMessage(msg), trNum, trNum2, 1, 6, 0, 0)
 		trWaitAnimating(messageDelay)
 	}
-	notice(5270)
-	says(5271)
+	notice(msgPhantasmalHandMaterializes)
+	says(msgIsAttacked)
 	trTrapDamageMember(i, gameStateArg+1, 8)
 	if p.Condition < conditionDead && random(21) > int(p.Stats[statKarma]) {
-		says(5272)
+		says(msgIsBeatenSeverely)
 		trTrapDamageMember(i, gameStateArg<<1+2, 8)
 		if random(21) > int(p.Stats[statKarma]) {
-			trInflictCondition(i, 5273, 11, conditionDead)
+			trInflictCondition(i, msgIsChokedSmashedAnd, 11, conditionDead)
 		}
 	}
-	notice(5274)
+	notice(msgPhantomHandWavesAnd)
 }
 
 // pick_chest_trap (WTREA 66b1) picks one of the chest's traps at random (0 none if it has
@@ -202,7 +202,7 @@ func pickChestTrap(chest *TreasureRec) {
 			left--
 		}
 	}
-	trTrapName = getMessage(chestTrap + trapNameMsg)
+	trTrapName = getMessage(chestTrap + msgTrapNameBase)
 	trTrapPool = []byte(trTrapName)
 }
 
@@ -313,7 +313,7 @@ func drawTrapList(win *Window, at int, hi bool, n int, list []int) {
 		if hi && d == 0 {
 			c = 6
 		}
-		printMessage(list[at+d]+trapNameMsg, win, c)
+		printMessage(list[at+d]+msgTrapNameBase, win, c)
 		if hi && d == 0 {
 			for win.CurX < 17 {
 				putChar(win, ' ', 6)
@@ -414,13 +414,13 @@ func trySpellDisarm(win, trapWin *Window, member, level int) {
 		chestTrap = 0
 		spellDisarmResult = disarmOpened
 		trChestOpen = 1
-		trLine = getMessage(5234)
+		trLine = getMessage(msgChestOpens)
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 7)
 	case 100-(100-chance)/3 < r:
 		spellDisarmResult = disarmSprung
 	default:
 		spellDisarmResult = disarmFailed
-		trLine = getMessage(5235)
+		trLine = getMessage(msgChestDidNotOpen)
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 7)
 	}
 	for _, w := range []*Window{win, trapWin, mainWindow, bottomLineWin} {
@@ -565,7 +565,7 @@ func chooseChestSpell(win *Window, member int) int {
 					drawListFrame(list, true)
 				} else {
 					trBlinkX, trBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, book, realmColors[realm])
+					printMessage(realm+msgRealmBase, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = countKnownSpells(member, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
@@ -638,7 +638,7 @@ func chooseChestSpell(win *Window, member int) int {
 		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		for {
 			trBlink = 1
-			trBlinkText[1] = getMessage(spells[pos] + 4000)
+			trBlinkText[1] = getMessage(spells[pos] + msgSpellNameBase)
 			trBlinkColor[1] = realmColors[realm]
 			drawBookSpellList(list, realm, pos, true, count, spells[:])
 			cost := int(spellTable[spells[pos]].Cost)
@@ -689,7 +689,7 @@ func chooseChestSpell(win *Window, member int) int {
 	drawListFrame(list, false)
 	deferWindowDraw(list)
 	setCursor(list, 2, 2)
-	printMessage(spell+4000, list, 18)
+	printMessage(spell+msgSpellNameBase, list, 18)
 	resumeWindowDraw(list)
 	refreshWindow(list)
 	trBlinkWin = book
@@ -756,7 +756,7 @@ func chooseChestSpell(win *Window, member int) int {
 					unhighlightBookRealm(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
 					setCursor(book, 13, 1)
-					printMessage(realm+3950, book, realmColors[realm])
+					printMessage(realm+msgRealmBase, book, realmColors[realm])
 					level, redraw = 1, true
 				} else if level < maxLevel {
 					plainLevel()
@@ -774,7 +774,7 @@ func chooseChestSpell(win *Window, member int) int {
 		return -1
 	}
 	if spellTable[spell].Target == spellTargetMember {
-		if trSpellTarget = trChooseMember(2030, 1); trSpellTarget == -1 {
+		if trSpellTarget = trChooseMember(msgCastOnWho, 1); trSpellTarget == -1 {
 			return -1
 		}
 	}
@@ -831,7 +831,7 @@ func handleChest(chest *TreasureRec) int {
 	fillWindow(trapWin, ' ', 3)
 	deferWindowDraw(trapWin)
 	setCursor(trapWin, 4, 0)
-	printMessage(5226, trapWin, 18)
+	printMessage(msgTrap, trapWin, 18)
 	g := func(x, y int, ch byte) { putGlyphAtC1(trapWin, x, y, ch) }
 	g(0, 1, 17)
 	g(19, 1, 19)
@@ -850,12 +850,12 @@ func handleChest(chest *TreasureRec) int {
 	var inspected [6]bool
 	options := []int{1, 1, 1, 1, 1, -1} // tried[6..10] and l22 behind it
 	for {
-		printChestPrompt(5200, 2)
+		printChestPrompt(msgChest, 2)
 		fillWindow(win, ' ', 3)
 		refreshAllWindows()
-		switch menuSelectCancel(win, 5201, options, 2, 1, 10, 3, 5, 0, 0, trInput) {
+		switch menuSelectCancel(win, msgChestMenu, options, 2, 1, 10, 3, 5, 0, 0, trInput) {
 		case 0: // inspect
-			if m := trChooseMember(5223, 0); m != -1 {
+			if m := trChooseMember(msgWhoInspects, 0); m != -1 {
 				if inspected[m] {
 					playSound(soundBeep)
 				} else if isMemberAble(m) {
@@ -864,7 +864,7 @@ func handleChest(chest *TreasureRec) int {
 				}
 			}
 		case 1: // disarm
-			m := trChooseMember(5220, 0)
+			m := trChooseMember(msgWhoDisarms, 0)
 			if m == -1 || !isMemberAble(m) {
 				break
 			}
@@ -877,7 +877,7 @@ func handleChest(chest *TreasureRec) int {
 			switch r {
 			case disarmOpened:
 				trChestOpen = 1
-				showCenteredLine(partyPictureWin, trRow, getMessage(5229), true, 7)
+				showCenteredLine(partyPictureWin, trRow, getMessage(msgYouDisarmedTrap), true, 7)
 				closeChestWindows(win, trapWin)
 				return 0
 			case disarmSprung:
@@ -886,19 +886,19 @@ func handleChest(chest *TreasureRec) int {
 				springTrap(chestTrap, m)
 				return 0
 			}
-			showCenteredLine(partyPictureWin, trRow, getMessage(5230), true, 7)
+			showCenteredLine(partyPictureWin, trRow, getMessage(msgYouCouldNotDisarm), true, 7)
 			for _, w := range []*Window{win, trapWin, mainWindow, bottomLineWin} {
 				resumeWindowDraw(w)
 			}
 		case 2: // open
-			if m := trChooseMember(5225, 0); m != -1 && isMemberAble(m) {
+			if m := trChooseMember(msgWhoOpens, 0); m != -1 && isMemberAble(m) {
 				trChestOpen = 1
 				closeChestWindows(win, trapWin)
 				springTrap(chestTrap, m)
 				return 0
 			}
 		case 3: // spell
-			m := trChooseMember(5224, 0)
+			m := trChooseMember(msgChestWhoCasts, 0)
 			if m == -1 || !isMemberAble(m) {
 				break
 			}

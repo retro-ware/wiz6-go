@@ -119,7 +119,7 @@ func npcLoadVocabulary() {
 	}
 	npcSynonyms = npcSynonyms[:0]
 	for i := range 38 {
-		npcSynonyms = append(npcSynonyms, getMessage(7160+i))
+		npcSynonyms = append(npcSynonyms, getMessage(msgSynonymBase+i))
 	}
 }
 
@@ -408,33 +408,33 @@ func npcAnswerSpecial() int {
 		tk.verb = 1
 	}
 	if tk.topic2 != -1 {
-		npcPrintWrapped(replaceCharWithString(getMessage(1600), npcAnswerWord(tk.topic, tk.plural), '^'), 5)
-		npcSay(1601, npcAnswerWord(tk.topic2, tk.plural2))
+		npcPrintWrapped(replaceCharWithString(getMessage(msgAreYouSpeaking), npcAnswerWord(tk.topic, tk.plural), '^'), 5)
+		npcSay(msgOrSubject, npcAnswerWord(tk.topic2, tk.plural2))
 		return -1
 	}
 	if tk.interj == -1 && tk.topic == -1 {
 		switch {
 		case tk.verb != -1:
-			npcSay(1602, npcWords[npcListVerb][tk.verb])
+			npcSay(msgSubjectWhat, npcWords[npcListVerb][tk.verb])
 		case random(2) == 0:
-			npcSay(1603, "")
+			npcSay(msgIDontKnowAbout, "")
 		default:
-			npcSay(1604, "")
+			npcSay(msgIDontUnderstand, "")
 		}
 		return -1
 	}
 	if tk.verb2 != -1 {
 		if tk.topic != -1 {
-			npcSay(1605, npcAnswerWord(tk.topic, 1))
+			npcSay(msgAreYouAskingAbout, npcAnswerWord(tk.topic, 1))
 			tk.lastVerb, tk.lastTopic, tk.lastPlural, tk.lastAsk = 1, tk.topic, tk.plural, 1
 		} else {
-			npcSay(1606, "")
+			npcSay(msgYourWordsAreConfusing, "")
 		}
 		return -1
 	}
 	if tk.interj == -1 && tk.verb == -1 {
 		if tk.topic == -1 {
-			npcSay(1607, "")
+			npcSay(msgHuh, "")
 			return -1
 		}
 		tk.question, tk.ask[1], tk.verb = true, true, 1
@@ -456,27 +456,27 @@ func npcAnswerInterjection() {
 			npcWait(messageDelay)
 		}
 	case npcInterjRepeat:
-		npcSay(1608, "")
+		npcSay(msgVeryWellThen, "")
 		tk.verb, tk.topic, tk.plural = tk.lastVerb, tk.lastTopic, tk.lastPlural
 		tk.question = true
 		npcSetAsk(tk.lastAsk)
 	case 3:
-		npcSay(1609, "")
+		npcSay(msgSoBeIt, "")
 		tk.lastAsk = -1
 	case 4, 5, 8:
-		npcSay(1606+tk.interj, "")
+		npcSay(msgInterjReplyBase+tk.interj, "")
 	case npcInterjOffend:
-		npcSay(1612, "")
+		npcSay(msgSameToYou, "")
 		*a -= int8(random(5) + 1)
 		if random(2) == 1 {
 			tk.done = true
 		}
 	case npcInterjChangeSubject:
-		npcSay(1613, "")
+		npcSay(msgConsiderItForgotten, "")
 		tk.topic, tk.plural, tk.verb = -1, 0, -1
 		tk.lastTopic, tk.lastPlural, tk.lastVerb, tk.lastAsk = -1, 0, -1, -1
 	case npcInterjFlatter:
-		npcSay(1615, "")
+		npcSay(msgHaHaHa, "")
 		if random(2) == 1 && *a < 50 { // flattery helps only up to 50
 			*a += int8(random(3) + 1)
 		}
@@ -489,7 +489,7 @@ func npcAnswerOrScript(msg, fallback int) {
 	s := getMessage(msg)
 	switch {
 	case s == "":
-		npcSay(1616, getMessage(fallback))
+		npcSay(msgIDontKnowSubject, getMessage(fallback))
 	case s[0] == '$':
 		if len(s) > 1 && npcRunScript(npcTalkMember, int(s[1])) == 1 {
 			tk.done = true
@@ -514,9 +514,9 @@ func npcAnswer() {
 		if tk.verb == 0 {
 			if q && k == 0 && (ask[0] || ask[1]) {
 				if npcRec.Msgs[npcRumors] > 0 {
-					npcSay(1617, npcRumor(0))
+					npcSay(msgIHeardRumorAbout, npcRumor(0))
 				} else {
-					npcSay(1638, "")
+					npcSay(msgIHaventHeardThing, "")
 				}
 				return
 			}
@@ -525,15 +525,15 @@ func npcAnswer() {
 				ask[1], tk.ask[1] = true, true
 			}
 			if q && (ask[6] || ask[1]) {
-				npcAnswerOrScript(m+3, 1625)
+				npcAnswerOrScript(m+3, msgHow)
 				return
 			}
 		}
 		if !q {
 			if k == 0 {
-				npcSay(1628, "")
+				npcSay(msgThatsYourOpinion, "")
 			} else {
-				npcSay(1635, "")
+				npcSay(msgThatsVeryInteresting, "")
 			}
 			return
 		}
@@ -543,25 +543,25 @@ func npcAnswer() {
 		switch {
 		case ask[0]:
 			if npcVocabRef[k] != 0 {
-				npcSay(1618, npcTopicWord(tk.topic, tk.plural))
+				npcSay(msgIDontKnowAnyone, npcTopicWord(tk.topic, tk.plural))
 			} else {
-				npcAnswerOrScript(m+1, 1619)
+				npcAnswerOrScript(m+1, msgWho)
 			}
 		case ask[1]:
-			npcAnswerOrScript(m+2, 1620)
+			npcAnswerOrScript(m+2, msgWhat)
 		case ask[2]:
-			npcSay(1621, "")
+			npcSay(msgIDontKnowWhen, "")
 		case ask[3]:
-			npcAnswerOrScript(m+4, 1622)
+			npcAnswerOrScript(m+4, msgWhere)
 		case ask[4]:
-			npcSay(1623, "")
+			npcSay(msgIDontKnowWhich, "")
 		case ask[5]:
-			npcAnswerOrScript(m+2, 1624)
+			npcAnswerOrScript(m+2, msgWhy)
 		case ask[6]:
 			if k == 0 {
-				npcSay(1626, "")
+				npcSay(msgIAmAlive, "")
 			} else {
-				npcSay(1627, "")
+				npcSay(msgIWouldntKnow, "")
 			}
 		}
 	case 4, 5:
@@ -569,44 +569,44 @@ func npcAnswer() {
 		case q && tk.subject == 0 && ask[1]:
 			npcSay(1639+tk.verb-4, "")
 		case q && tk.subject == 0:
-			npcSay(1631, "")
+			npcSay(msgPossibly, "")
 		case q:
-			npcSay(1627, "")
+			npcSay(msgIWouldntKnow, "")
 		case tk.verb == 4 && k == 0:
-			npcSay(1632, "")
+			npcSay(msgThatsWhatYouThink, "")
 		case tk.verb == 4:
-			npcSay(1627, "")
+			npcSay(msgIWouldntKnow, "")
 		case tk.subject > 0:
-			npcAnswerOrScript(m+3, 1625)
+			npcAnswerOrScript(m+3, msgHow)
 		default:
-			npcSay(1636, "")
+			npcSay(msgThatsGoodKnow, "")
 		}
 	case 6, 7:
 		if q {
-			npcSay(1631, "")
+			npcSay(msgPossibly, "")
 		} else {
-			npcSay(1637, "")
+			npcSay(msgIWillConsiderIt, "")
 		}
 	case 8, 9:
 		if !q {
-			npcSay([2]int{1633, 1635}[tk.verb-8], "")
+			npcSay([2]int{msgPleaseContinue, msgThatsVeryInteresting}[tk.verb-8], "")
 			return
 		}
 		switch {
 		case ask[0] || tk.verb == 9 && ask[4]:
-			npcSay(1630, "")
+			npcSay(msgIDontKnow, "")
 		case ask[1] && tk.verb == 8:
-			npcAnswerOrScript(m+2, 1620)
+			npcAnswerOrScript(m+2, msgWhat)
 		case ask[1]:
-			npcSay(1634, "")
+			npcSay(msgTryAndSee, "")
 		case ask[3]:
-			npcAnswerOrScript(m+4, 1622)
+			npcAnswerOrScript(m+4, msgWhere)
 		case ask[4]:
-			npcSay(1623, "")
+			npcSay(msgIDontKnowWhich, "")
 		case ask[2]:
-			npcSay(1621, "")
+			npcSay(msgIDontKnowWhen, "")
 		default:
-			npcAnswerOrScript(m+3, 1625)
+			npcAnswerOrScript(m+3, msgHow)
 		}
 	}
 }

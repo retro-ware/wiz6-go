@@ -401,7 +401,7 @@ func npcGesture(kind int) {
 		return
 	}
 	if kind == 0 {
-		s := getMessage(2025)
+		s := getMessage(msgEncounter)
 		eraseWindow(mainWindow, true)
 		printCentered(mainWindow, s, 0, 18)
 	}
@@ -949,7 +949,7 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 	var exitHi, exitLo string
 	if withCancel == 1 {
 		exitX, exitY = int(mainWindow.CurX), int(mainWindow.CurY)
-		exitHi, exitLo = getMessage(2027), getMessage(2028)
+		exitHi, exitLo = getMessage(msgExit), getMessage(msgExitHi)
 		if mousePresent {
 			printStringHi(mainWindow, exitHi, 3)
 		} else {
@@ -1062,7 +1062,7 @@ func npcChooseMember(msg int, withExit bool) int {
 	npcPrompt(getMessage(msg), extra)
 	refreshAllWindows()
 	var exitX, exitY int
-	exitHi, exitLo := getMessage(2027), getMessage(2028)
+	exitHi, exitLo := getMessage(msgExit), getMessage(msgExitHi)
 	if withExit {
 		mainWindow.CurX++
 		exitX, exitY = int(mainWindow.CurX), int(mainWindow.CurY)
@@ -1169,7 +1169,7 @@ func runNPCEncounter() {
 
 // init_npc_encounter (WMNPC b8de) clears the sprites and the view and reads NPC npcID.
 func initNPCEncounter() {
-	npcKeys = getMessage(1500)
+	npcKeys = getMessage(msgNpcKeys)
 	gameState = stateExplore
 	for i := range spriteList {
 		spriteList[i].Depth = 255
@@ -1195,11 +1195,11 @@ func npcShowNPC() {
 	viewPosGroup[0][0] = 4
 	npcChooseFrames(4, 0)
 	switch s := int(npcRec.Disarm); {
-	case s >= 14:
+	case s >= loadedSound:
 		if s != curSound {
 			loadSound(s)
 		}
-		npcSound = 14
+		npcSound = loadedSound
 	case s > 0:
 		npcSound = s
 	default:
@@ -1214,7 +1214,7 @@ func npcShowNPC() {
 func npcMainMenu() {
 	npcLeaves, npcPilfered = 0, 0
 	enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, -1}
-	title := getMessage(1510)
+	title := getMessage(msgNpcPartyOptions)
 	win := createWindow(0, 19, 19, 5, 18, borderRightEdge, 0, false)
 	if g := npcRec.Msgs[npcGreeting]; g > 0 {
 		npcShowMessageText(int(g), 0)
@@ -1238,7 +1238,7 @@ func npcMainMenu() {
 		npcPrompt(title, 0)
 		m = -1
 		refreshAllWindows()
-		choice := menuSelectCancel(win, 1530, enabled, 1, 1, 6, 3, 5, 0, 0, npcMenuInput)
+		choice := menuSelectCancel(win, msgNpcMenu, enabled, 1, 1, 6, 3, 5, 0, 0, npcMenuInput)
 		// pick asks for a member under msg; able is whether one was picked and can act.
 		pick := func(msg int) bool {
 			m = npcChooseMember(msg, true)
@@ -1246,35 +1246,35 @@ func npcMainMenu() {
 		}
 		switch choice {
 		case npcMenuTalk:
-			if pick(1512) {
+			if pick(msgWhoSpeaks) {
 				if npcMood(m) > 0 {
 					npcTalk(m)
 				} else {
-					npcRefuse(1540)
+					npcRefuse(msgNotWithYou)
 				}
 			}
 		case npcMenuTrade:
-			if pick(1501) {
+			if pick(msgWhoTrades) {
 				if npcMood(m) > 0 {
 					npcTrade(m)
 				} else {
-					npcRefuse(1540)
+					npcRefuse(msgNotWithYou)
 				}
 			}
 		case npcMenuCast:
-			if pick(1514) {
+			if pick(msgNpcWhoCasts) {
 				npcCastSpell(win, m)
 			}
 		case npcMenuUse:
-			if pick(1515) {
+			if pick(msgNpcWhoWillUse) {
 				npcUseItem(win, m)
 			}
 		case npcMenuPoolGold:
-			if pick(1519) {
+			if pick(msgWhoCarries) {
 				npcPoolGold(m)
 			}
 		case npcMenuPilfer:
-			if pick(1511) {
+			if pick(msgNpcWhoWillTry) {
 				npcPilfer(m)
 			}
 		case npcMenuFight:
@@ -1301,10 +1301,10 @@ func npcMainMenu() {
 			}
 			if int(int16(random(100)+int(party[m].Stats[statPersonality])+int(npcCharm))) < a { // C int wraps
 				if random(2) == 1 {
-					npcNoticeName(1541, true)
+					npcNoticeName(msgAttacks, true)
 					npcStartFight()
 				} else {
-					npcNoticeName(1542, false)
+					npcNoticeName(msgLeaves, false)
 					npcLeaves = 1
 				}
 				choice = npcMenuLeave
@@ -1402,13 +1402,13 @@ func npcRunScript(m, n int) int {
 				npcSayAll(arg)
 			}
 		case npcOpFight:
-			npcNoticeName(1541, true)
+			npcNoticeName(msgAttacks, true)
 			npcStartFight()
 			npcLeaves = 0
 			return 1
 		case npcOpLeave:
 			if param == 0 {
-				npcNoticeName(1542, false)
+				npcNoticeName(msgLeaves, false)
 			}
 			npcLeaves = 1
 			gameState = stateExplore
@@ -1474,7 +1474,7 @@ func npcRunScript(m, n int) int {
 				return 0
 			}
 			if param == 1 {
-				npcNotice(replaceCharWithString(getMessage(1547), memberName(who), '^'), true)
+				npcNotice(replaceCharWithString(getMessage(msgGotItem), memberName(who), '^'), true)
 			}
 		case npcOpTakeItem: // take item arg (a charge of a stack)
 			if k := npcFindItem(m, arg); k != -1 {
@@ -1574,7 +1574,7 @@ func npcRunScript(m, n int) int {
 		case npcOpRaiseStatus7: // the well members gain status 7 (statusInsane)
 			for i := 0; i < partyCount; i++ {
 				if party[i].Condition == conditionOK {
-					npcNotice(replaceCharWithString(getMessage(1548), memberName(i), '^'), true)
+					npcNotice(replaceCharWithString(getMessage(msgNpcHypnotized), memberName(i), '^'), true)
 					party[i].Status[statusInsane]++
 					npcDrawMemberStatus(i, npcShowGold)
 				}
@@ -1590,7 +1590,7 @@ func npcRunScript(m, n int) int {
 					next = param
 					break
 				}
-				npcNotice(replaceCharWithString(getMessage(1549), memberName(i), '^'), true)
+				npcNotice(replaceCharWithString(getMessage(msgBitten), memberName(i), '^'), true)
 				p.HP = int16(random(int(p.HP)) + 1)
 				p.HPMax -= int16(random(4) + 1)
 				p.HPMax = max(p.HPMax, 1)
@@ -1613,8 +1613,8 @@ func npcRunScript(m, n int) int {
 						continue
 					}
 					party[i].Stats[s]++
-					t := replaceCharWithString(getMessage(5015), memberName(i), '^')
-					npcNotice(replaceCharWithString(t, getMessage(s+5050), '$'), true)
+					t := replaceCharWithString(getMessage(msgIncreased), memberName(i), '^')
+					npcNotice(replaceCharWithString(t, getMessage(s+msgStatNameBase), '$'), true)
 				}
 			}
 		case npcOpStamina: // arg d8 of stamina, lost if param
@@ -1784,3 +1784,85 @@ func npcGiveItemToMember(member, id, qty int) int {
 	calcCarriedWeight(member)
 	return 0
 }
+
+// MSG.DBS message ids.
+const (
+	msgItemTypeBase    = 1550 // plus ItemRec.Type: WEAPON (S)..UNUSABLE
+	msgMakesMoveBase   = 1570 // plus the sex: ^ MAKES HIS/HER MOVE...
+	msgInterjReplyBase = 1606 // plus the interjection: the NPC's reply
+	msgSynonymBase     = 7160 // plus i: the word synonym lists
+
+	msgNpcKeys               = 1500
+	msgWhoTrades             = 1501
+	msgInsufficientFunds     = 1503
+	msgThankYou              = 1504
+	msgTradeFull             = 1505 // ^_full_^
+	msgTradeExit             = 1506 // exit
+	msgTradeExitHi           = 1507 // EXIT
+	msgNpcMemberOptions      = 1508 // $`s_options
+	msgBuyItemExitClass      = 1509 // buy_item}_exit_____class________price
+	msgNpcPartyOptions       = 1510 // party_options
+	msgNpcWhoWillTry         = 1511 // who_will_try}
+	msgWhoSpeaks             = 1512
+	msgNpcWhoCasts           = 1514 // who_casts}
+	msgNpcWhoWillUse         = 1515 // who_will_use}
+	msgNpcUseWhichItem       = 1516 // USE WHICH ITEM?
+	msgSellWhichItem         = 1517
+	msgNotInterested         = 1518
+	msgWhoCarries            = 1519
+	msgTradeMenu             = 1520 // BUY
+	msgAcceptGp              = 1525
+	msgAcceptYesNo           = 1526 // YES
+	msgEquipped              = 1528
+	msgYouNeedThat           = 1529
+	msgNpcMenu               = 1530 // TALK
+	msgNotWithYou            = 1540
+	msgAttacks               = 1541
+	msgLeaves                = 1542
+	msgIsCharmed             = 1543
+	msgIsUnaffected          = 1544
+	msgNothingGiven          = 1545 // (NOTHING)
+	msgGotItem               = 1547 // ^ GOT AN ITEM
+	msgNpcHypnotized         = 1548 // ^ HYPNOTIZED!
+	msgBitten                = 1549
+	msgUnusable              = 1567
+	msgGotCaught             = 1576
+	msgGiveWhichItem         = 1580
+	msgGiveGold              = 1581
+	msgAmount                = 1582
+	msgAreYouSpeaking        = 1600 // ARE YOU SPEAKING OF ^
+	msgOrSubject             = 1601 // OR ^?
+	msgSubjectWhat           = 1602 // ^ WHAT?
+	msgIDontKnowAbout        = 1603 // I DON'T KNOW ABOUT THAT...
+	msgIDontUnderstand       = 1604
+	msgAreYouAskingAbout     = 1605
+	msgYourWordsAreConfusing = 1606
+	msgHuh                   = 1607
+	msgVeryWellThen          = 1608
+	msgSoBeIt                = 1609
+	msgSameToYou             = 1612
+	msgConsiderItForgotten   = 1613
+	msgHaHaHa                = 1615
+	msgIDontKnowSubject      = 1616 // I DON'T KNOW ^...
+	msgIHeardRumorAbout      = 1617 // I HEARD A RUMOR ABOUT ^...
+	msgIDontKnowAnyone       = 1618 // I DON'T KNOW ANYONE NAMED ^...
+	msgWho                   = 1619
+	msgWhat                  = 1620
+	msgIDontKnowWhen         = 1621
+	msgWhere                 = 1622
+	msgIDontKnowWhich        = 1623
+	msgWhy                   = 1624
+	msgHow                   = 1625
+	msgIAmAlive              = 1626
+	msgIWouldntKnow          = 1627
+	msgThatsYourOpinion      = 1628
+	msgIDontKnow             = 1630
+	msgPossibly              = 1631
+	msgThatsWhatYouThink     = 1632
+	msgPleaseContinue        = 1633
+	msgTryAndSee             = 1634
+	msgThatsVeryInteresting  = 1635
+	msgThatsGoodKnow         = 1636 // THAT'S GOOD TO KNOW...
+	msgIWillConsiderIt       = 1637
+	msgIHaventHeardThing     = 1638 // I HAVEN'T HEARD A THING...
+)

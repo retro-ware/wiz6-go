@@ -123,7 +123,8 @@ Shared names for the other groups: `gameStateID` and its `state...` constants (s
 - state.go `conditionGlyph`, `statusGlyph`, `realmColors`, `stackable`, `recipes`, `spellTable`: root data tables, kept as numbers (glyph indexes, colours, item ids, spell fields).
 - winit.go `gmodeInvalid = 255`: the Gmode that makes the game exit with code 2; what the original means by it is not known.
 - root_sound.go `firstStepSound`..`lastStepSound`: "footsteps and the like" (is_sound_10_to_12); which sounds exactly is not checked.
-- Sound numbers (`loadSound(39)`, `playSound(4)`, ...), exit codes (`exitGame(9)`, ...), window positions, priorities, fill glyphs and fonts in winit.go and root*.go stay literals: they are the original's arguments, and most have no name of their own (exit codes are reused for several failures).
+- Sound numbers other than `soundBeep`, `soundClick`, `soundHurt`, `soundHit`, `soundDeathBase` and `loadedSound` (`loadSound(39)`, `playSound(4)`, 3, 5, 6, 13, ...), exit codes (`exitGame(9)`, ...), window positions, priorities, fill glyphs and fonts in winit.go and root*.go stay literals: they are the original's arguments, and most have no name of their own (exit codes are reused for several failures).
+- MSG.DBS message ids are `msg...` constants, one block per overlay main file (wpcvw.go, wbase.go, wpcmk.go, wmnpc.go, wmaze.go, wmexe.go, wmele.go, wpops.go, wtrea.go), with `msg...Base` for offset tables. Left as numbers (meaning unclear or the name would only describe the form): 454..456 and 479 (letter strings), `+454` in wpcvw_items.go, 1513, 1546, 5005, 3306/3309 (two DAMAGE strings), 8000, 3510/3511, 1639+verb, 7040/7041 and 7070/7071.
 
 ### Low-level code kept
 
@@ -145,7 +146,7 @@ New names in wbase.go: `menuKeyEscape`..`menuKeyEnter` (places in menuKeys, the 
 ### Unclear names kept
 
 - `magicWordTypedValue = 17210`: the original's value; why that number is unknown.
-- Message numbers (1000, 1002, 1202, 2300, 2350, ...), sound numbers, window positions/priorities, colours, fonts, fill glyphs (26), glyph numbers of the camp/command window/list frame/gauges (69..71, 86, 99, drawGlyph2x2 arguments), the camp scene's maze tile and frame tables and clip columns, and the click region indexes in choosePcfileChar/doGameConfiguration stay literals: they are the original's arguments with no name of their own.
+- Sound numbers 3 and 4, window positions/priorities, colours, fonts, fill glyphs (26), glyph numbers of the camp/command window/list frame/gauges (69..71, 86, 99, drawGlyph2x2 arguments), the camp scene's maze tile and frame tables and clip columns, and the click region indexes in choosePcfileChar/doGameConfiguration stay literals: they are the original's arguments with no name of their own.
 - doGameConfiguration's setting indexes 0..7 (sound, delay, level, input, gmode, path 3, 0, 1), their rows/colours and the `% 6`, `% 3`, `% 2` value counts; scenarioHdr.Paths indexes 0, 1, 3; `scenarioHdr.Input == 1` (mouse): kept as numbers, the path slots' meaning is not checked.
 - `startGame(0/1)`, `loadGame(resume)` 0/1, `drawPcfileList` highlight 1, `menuClicked` 0/1: the original's int flags.
 - `openData(..., 14)`, `loadMonsterPic(mon, slot, 21)`, `loadMonsterPicSlot(8, 4)`, picture slots 2 and 4, `mapCacheA` limit 14, `exitGame(19)`: original arguments, not named.
@@ -172,7 +173,7 @@ New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall s
 - `mazeB.Unk288`, `scenarioHdr.Unk140`, `event288()`: dbs fields of unknown meaning.
 - Condition values other than 0 and 3 (2 is cured by event 25's bit 5), status slot 6 and 9, `Resist[...]` indexes other than `resistFire`/`resistCold`/`resistPoison`/`resistMental` (wmaze.go), `partyCounters[0]`/`[2]`/`[5]` (effects: levitation-like, detect secret, trap ward by their use): left as numbers. Correction: the character section's `effect...` names are right, [0] is `effectDirection` (spell 38; its B is also the map 8 item's flag) and [5] `effectLevitate` (spell 30, which wards traps).
 - Wall codes other than `wallOpen`/`wallSolid`/`wallDoor` (1 a passable door, 4..14 view features), floor feature codes other than `floorNone`/`floorDoor` (getFrontWall, sideFeature, tryMove, searchCell's 5), map numbers (`gameStateArg == 1, 2, 5, 8, 10, 12, ...` for pits, edges and special cells), encounter odds (74, 92, 975/990, 995), menu entry indexes of mazePartyMenu/diskOptionsMenu/lockedDoorMenu and the event bit field positions in `extractBits(bits, n, w)`: the original's map data and layout, not named.
-- Message numbers (2000.., 2100.., 5231.., 10000), sound numbers, window positions/priorities, colours (incl. printString's -5 highlight), fonts, glyph numbers (gauges 86/99, portraits 72, class 58, condition 37, lock frame glyphs, arrow pad glyphs in putGlyphs2x2/4x2), click region rectangles, MAZEDATA tile numbers (the drawFrontCell/drawSideWall/drawFloorCeiling argument lists, 344..361, frame offsets 10, 13, 15, 18) and the view clip tables: the original's arguments with no name of their own.
+- Sound numbers 4, 8 and 13, window positions/priorities, colours (incl. printString's -5 highlight), fonts, glyph numbers (gauges 86/99, portraits 72, class 58, condition 37, lock frame glyphs, arrow pad glyphs in putGlyphs2x2/4x2), click region rectangles, MAZEDATA tile numbers (the drawFrontCell/drawSideWall/drawFloorCeiling argument lists, 344..361, frame offsets 10, 13, 15, 18) and the view clip tables: the original's arguments with no name of their own.
 - `noopEvent17`/`noopEvent18`: empty in the original; what the kinds are is unknown.
 
 ### Low-level code kept
@@ -197,7 +198,7 @@ Renamed core fields (state.go, goldens rewritten): `Combatant.W10` -> `Choice` (
 - `actionDefend`'s Choice 0 and 1 (block with the shield skill, a plain -2 armour): left as numbers.
 - `Status[6]` (hypnotized or diseased: the messages disagree) and `[9]`, `Resist[...]` indexes other than the four named (2, 4, 5, 7, 8, 9, 11, 12, 13), `Wards[k]` and cloud indexes `k`: left as numbers.
 - Breath kinds in doBreath, spell animation kinds, monster record fields `Unk168`/`Unk172`/`Unk211`, `MonsterPicRec.Unk306`/`Unk309`/`Unk114`, monster ids (128, 150, 151, 153, 211..223, item 458, picture 9..54 lists), `g4338`/`g4352`.
-- Message numbers (3200..3900, 4000+spell), sound numbers other than beep/death, colours, window positions, depths, the hit-flash frame/depth tables, `spellAnimXY`, view tables `viewAdvance`/`viewDepthBase`/`flashShift`, view clip 72/248, `actionNone = 10`, `250` status cap: the original's arguments and data.
+- Sound numbers 5 and 6, colours, window positions, depths, the hit-flash frame/depth tables, `spellAnimXY`, view tables `viewAdvance`/`viewDepthBase`/`flashShift`, view clip 72/248, `actionNone = 10`, `250` status cap: the original's arguments and data.
 - Sprite `Depth: 255` (free) stays a literal, as in WPOPS.
 
 ### Low-level code kept
@@ -218,7 +219,7 @@ No identifiers renamed (the goldens name `npcRec`, `npcWares`, `npcPilfered`, ..
 ### Unclear names kept
 
 - `npcWord6`/`npcWord7` (messages 7040/7041) and their classes `npcClassWord6`/`npcClassWord7`: what the two words are is not known; a verb after word 7 swaps subject and object.
-- Interjections 0, 3, 4, 5 and 8, the verb numbers (0..9) and the question word indexes `tk.ask[0..6]` in npcAnswer, and the NPC text message numbers (1500..1641, 2025..2035, 5015, 5050, 7000..7197, 8000): left as numbers.
+- Interjections 0, 3, 4, 5 and 8, the verb numbers (0..9) and the question word indexes `tk.ask[0..6]` in npcAnswer, and the NPC text message numbers (1639+verb, 1513, 1546, 7000..7197, 8000, the NPCRec message bases): left as numbers.
 - `scenarioHdr.Unk140`, `MonsterPicRec.Unk306`/`Unk309`: dbs field names, not this group's to rename; their uses are described in comments.
 - `npcOpRaiseStatus7`: keeps its number name (the op raises `Status[statusInsane]`; not renamed in this pass).
 - Bits 16/32 of the record-to-item flag table in npcGiveItemToMember, the spell lists in npcApplySpell whose panels are redrawn, picture ids 40/54 (npcPicAlt), the start-of-game and npcFullMessage destinations (137,151 / 129,132, maps 12/13), `stackable[...] == 1`, `g4338`: the original's data, meaning only partly known.
@@ -248,7 +249,7 @@ New names, from the game's messages (MSG.DBS 100+, 120+, 140+, 351+, 1550+, 3050
 - `effect...`: partyCounters indexes named by the spell castSpell sets each with; wmaze's section guessed [0] and [5] differently (levitation-like, trap ward); these names are right (spells 38 and 30 set them), and that note is corrected. state.go's `Spell.Books` comment said "2 alchemist 1 psionic"; chooseStartingSpell/learnNewSpell use bit 1 for the alchemist book and 2 for the psionic one (`spellBookBits`), and the comment is fixed.
 - Item types 14, 15 (both SPECIAL) and 17 stay numbers in the type switches; `useDirectionOnMap8`/`useReadWithItem388` and the item ids 388/395/403, maps 8, text messages: the original's data.
 - The class/race rule tables (HP, to-hit and skill rolls, attack steps in setClassAttackCounts, rank levels, resistance growth level 16, karma 9, monk AC cap 20, equip power stat cap 20, `p.Level < 250`), the load percentages of getLoadCategory, the weapon icon table of weaponSkill and canEquipItem's launcher/ammunition icons (11/22, 13/23, 12/83): game rules and data, left as numbers.
-- Message numbers, sound 1 (the adjust click), colours, window positions/priorities, glyph and icon numbers (frames, cursor marks 98/100/99/23, gauges 86/99, portraits 72, class 58), click region indexes and rectangles: the original's arguments, as elsewhere.
+- Colours, window positions/priorities, glyph and icon numbers (frames, cursor marks 98/100/99/23, gauges 86/99, portraits 72, class 58), click region indexes and rectangles: the original's arguments, as elsewhere.
 
 ### Low-level code kept
 
@@ -268,7 +269,7 @@ No identifiers renamed. New names: in wpops.go the party menu's extra entries `m
 ### Unclear names kept
 
 - `B35`, `MonsterRec.Unk211`/`Unk168`, `Class` 22 (never fights allies): dbs/state fields, not this group's to rename.
-- The bow/arrow icon pairs (11/22, 13/23, 12/83) in choosePartyActions, attack kinds 2/3 and their bits 4/8 in attackBits, attack bit 4, `wpopsTargetTaken`'s `9+g*9+m` layout, the defend submenu's choice indexes, the switch cases in wpops_spell.go and the rest of wpops.go's menu/draw code (case 1..4 menu rows), message numbers 3000..3611: meaning only partly known, left as numbers.
+- The bow/arrow icon pairs (11/22, 13/23, 12/83) in choosePartyActions, attack kinds 2/3 and their bits 4/8 in attackBits, attack bit 4, `wpopsTargetTaken`'s `9+g*9+m` layout, the defend submenu's choice indexes, the switch cases in wpops_spell.go and the rest of wpops.go's menu/draw code (case 1..4 menu rows): meaning only partly known, left as numbers.
 - Window positions, sizes, colours and `viewAnimState` -2/-3 in startCombatRound: the original's arguments, as elsewhere.
 
 ### Low-level code kept
@@ -278,7 +279,7 @@ No identifiers renamed. New names: in wpops.go the party menu's extra entries `m
 
 ## internal/game: wtrea
 
-No identifiers renamed (the loot/chest/tr... state names are in the parity goldens and already descriptive). New names: in wtrea.go the picture slots `picChestLid`/`picChest`/`picTrapsFirst`..`picTrapsThird`, `trAnimsSecond`/`trAnimsThird`, `trViewLeft`/`trViewRight`, `trLidSteps`, `trTrapSteps`, `trTextRows`, `trMoreGlyph`, `trLineCenter`; in wtrea_chest.go `trapCount`, `trapNameMsg`, `trapGuessMax`, `trapLetterGuessed`/`trapLetterWrong`, `spellOpenChest` (39), `spellRevealTrap` (52), `disarmOpened`/`disarmFailed`/`disarmSprung`; in wtrea_loot.go the TreasureEntry kinds `treasureGold`/`treasureItem`/`treasureExp`. Game states, `menuKey...` (trInput's results), `npcText...` (print_text_line's controls, same string as WMNPC's), `keyClassMenu`/`keyEnter`, `borderRightEdge`/`borderTopEdge`, `clickRegionsEnd`, `animFrameSteps`, `soundBeep`/`soundDeathBase`, `condition...`, `status...`, `stat...`, `skillPickLock`, `classThief`/`classNinja`/`classRanger`/`classBard`, the castSpell `spell...`/`effect...` names, `spellTargetMember`, `realmCount`, `packSlots`/`itemSlots`/`maxStackQty`, `itemImportant`/`itemKept`/`itemOffHand`/`itemTwoHanded`/`recItem...` replace literals.
+No identifiers renamed (the loot/chest/tr... state names are in the parity goldens and already descriptive). New names: in wtrea.go the picture slots `picChestLid`/`picChest`/`picTrapsFirst`..`picTrapsThird`, `trAnimsSecond`/`trAnimsThird`, `trViewLeft`/`trViewRight`, `trLidSteps`, `trTrapSteps`, `trTextRows`, `trMoreGlyph`, `trLineCenter`; in wtrea_chest.go `trapCount`, `msgTrapNameBase`, `trapGuessMax`, `trapLetterGuessed`/`trapLetterWrong`, `spellOpenChest` (39), `spellRevealTrap` (52), `disarmOpened`/`disarmFailed`/`disarmSprung`; in wtrea_loot.go the TreasureEntry kinds `treasureGold`/`treasureItem`/`treasureExp`. Game states, `menuKey...` (trInput's results), `npcText...` (print_text_line's controls, same string as WMNPC's), `keyClassMenu`/`keyEnter`, `borderRightEdge`/`borderTopEdge`, `clickRegionsEnd`, `animFrameSteps`, `soundBeep`/`soundDeathBase`, `condition...`, `status...`, `stat...`, `skillPickLock`, `classThief`/`classNinja`/`classRanger`/`classBard`, the castSpell `spell...`/`effect...` names, `spellTargetMember`, `realmCount`, `packSlots`/`itemSlots`/`maxStackQty`, `itemImportant`/`itemKept`/`itemOffHand`/`itemTwoHanded`/`recItem...` replace literals.
 
 ### Hex/binary literals in code
 
@@ -290,7 +291,7 @@ No identifiers renamed (the loot/chest/tr... state names are in the parity golde
 - `trTrapPos` (ROOT g038e): a coordinate table kept as numbers.
 - Item record flag bits 16, 32 in giveItemToMember (copied as is): meaning not known.
 - The status cap 250 in trInflictStatus is a literal as in wmaze's inflictStatus.
-- Message numbers, window positions, sizes, colours, glyph codes of the trap/loot frames, dice and chance formulas, handleChest's menu choices (0..4, commented), and the click region indexes in chooseChestSpell/disarmChest: the original's arguments.
+- Window positions, sizes, colours, glyph codes of the trap/loot frames, dice and chance formulas, handleChest's menu choices (0..4, commented), and the click region indexes in chooseChestSpell/disarmChest: the original's arguments.
 
 ### Low-level code kept
 
@@ -312,7 +313,7 @@ No identifiers renamed (the dp... state and wdopt... helpers are already descrip
 - Spells 39 and 60 use the existing `spellOpenChest` and `spellMapInNPC` names (the unlocking and the overhead map spell); no outside-combat names of their own.
 - spellCureLesserCnd's statuses 1, 4, 8, 9 (only 2 `statusAsleep` named), `t.Unk026` (raised by resurrection), `mazeB.Unk288` (the lock's key item).
 - Floor codes 1/2 (stairs), 13/14 (dark, void) in wdoptMapCell, map numbers (`gameStateArg` 0..12, map 8's item), lock DirBits values 1/2 and the Param level bits: the map data, as in wmaze.
-- The overhead map's glyph numbers (1..20), pixel offsets and clip bounds (72, 239, 248), waitAnimatedView's `ticks *= 5` steps per tick, message numbers (2001, 2027.., 2113.., 3950.., 4000+), window positions/priorities, colours, click region indexes: the original's arguments.
+- The overhead map's glyph numbers (1..20), pixel offsets and clip bounds (72, 239, 248), waitAnimatedView's `ticks *= 5` steps per tick, window positions/priorities, colours, click region indexes: the original's arguments.
 
 ### Low-level code kept
 

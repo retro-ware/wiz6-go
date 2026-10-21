@@ -289,7 +289,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 	putCharHi(side, 38, 4)
 	resetCombatValues(m)
 	drawInventoryPanel(sheet, m)
-	cancel := getMessage(359)
+	cancel := getMessage(msgNoneEquipped)
 	for s := 0; s < equipSlots; s++ {
 		var cand [packSlots]int
 		n := canEquipItem(m, s, &cand)
@@ -299,7 +299,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
 		setCursor(menu, 2, 1)
-		printStringHi(menu, replaceCharWithString(getMessage(350), getMessage(s+351), '$'), 3)
+		printStringHi(menu, replaceCharWithString(getMessage(msgSelect), getMessage(s+msgEquipSlotBase), '$'), 3)
 		menu.CurX++
 		cx, cy := int(menu.CurX), int(menu.CurY)
 		if mousePresent {
@@ -402,7 +402,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		t := getMessage(380)
+		t := getMessage(msgInvokePower)
 		setCursor(menu, 20-(len(t)+1)/2, 1)
 		printStringHi(menu, t, 3)
 		name := pvItemNames[p.Equipped[s]]
@@ -411,7 +411,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		menu.CurX++
 		putCharHi(menu, '?', 3)
 		menu.CurX += 2
-		if menuSelect(menu, 381, []int{1, 1, -1}, int(menu.CurX), 2, 3, 1, 5, 0, getMenuInputBlink) != 1 {
+		if menuSelect(menu, msgInvokeNoYes, []int{1, 1, -1}, int(menu.CurX), 2, 3, 1, 5, 0, getMenuInputBlink) != 1 {
 			continue
 		}
 		switch v := power[s]; {

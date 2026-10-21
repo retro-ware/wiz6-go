@@ -28,7 +28,7 @@ func MainFight(dir string, mon int) int {
 func PCView(dir string, m int) int {
 	return run(dir, func() {
 		startTestMaze()
-		menuKeys = getMessage(300)
+		menuKeys = getMessage(msgSheetKeys)
 		curMember = int16(min(m, max(partyCount-1, 0)))
 		returnCmd, gameState = int16(stateExplore), stateViewCharacter
 	})

@@ -201,9 +201,9 @@ func drawStatsPanel(w *Window, m int) {
 	drawPortrait(w, int(memberPortrait[m]), 1, 1)
 	printAt(w, 4, 1, memberName(m), 5)
 	setCursor(w, 13, 1)
-	putChar(w, (getMessage(int(p.Sex)+140) + "\x00")[0], 1)
+	putChar(w, (getMessage(int(p.Sex)+msgSexBase) + "\x00")[0], 1)
 	putChar(w, '-', 1)
-	printMsgColor(int(p.Race)+100, w, 1)
+	printMsgColor(int(p.Race)+msgRaceBase, w, 1)
 	setCursor(w, 4, 2)
 	putChar(w, 30, 5)
 	printInt(w, int(p.AgeDays/daysPerYear), 3, 14)
@@ -211,39 +211,39 @@ func drawStatsPanel(w *Window, m int) {
 	if testBit(p.Flags[:], 0) || testBit(p.Flags[:], 1) || testBit(p.Flags[:], 2) {
 		putChar(w, 10, 5)
 	}
-	printMsgAt(int(p.Class)+120, w, 13, 2, 1)
+	printMsgAt(int(p.Class)+msgClassBase, w, 13, 2, 1)
 	setCursor(w, 4, 3)
 	putChar(w, 31, 5)
 	printInt(w, int(p.Unk026), 3, 12)
-	printMsgAt(200, w, 13, 3, 8)
+	printMsgAt(msgLVL, w, 13, 3, 8)
 	w.CurX++
 	printInt(w, int(p.Level), 3, 9)
-	printMsgAt(201, w, 25, 1, 11)
-	rank := getMessage(int(p.Class)*10 + int(p.Rank) + 800)
+	printMsgAt(msgRNK, w, 25, 1, 11)
+	rank := getMessage(int(p.Class)*rankPerClass + int(p.Rank) + msgRankBase)
 	setCursor(w, 39-len(rank), 1)
 	printString(w, rank, 3)
-	printMsgAt(202, w, 25, 2, 14)
+	printMsgAt(msgEXP, w, 25, 2, 14)
 	w.CurX++
 	printLong(w, p.Exp, 10, 6)
-	printMsgAt(203, w, 25, 3, 14)
+	printMsgAt(msgMKS, w, 25, 3, 14)
 	w.CurX++
 	printLong(w, p.Kills, 10, 6)
 	for i := range statCount {
-		printMsgAt(i+204, w, 1, i+5, 5)
+		printMsgAt(i+msgStatAbbrevBase, w, 1, i+5, 5)
 		w.CurX++
 		printInt(w, int(p.Stats[i]), 2, 1)
 	}
-	printMsgAt(212, w, 10, 5, 4)
+	printMsgAt(msgHP, w, 10, 5, 4)
 	w.CurX++
 	printInt(w, int(p.HP), 4, 6)
 	putChar(w, '/', 8)
 	setCursor(w, 14, 6)
 	printInt(w, int(p.HPMax), 4, 6)
-	printMsgAt(213, w, 10, 8, 4)
+	printMsgAt(msgSTM, w, 10, 8, 4)
 	w.CurX += 2
 	printInt(w, staminaPct(p), 3, 6)
 	putChar(w, '%', 4)
-	printMsgAt(214, w, 10, 9, 4)
+	printMsgAt(msgCND, w, 10, 9, 4)
 	w.CurX++
 	x := w.CurX
 	g := conditionGlyph[p.Condition]
@@ -268,7 +268,7 @@ func drawStatsPanel(w *Window, m int) {
 	if w.CurX == x {
 		putCharHi(w, byte(conditionGlyph[0]+47), 1)
 	}
-	printMsgAt(215, w, 10, 11, 13)
+	printMsgAt(msgGP, w, 10, 11, 13)
 	w.CurX++
 	printLong(w, p.Gold, 7, 5)
 	calcCarriedWeight(m)
@@ -279,7 +279,7 @@ func drawStatsPanel(w *Window, m int) {
 	if c == 9 {
 		c8 = 8
 	}
-	printMsgAt(216, w, 10, 12, c8)
+	printMsgAt(msgCC, w, 10, 12, c8)
 	printInt(w, int(p.Carried)/10, 3, c)
 	putChar(w, '/', c8)
 	printInt(w, int(p.MaxLoad)/10, 3, c)
@@ -298,7 +298,7 @@ func drawInventoryPanel(w *Window, m int) {
 	p := &party[m]
 	mod := int(int8(p.AC[acHands])) + getLoadCategory(m).AC
 	setCursor(w, 21, 5)
-	printMsgColor(217, w, 15)
+	printMsgColor(msgArmorClass, w, 15)
 	w.CurX++
 	printInt(w, int(int8(p.AC[acBase]))+mod, 2, 4)
 	printString(w, wpcvwACOpen, 15)
@@ -440,7 +440,7 @@ const (
 // Exit; returnCmd says where from (stateMasterOptions, stateRunCombatRound, else the maze).
 func viewCharacter(m int) {
 	gameState = gameStateID(returnCmd)
-	menuKeys = getMessage(300)
+	menuKeys = getMessage(msgSheetKeys)
 	pvCardWin = createWindow(20, 4, 20, 16, 26, borderNone, 0, false)
 	fillWindow(pvCardWin, ' ', 3)
 	deferWindowDraw(pvCardWin)
@@ -485,7 +485,7 @@ func viewCharacter(m int) {
 			enabled[sheetMenuSpell], enabled[sheetMenuUse] = 0, 0
 		}
 		flushKeys()
-		choice := menuSelect(menu, 301, enabled, 2, 1, 6, 2, 5, countEnabledItems(enabled, sheetMenuExit), getMenuInputBlink)
+		choice := menuSelect(menu, msgSheetMenu, enabled, 2, 1, 6, 2, 5, countEnabledItems(enabled, sheetMenuExit), getMenuInputBlink)
 		switch choice {
 		case sheetMenuEquip:
 			doEquipItems(sheet, menu, m)
@@ -494,11 +494,11 @@ func viewCharacter(m int) {
 		case sheetMenuTrade:
 			doTradeItems(sheet, menu, m)
 		case sheetMenuAssay:
-			if pvChosenItem = chooseItem(sheet, menu, 450, m, false); pvChosenItem != -1 {
+			if pvChosenItem = chooseItem(sheet, menu, msgAssayWhichItem, m, false); pvChosenItem != -1 {
 				showItemInfo(menu, m, pvChosenItem, 0)
 			}
 		case sheetMenuDrop:
-			if pvChosenItem = chooseItem(sheet, menu, 402, m, false); pvChosenItem != -1 {
+			if pvChosenItem = chooseItem(sheet, menu, msgDropWhichItem, m, false); pvChosenItem != -1 {
 				if p.Items[pvChosenItem].Flags&(itemEquipped|itemCursed|itemKept) != 0 {
 					playSound(soundBeep)
 				} else {
@@ -506,7 +506,7 @@ func viewCharacter(m int) {
 				}
 			}
 		case sheetMenuUse:
-			if pvChosenItem = chooseItem(sheet, menu, 400, m, false); pvChosenItem != -1 {
+			if pvChosenItem = chooseItem(sheet, menu, msgUseWhichItem, m, false); pvChosenItem != -1 {
 				useItemOnSheet(sheet, menu, m, pvChosenItem)
 			}
 		case sheetMenuMerge:
@@ -518,7 +518,7 @@ func viewCharacter(m int) {
 		case sheetMenuSkills:
 			doSkillsMenu(menu, m)
 		case sheetMenuMember:
-			if c := chooseMember(menu, 500, m); c != -1 {
+			if c := chooseMember(menu, msgSheetReviewWho, m); c != -1 {
 				curMember = int16(c)
 				m = c
 				pvNamesLoaded = false
@@ -577,7 +577,7 @@ func chooseMember(w *Window, title, sel int) int {
 	setCursor(w, 10-(len(s)+1)/2, 1)
 	printStringHi(w, s, 3)
 	const cx, cy = 8, 3
-	cancel := getMessage(503)
+	cancel := getMessage(msgSheetExit)
 	setCursor(w, cx, cy)
 	if !mousePresent && sel == -1 {
 		printString(w, cancel, -5)

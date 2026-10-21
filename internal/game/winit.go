@@ -213,13 +213,13 @@ func showTitleSequence() {
 	wait(72)
 	drv.LoadScreen(nil)
 	drv.ShowWindow(win)
-	playSound(14)
+	playSound(loadedSound)
 	wait(10)
 	playSound(6)
 	drawBigChar(7, 76, 67)
 	drawBigChar(8, 76, 99)
 	drv.ShowWindow(win)
-	playSound(7)
+	playSound(soundHit)
 	wait(10)
 
 	// The pieces: their frame, column, the step they start moving, their start row and the
@@ -295,7 +295,7 @@ func showGraveyard() {
 	}
 	loadSound(34)
 	loadFullscreenPic("GRAVEYRD.EGA", true)
-	playSound(14)
+	playSound(loadedSound)
 	stopSound()
 	destroyWindow(fullscreenWin, false)
 	gameState = stateMainScreen

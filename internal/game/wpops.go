@@ -45,7 +45,7 @@ func groupName(g int) string {
 func drawCombatTitle() {
 	deferWindowDraw(mainWindow)
 	setCursor(mainWindow, 22, 0)
-	printMessage(3503, mainWindow, 18)
+	printMessage(msgMonsters, mainWindow, 18)
 	resumeWindowDraw(mainWindow)
 }
 
@@ -93,7 +93,7 @@ func drawAllyGroup() {
 	deferWindowDraw(w)
 	fillWindow(w, 28, 3)
 	setCursor(w, 4, 0)
-	printMessage(3516, w, 18)
+	printMessage(msgConjured, w, 18)
 	clearWindowArea(w, 0, 1, 21, 1)
 	grp := monsterGroups[allyGroup]
 	grp.AbleCount = 0
@@ -357,10 +357,10 @@ func selectMonsterGroup(win *Window, msg, rng, sel int) int {
 	list := monsterListWin
 	fillWindow(win, 32, 3)
 	refreshAllWindows()
-	title := replaceCharWithString(getMessage(3600), getMessage(msg), '$')
+	title := replaceCharWithString(getMessage(msgGroup), getMessage(msg), '$')
 	setCursor(win, 10-(len(title)+1)/2, 1)
 	printStringHi(win, title, 3)
-	cancel := getMessage(3606)
+	cancel := getMessage(msgGroupCancel)
 	setCursor(win, 7, 3)
 	printStringHi(win, cancel, 3)
 	count := 5
@@ -461,7 +461,7 @@ func selectPartyMember(msg int) int {
 	}
 	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, 32, 3)
-	clickText, keyText := getMessage(3607), getMessage(3608)
+	clickText, keyText := getMessage(msgCombatExit), getMessage(msgCombatExitHi)
 	printCombatPrompt(getMessage(msg), 5)
 	mainWindow.CurX++
 	cx, cy := int(mainWindow.CurX), int(mainWindow.CurY)
@@ -697,7 +697,7 @@ func choosePartyActions(win *Window) {
 			back := false
 			for {
 				drawMonsterGroups(monsterListWin, false)
-				prompt(3500)
+				prompt(msgCombatMemberOptions)
 				refreshAllWindows()
 				n := 0
 				for i := 0; enabled[i] != -1; i++ {
@@ -709,13 +709,13 @@ func choosePartyActions(win *Window) {
 				if n > 9 {
 					rows = 4
 				}
-				action = menuSelect(win, 3000, enabled[:], 1, 1, 6, rows, 5, 0, getCombatInput)
+				action = menuSelect(win, msgActionMenu, enabled[:], 1, 1, 6, rows, 5, 0, getCombatInput)
 				choice = -1
 				c.TargetGroup, c.TargetMember = -1, 0
 				retry := false
 				switch action {
 				case actionAttack:
-					prompt(3501)
+					prompt(msgFightPrompt)
 					weapon := int(p.Equipped[equipPrimary])
 					kinds := 0
 					var attacks [9]int
@@ -737,7 +737,7 @@ func choosePartyActions(win *Window) {
 					}
 					if kinds > 1 {
 						refreshAllWindows()
-						choice = menuSelect(win, 3050, attacks[:], 3, 1, 8, 3, 5, 0, getCombatInput)
+						choice = menuSelect(win, msgAttackMenu, attacks[:], 3, 1, 8, 3, 5, 0, getCombatInput)
 					}
 					if choice != -1 {
 						rng := int(p.Hands[0].Range)
@@ -748,7 +748,7 @@ func choosePartyActions(win *Window) {
 							playSound(soundBeep)
 							target = -1
 						} else {
-							target = selectMonsterGroup(win, 3602, rng, 0)
+							target = selectMonsterGroup(win, msgFightGroup, rng, 0)
 						}
 					}
 					if choice == -1 || target == -1 {
@@ -757,7 +757,7 @@ func choosePartyActions(win *Window) {
 						c.TargetGroup = int8(target)
 					}
 				case actionDefend: // parry and the like
-					prompt(3502)
+					prompt(msgParry)
 					refreshAllWindows()
 					for i := range 4 {
 						enabled[i] = 1
@@ -766,7 +766,7 @@ func choosePartyActions(win *Window) {
 						enabled[0] = 0 // the shield choice
 					}
 					enabled[4] = -1 // the C leaves it so: a retry shows only four actions
-					if choice = menuSelect(win, 3100, enabled[:], 3, 1, 9, 2, 5, 0, getCombatInput); choice == -1 {
+					if choice = menuSelect(win, msgDefendMenu, enabled[:], 3, 1, 9, 2, 5, 0, getCombatInput); choice == -1 {
 						retry = true
 					}
 				case actionCast:
@@ -777,10 +777,10 @@ func choosePartyActions(win *Window) {
 					choice = chooseCombatItem(win, member)
 					retry = choice == -1
 				case actionMove:
-					choice = selectPartyMember(3611)
+					choice = selectPartyMember(msgMoveWhere)
 					retry = choice == -1
 				case actionBreath:
-					target = selectMonsterGroup(win, 3605, 1, 0)
+					target = selectMonsterGroup(win, msgBreatheOn, 1, 0)
 					choice = 8
 					if target == -1 {
 						retry = true
@@ -841,13 +841,13 @@ func choosePartyActions(win *Window) {
 		if member == partyCount {
 			drawMonsterGroups(monsterListWin, false)
 			fillWindow(win, 32, 3)
-			printCombatPrompt(getMessage(3506), 0)
+			printCombatPrompt(getMessage(msgFinalOrders), 0)
 			refreshAllWindows()
 			ok := []int{1, 1, 1, -1}
 			if done == 0 {
 				ok[1], ok[2] = 0, 0
 			}
-			switch menuSelect(win, 3507, ok, 3, 1, 14, 4, 5, 0, getCombatInput) {
+			switch menuSelect(win, msgFinalOrdersMenu, ok, 3, 1, 14, 4, 5, 0, getCombatInput) {
 			case 2:
 				clearTargets()
 				member, done = 0, 0
@@ -1111,3 +1111,48 @@ func startCombatRound() {
 	deferWindowDraw(bottomLineWin)
 	gameState = stateRunCombatRound
 }
+
+// MSG.DBS message ids.
+const (
+	msgAttackKindBase = 3050 // plus the attack kind: SWING..SHOOT
+	msgRealmBase      = 3950 // plus the realm: FIRE..MAGIC
+	msgSpellNameBase  = 4000 // plus the spell
+
+	msgActionMenu          = 3000 // FIGHT
+	msgAttackMenu          = 3050 // SWING
+	msgShoot               = 3058
+	msgDefendMenu          = 3100 // BLOCK
+	msgCombatMemberOptions = 3500 // $`s_options
+	msgFightPrompt         = 3501 // $_{fight/
+	msgParry               = 3502
+	msgMonsters            = 3503 // the monsters
+	msgCombatUseWhichItem  = 3504 // USE WHICH ITEM?
+	msgCombatUseCancel     = 3505 // CANCEL
+	msgFinalOrders         = 3506
+	msgFinalOrdersMenu     = 3507 // START FIGHTING
+	msgCallsForHelp        = 3512
+	msgAdvances            = 3513
+	msgRetreats            = 3514
+	msgHides               = 3515
+	msgConjured            = 3516
+	msgRuns                = 3517
+	msgBlinksOut           = 3518
+	msgBlinksIn            = 3519
+	msgShadows             = 3520
+	msgFailed              = 3521
+	msgAway                = 3522
+	msgBlocked             = 3523
+	msgGroup               = 3600
+	msgFightGroup          = 3602 // FIGHT
+	msgCastOn              = 3603
+	msgUseOn               = 3604
+	msgBreatheOn           = 3605
+	msgGroupCancel         = 3606 // CANCEL
+	msgCombatExit          = 3607 // exit
+	msgCombatExitHi        = 3608 // EXIT
+	msgCombatCastOnWho     = 3609 // cast_on_who}
+	msgCombatUseOnWho      = 3610 // use_on_who}
+	msgMoveWhere           = 3611
+	msgSpellBookCancel     = 3956 // CANCEL
+	msgCost                = 3957
+)

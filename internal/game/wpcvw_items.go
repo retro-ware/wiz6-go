@@ -108,7 +108,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 	}
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
-	t, cancel := getMessage(title), getMessage(401)
+	t, cancel := getMessage(title), getMessage(msgNoItemCancel)
 	setCursor(w, 2, 1)
 	printStringHi(w, t, 3)
 	w.CurX++
@@ -219,7 +219,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		}
 		deferWindowDraw(w)
 		setCursor(w, 1, 1)
-		printMessage(750, w, 18)
+		printMessage(msgSwagBag, w, 18)
 		putIconAt(w, 2, 1, 100)
 		putIconAt(w, 17, 1, 100)
 		for i := 0; i < int(p.SwagCount); i++ {
@@ -264,12 +264,12 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		switch menuSelect(menu, 751, enabled, 2, 1, 8, 2, 5, countEnabledItems(enabled, swagMenuExit), getMenuInputBlink) {
+		switch menuSelect(menu, msgSwagMenu, enabled, 2, 1, 8, 2, 5, countEnabledItems(enabled, swagMenuExit), getMenuInputBlink) {
 		case swagMenuAdd:
 			deferWindowDraw(w)
 			fillWindow(menu, ' ', 3)
 			refreshAllWindows()
-			pvChosenItem = chooseItem(sheet, menu, 760, m, false)
+			pvChosenItem = chooseItem(sheet, menu, msgPutWhichItemIn, m, false)
 			if pvChosenItem != -1 {
 				if p.Items[pvChosenItem].Flags&itemEquipped != 0 {
 					playSound(soundBeep)
@@ -285,7 +285,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 			}
 			resumeWindowDraw(w)
 		case swagMenuRemove:
-			if i := chooseItem(w, menu, 761, m, true); i != -1 {
+			if i := chooseItem(w, menu, msgRemoveWhichItem, m, true); i != -1 {
 				p.Items[p.ItemCount] = p.Items[packSlots+i]
 				pvItemNames[p.ItemCount] = pvSwagNames[i]
 				p.ItemCount++
@@ -293,7 +293,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 				drawInventoryPanel(sheet, m)
 			}
 		case swagMenuDrop:
-			if i := chooseItem(w, menu, 762, m, true); i != -1 {
+			if i := chooseItem(w, menu, msgSwagDropWhichItem, m, true); i != -1 {
 				if p.Items[packSlots+i].Flags&itemKept != 0 {
 					playSound(soundBeep)
 				} else {
@@ -310,14 +310,14 @@ func doSwagMenu(sheet, menu *Window, m int) {
 
 // doTradeItems (WPCVW 96a2) gives gold and items of member m to another member.
 func doTradeItems(sheet, menu *Window, m int) {
-	to := chooseMember(menu, 501, -1)
+	to := chooseMember(menu, msgTradeWithWho, -1)
 	if to == -1 || to == m {
 		return
 	}
 	p, q := &party[m], &party[to]
 	if p.Gold > 0 {
 		for {
-			n := inputNumber(menu, 404, 8)
+			n := inputNumber(menu, msgTradeGoldAmount, 8)
 			if n >= 0 && p.Gold >= n {
 				p.Gold -= n
 				q.Gold += n
@@ -328,7 +328,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 	}
 	drawSheet(sheet, menu, m)
 	for int(q.ItemCount)+int(q.SwagCount) < itemSlots && p.ItemCount > 0 {
-		pvChosenItem = chooseItem(sheet, menu, 403, m, false)
+		pvChosenItem = chooseItem(sheet, menu, msgTradeWhichItem, m, false)
 		if pvChosenItem == -1 {
 			return
 		}
@@ -340,7 +340,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 			playSound(soundBeep)
 		} else if stackable[it.Type] == 1 {
 			for {
-				n = int(int16(inputNumber(menu, 405, 3)))
+				n = int(int16(inputNumber(menu, msgTradeHowManyAmount, 3)))
 				if int(it.Qty) < n {
 					n = -1
 					playSound(soundBeep)
@@ -450,10 +450,10 @@ func doMergeItems(sheet, menu *Window, m int) {
 	if p.ItemCount < 2 {
 		return
 	}
-	if pvChosenItem = chooseItem(sheet, menu, 406, m, false); pvChosenItem == -1 {
+	if pvChosenItem = chooseItem(sheet, menu, msgMergeWhichItem, m, false); pvChosenItem == -1 {
 		return
 	}
-	b := chooseItem(sheet, menu, 407, m, false)
+	b := chooseItem(sheet, menu, msgMergeWithItem, m, false)
 	if b == -1 {
 		return
 	}
@@ -500,16 +500,16 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 	rec := itemRec(int(p.Items[i].ID))
 	if rec.UseAction > 0 {
 		pickedIs := func(id int16) bool {
-			j := chooseItem(sheet, menu, 408, m, false)
+			j := chooseItem(sheet, menu, msgUseOnWhichItem, m, false)
 			return j >= 0 && p.Items[j].ID == id // the C reads slot -1 on cancel
 		}
 		switch rec.UseAction {
 		case useReadWithItem:
-			j := chooseItem(sheet, menu, 408, m, false)
+			j := chooseItem(sheet, menu, msgUseOnWhichItem, m, false)
 			if j >= 0 && p.Items[j].ID == 395 {
-				showTextPages(menu, 11350)
+				showTextPages(menu, msgDecoderRing)
 			} else if j >= 0 && p.Items[j].ID == 403 {
-				showTextPages(menu, 12200)
+				showTextPages(menu, msgDecoderRingText)
 			}
 		case useShowText:
 			showTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
@@ -517,14 +517,14 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 			if testBit(mask16(rec.ClassMask), int(p.Class)) {
 				s := int(rec.Spell) % 256
 				if int(spellTable[s].Level)<<1 > int(p.Level) {
-					showTextPages(menu, 725)
+					showTextPages(menu, msgYouAreNotAdvanced)
 				} else {
 					setBit(p.KnownSpells[:], s, true)
-					showTextPages(menu, 720)
+					showTextPages(menu, msgSpellHasBeenScribed)
 					removeItemShown(m, i)
 				}
 			} else {
-				showTextPages(menu, 730)
+				showTextPages(menu, msgYouAreNotEligible)
 			}
 		case useSwitchMapFlags: // on map Damage.Base, clear event flag Damage.Count and set Damage.Sides
 			if mp := int(rec.Damage.Base); gameStateArg == mp {
@@ -540,7 +540,7 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 			}
 		case useReadWithItem388:
 			if pickedIs(388) {
-				showTextPages(menu, 18520)
+				showTextPages(menu, msgPersonalLog)
 			}
 		}
 		return
@@ -550,7 +550,7 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 	}
 	power, s := int(rec.Spell)/256, int(rec.Spell)%256
 	if spellTable[s].Target == spellTargetMember {
-		if pvSpellTarget = chooseMember(menu, 504, -1); pvSpellTarget == -1 {
+		if pvSpellTarget = chooseMember(menu, msgSheetUseOnWho, -1); pvSpellTarget == -1 {
 			return
 		}
 	}
@@ -641,7 +641,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 
 	switch {
 	case power == 0:
-		centered(getMessage(int(rec.Type)+1550), 3, 1)
+		centered(getMessage(int(rec.Type)+msgItemTypeBase), 3, 1)
 		if masks {
 			setCursor(w, 3, 4)
 			s := getMessage(454)
@@ -659,25 +659,25 @@ func showItemInfo(menu *Window, m, i, power int) {
 				putChar(w, byte(byteAt(s, b)), maskColor(testBit(mask16(rec.ClassMask), b)))
 			}
 		} else if spell && rec.Spell != 0 {
-			centered(getMessage(int(rec.Spell)%256+4000), 5, 4)
+			centered(getMessage(int(rec.Spell)%256+msgSpellNameBase), 5, 4)
 		}
 		if skill {
-			s, c := getMessage(1567), 9
+			s, c := getMessage(msgUnusable), 9
 			if testBit(mask16(rec.RaceMask), int(p.Race)) && testBit(mask16(rec.ClassMask), int(p.Class)) && testBit([]byte{rec.SexMask, rec.Flags}, int(p.Sex)) {
-				s, c = getMessage(weaponSkill(rec.Icon)+5500), 2
+				s, c = getMessage(weaponSkill(rec.Icon)+msgSkillNameBase), 2
 			}
 			centered(s, 6, c)
 		}
 		if attackFlags {
 			if rec.Type == itemTypeLauncher {
 				setCursor(w, 3, 7)
-				printString(w, getMessage(3058), 5)
+				printString(w, getMessage(msgShoot), 5)
 			} else {
 				n := 0
 				for b := 0; b < 8; b++ {
 					if testBit([]byte{rec.HandFlags, rec.Unk73}, b) {
 						setCursor(w, n/3<<3+3, n%3+7)
-						printString(w, getMessage(b+3050), 5)
+						printString(w, getMessage(b+msgAttackKindBase), 5)
 						n++
 					}
 				}
@@ -685,12 +685,12 @@ func showItemInfo(menu *Window, m, i, power int) {
 		}
 		setCursor(w, 1, 10)
 		if primary || secondary {
-			s := getMessage(451)
+			s := getMessage(msgPS)
 			putChar(w, byte(byteAt(s, 0)), map[bool]int{true: 6, false: 14}[primary])
 			putChar(w, '/', 14)
 			putChar(w, byte(byteAt(s, 1)), map[bool]int{true: 6, false: 14}[rec.Flags&recItemOffHand != 0])
 		} else if acLine {
-			printString(w, getMessage(452), acColor+8)
+			printString(w, getMessage(msgAC), acColor+8)
 			w.CurX++
 			printString(w, strconv.Itoa(-int(int8(rec.AC))), acColor)
 		}
@@ -714,17 +714,17 @@ func showItemInfo(menu *Window, m, i, power int) {
 		row := 3
 		if damage {
 			setCursor(w, 1, 3)
-			printString(w, getMessage(466), 14)
+			printString(w, getMessage(msgItemDamage), 14)
 			a, b, c := strconv.Itoa(int(rec.Damage.Count)), strconv.Itoa(int(rec.Damage.Sides)), strconv.Itoa(int(rec.Damage.Base))
 			setCursor(w, 19-(len(a)+len(b)+len(c)+2), 3)
 			printString(w, a, 5)
-			printString(w, getMessage(478), 5)
+			printString(w, getMessage(msgDiceD), 5)
 			printString(w, b, 5)
 			putChar(w, '+', 5)
 			printString(w, c, 5)
 			if th := int8(rec.ToHitPen); th != 0 {
 				setCursor(w, 1, 4)
-				printString(w, getMessage(467), 14)
+				printString(w, getMessage(msgTohit), 14)
 				setCursor(w, 7, 4)
 				if th >= 0 {
 					putChar(w, '+', 5)
@@ -739,7 +739,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 				row = 4
 			}
 			setCursor(w, 11, row)
-			printString(w, getMessage(468), 14)
+			printString(w, getMessage(msgRegen), 14)
 			setCursor(w, 17, row)
 			if d >= 0 {
 				putChar(w, '+', 5)
@@ -749,17 +749,17 @@ func showItemInfo(menu *Window, m, i, power int) {
 		}
 		if rec.Curse != 0 {
 			setCursor(w, 1, row)
-			printString(w, getMessage(465), 3)
+			printString(w, getMessage(msgCurse), 3)
 			setCursor(w, 15, row)
 			printCipher(w, int(rec.Curse), 1)
 			row++
 		}
 		if rec.Spell != 0 {
 			setCursor(w, 1, row)
-			printString(w, getMessage(int(rec.Spell)%256+4000), 4)
+			printString(w, getMessage(int(rec.Spell)%256+msgSpellNameBase), 4)
 			setCursor(w, 16, row)
 			if p.Items[i].Qty == 0 {
-				printString(w, getMessage(480), 1)
+				printString(w, getMessage(msgMax), 1)
 			} else {
 				printInt(w, int(p.Items[i].Qty), 3, 1)
 			}
@@ -770,7 +770,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 		}
 		if rec.Power != 0 {
 			setCursor(w, 1, row)
-			printString(w, getMessage(469), 7)
+			printString(w, getMessage(msgSpecialPower), 7)
 			setCursor(w, 15, row)
 			printCipher(w, int(rec.Power), 1)
 			row++
@@ -780,7 +780,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 			for b := 0; b < 8; b++ {
 				if rec.HitEffects[b] > 0 {
 					setCursor(w, n/3<<3+3, n%3+row)
-					printString(w, getMessage(b+470), 5)
+					printString(w, getMessage(b+msgPowerNameBase), 5)
 					n++
 				}
 			}
@@ -788,7 +788,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 			for r := range realmCount {
 				v := min((int(rec.SkillBonus[2*r+1])+int(rec.SkillBonus[2*r+2]))/2, 99)
 				setCursor(w, r/3*9+1, r%3+row)
-				printString(w, getMessage(r+3950), realmColors[r])
+				printString(w, getMessage(r+msgRealmBase), realmColors[r])
 				setCursor(w, r/3*9+7, r%3+row)
 				printInt(w, v, 2, 1)
 				putChar(w, '%', realmColors[r])
@@ -796,14 +796,14 @@ func showItemInfo(menu *Window, m, i, power int) {
 		}
 
 	default:
-		s := getMessage(482)
+		s := getMessage(msgFailure)
 		setCursor(w, 10-(len(s)+1)/2, 4)
 		printString(w, s, 1)
 	}
 	resumeWindowDraw(w)
 	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
-	s := getMessage(609)
+	s := getMessage(msgPressExitPadded)
 	setCursor(menu, 20-(len(s)+1)/2, 1)
 	printStringHi(menu, s, 3)
 	resumeWindowDraw(menu)

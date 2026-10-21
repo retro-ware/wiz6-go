@@ -176,10 +176,10 @@ func clearNameRows() {
 func drawSexRaceClass() {
 	printStrAt(sheetWin, 4, 1, cstr(newPC.Name[:]), 5)
 	setCursor(sheetWin, 13, 1)
-	putChar(sheetWin, getMessage(int(newPC.Sex) + 140)[0], 1)
+	putChar(sheetWin, getMessage(int(newPC.Sex) + msgSexBase)[0], 1)
 	putChar(sheetWin, '-', 1)
-	printMsgColor(int(newPC.Race)+100, sheetWin, 1)
-	printMsgAt(int(newPC.Class)+120, sheetWin, 13, 2, 1)
+	printMsgColor(int(newPC.Race)+msgRaceBase, sheetWin, 1)
+	printMsgAt(int(newPC.Class)+msgClassBase, sheetWin, 13, 2, 1)
 }
 
 // drawCharacterSheet (WPCMK 535b) draws the name, age, level, rank, experience, kills and
@@ -193,17 +193,17 @@ func drawCharacterSheet() {
 	setCursor(w, 4, 3)
 	putChar(w, 31, 5)
 	printInt(w, int(newPC.Unk026), 3, 12)
-	printMsgAt(200, w, 13, 3, 8)
+	printMsgAt(msgLVL, w, 13, 3, 8)
 	w.CurX++
 	printInt(w, int(newPC.Level), 3, 9)
-	printMsgAt(201, w, 25, 1, 11)
-	rank := getMessage(int(newPC.Class)*10 + int(newPC.Rank) + 800)
+	printMsgAt(msgRNK, w, 25, 1, 11)
+	rank := getMessage(int(newPC.Class)*rankPerClass + int(newPC.Rank) + msgRankBase)
 	setCursor(w, 39-len(rank), 1)
 	printString(w, rank, 3)
-	printMsgAt(202, w, 25, 2, 14)
+	printMsgAt(msgEXP, w, 25, 2, 14)
 	w.CurX++
 	printLong(w, newPC.Exp, 10, 6)
-	printMsgAt(203, w, 25, 3, 14)
+	printMsgAt(msgMKS, w, 25, 3, 14)
 	w.CurX++
 	printLong(w, newPC.Kills, 10, 6)
 	putGlyphAt(w, 1, 14, 35)
@@ -222,23 +222,23 @@ func drawStats() {
 	}
 	w := sheetWin
 	for i := range statCount {
-		printMsgAt(i+204, w, 1, i+5, 5)
+		printMsgAt(i+msgStatAbbrevBase, w, 1, i+5, 5)
 		w.CurX++
 		printInt(w, int(newPC.Stats[i]), 2, 1)
 	}
 	if bonusPoints >= 0 {
 		setCursor(w, 10, 11)
-		printMessage(1107, w, -7)
+		printMessage(msgBonus, w, -7)
 		w.CurX++
 		printInt(w, bonusPoints, 2, 7)
 	}
-	printMsgAt(212, w, 10, 5, 4)
+	printMsgAt(msgHP, w, 10, 5, 4)
 	w.CurX++
 	printInt(w, int(newPC.HP), 4, 6)
 	putChar(w, '/', 8)
 	setCursor(w, 14, 6)
 	printInt(w, int(newPC.HPMax), 4, 6)
-	printMsgAt(213, w, 10, 8, 4)
+	printMsgAt(msgSTM, w, 10, 8, 4)
 	w.CurX += 2
 	printInt(w, int(newPC.Stamina), 3, 6)
 	putChar(w, '/', 8)
@@ -386,13 +386,13 @@ func doCreateCharacter() {
 	if slot == -1 {
 		return
 	}
-	name := readName(1100)
+	name := readName(msgCharacterName)
 	maxBonus = false
 	if name == "" {
 		return
 	}
 	if nameTaken(name) {
-		showErrorMsg(1102, 6, 2)
+		showErrorMsg(msgCharacterAlreadyExists, 6, 2)
 		return
 	}
 	createCharacter(name, slot)
@@ -415,7 +415,7 @@ func wpcmkWaitForKey() {
 	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 12, 1)
-	printMessage(1110, promptWin, 18)
+	printMessage(msgPressExit, promptWin, 18)
 	for {
 		if checkScreenClick() {
 			return
@@ -435,8 +435,8 @@ func yesNo(firstMsg, sel int) bool {
 func deleteCharacter(slot int) {
 	loadAndShowCharacter(slot)
 	setCursor(promptWin, 5, 1)
-	printMessage(1125, promptWin, 18)
-	if yesNo(1126, 1) {
+	printMessage(msgDeleteThisCharacter, promptWin, 18)
+	if yesNo(msgDeleteYesNo, 1) {
 		rosterSlotUsed[slot] = rosterSlotFree
 		writePcfileHeader()
 	}
@@ -445,12 +445,12 @@ func deleteCharacter(slot int) {
 // renameCharacter (WPCMK 989b) gives roster character slot a new name.
 func renameCharacter(slot int) {
 	loadAndShowCharacter(slot)
-	name := readName(1128)
+	name := readName(msgNewName)
 	if name == "" {
 		return
 	}
 	if nameTaken(name) {
-		showErrorMsg(1102, 6, 2)
+		showErrorMsg(msgCharacterAlreadyExists, 6, 2)
 		return
 	}
 	newPC.Name = [8]uint8{}
@@ -494,22 +494,22 @@ func drawRosterList(win *Window, top, highlight int) {
 			for win.CurX < 9 {
 				putChar(win, ' ', 1)
 			}
-			putChar(win, getMessage(e.sex + 140)[0], 7)
+			putChar(win, getMessage(e.sex + msgSexBase)[0], 7)
 			putChar(win, '-', 9)
-			printString(win, getMessage(e.race+100), 6)
+			printString(win, getMessage(e.race+msgRaceBase), 6)
 			putChar(win, ' ', 1)
-			printString(win, getMessage(e.class+120), 3)
+			printString(win, getMessage(e.class+msgClassBase), 3)
 			continue
 		}
 		printStringHi(win, e.name, 3)
 		for win.CurX < 9 {
 			putCharHi(win, ' ', 3)
 		}
-		putCharHi(win, getMessage(e.sex + 140)[0], 3)
+		putCharHi(win, getMessage(e.sex + msgSexBase)[0], 3)
 		putCharHi(win, '-', 3)
-		printStringHi(win, getMessage(e.race+100), 3)
+		printStringHi(win, getMessage(e.race+msgRaceBase), 3)
 		win.CurX++
-		printStringHi(win, getMessage(e.class+120), 3)
+		printStringHi(win, getMessage(e.class+msgClassBase), 3)
 	}
 	resumeWindowDraw(win)
 	refreshWindow(win)
@@ -538,7 +538,7 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 	resumeWindowDraw(win)
 	drawListBox(listWin, false)
 	refreshAllWindows()
-	cancel := getMessage(1124)
+	cancel := getMessage(msgCharCancel)
 	sel, onCancel := 0, false
 	lx, ly := listWin.X, listWin.Y
 	setClickRegion(0, lx+1, ly+3, lx+19, ly+3)
@@ -600,7 +600,7 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 // characterMenu (WPCMK 9f44) is the character menu: create, review, delete, rename,
 // change portrait, leave.
 func characterMenu() {
-	menuKeys = getMessage(1000)
+	menuKeys = getMessage(msgCampKeys)
 	sheetWin = createWindow(0, 0, 40, 20, 20, borderNone, 0, false)
 	promptWin = createWindow(0, 20, 40, 5, 19, borderNone, 0, false)
 	menuWin = createWindow(21, 7, 19, 13, 21, borderNone, 0, false)
@@ -617,7 +617,7 @@ func characterMenu() {
 			}
 		}
 		enabled[charMenuReview], enabled[charMenuDelete], enabled[charMenuRename], enabled[charMenuPortrait] = any, any, any, any
-		choice := menuSelect(promptWin, 1130, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, charMenuLeave), menuInput)
+		choice := menuSelect(promptWin, msgCharMenu, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, charMenuLeave), menuInput)
 		pick := func(msg int, f func(int)) {
 			if sel := selectRosterCharacter(promptWin, menuWin, msg); sel != -1 {
 				f(rosterList[sel].slot)
@@ -627,13 +627,13 @@ func characterMenu() {
 		case charMenuCreate:
 			doCreateCharacter()
 		case charMenuReview:
-			pick(1129, viewRosterCharacter)
+			pick(msgCharReviewWho, viewRosterCharacter)
 		case charMenuDelete:
-			pick(1121, deleteCharacter)
+			pick(msgDeleteWho, deleteCharacter)
 		case charMenuRename:
-			pick(1122, renameCharacter)
+			pick(msgRenameWho, renameCharacter)
 		case charMenuPortrait:
-			pick(1123, changePortrait)
+			pick(msgPortraitForWhom, changePortrait)
 		}
 		if choice == charMenuLeave {
 			break
@@ -643,3 +643,35 @@ func characterMenu() {
 	destroyWindow(promptWin, false)
 	destroyWindow(sheetWin, false)
 }
+
+// MSG.DBS message ids.
+const (
+	msgCharacterName             = 1100
+	msgCharacterAlreadyExists    = 1102
+	msgSaveThisCharacter         = 1103
+	msgSelectCharacterRace       = 1104
+	msgSelectCharacterSex        = 1105
+	msgSelectCharacterProfession = 1106
+	msgBonus                     = 1107
+	msgAdjustsAbility            = 1108
+	msgSelectsAbility            = 1109
+	msgPressExit                 = 1110
+	msgCastingKarmaPress         = 1111
+	msgReviewPortraits           = 1112
+	msgPressSelect               = 1113
+	msgSaveYesNo                 = 1114 // YES
+	msgCharacterRace             = 1116
+	msgCharacterSex              = 1117
+	msgProfession                = 1118
+	msgCharacterPortrait         = 1119
+	msgAssignAbilityScoreBonus   = 1120
+	msgDeleteWho                 = 1121
+	msgRenameWho                 = 1122
+	msgPortraitForWhom           = 1123
+	msgCharCancel                = 1124 // CANCEL
+	msgDeleteThisCharacter       = 1125
+	msgDeleteYesNo               = 1126 // YES
+	msgNewName                   = 1128
+	msgCharReviewWho             = 1129 // REVIEW WHO?
+	msgCharMenu                  = 1130 // CREATE PC
+)

@@ -197,7 +197,7 @@ func puzzleEvent() {
 	deferWindowDraw(mainWindow)
 	var answer string
 	if single == 1 {
-		answer = getMessage(2038)
+		answer = getMessage(msgYouMay)
 	} else {
 		answer = getMessage(msg)
 		msg++
@@ -296,7 +296,7 @@ func riddleEvent() {
 	textWin = createWindow(0, 19, 40, 5, 20, borderNone, 0, false)
 	refreshAllWindows()
 	setCursor(textWin, 2, 0)
-	printMessage(2039, textWin, 1)
+	printMessage(msgAnswer, textWin, 1)
 	reply := inputTextAnimating(textWin, 20, 6, inputPrintable)
 	wrong := true
 	for acc := getMessage(m); !msgNotFound; acc = getMessage(m) {
@@ -367,7 +367,7 @@ func applyMemberEffects() {
 	count := int(mazeB.Unk288[ev]) / 16
 	sides := int(mazeB.Unk288[ev]) % 16
 	for {
-		m := choosePartyMember(2047, 1)
+		m := choosePartyMember(msgWhoDrinks, 1)
 		if m == -1 {
 			break
 		}
@@ -449,7 +449,7 @@ func applyMemberEffects() {
 			}
 		}
 		drawMemberStatus(m)
-		showCenteredNotice(good + bad + 2048)
+		showCenteredNotice(good + bad + msgDrinkResultBase)
 	}
 	refreshAllWindows()
 }
@@ -580,12 +580,12 @@ func searchCell() {
 	cell := int(partyBlock)<<6 + int(cellY)<<3 + int(cellX)
 	nothing := true
 	if getBitfield(mazeA.Floor[:], cell, 4) == 5 && getBitfield(mazeA.Feature[:], cell, 2) == int(partyFacing) {
-		showMazeMessage(2044)
+		showMazeMessage(msgPressButton)
 		playSound(4)
 		waitAnimating(2)
 		nothing = false
 	} else {
-		showMazeMessage(2043)
+		showMazeMessage(msgSearching)
 		waitAnimating(messageDelay)
 	}
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
@@ -602,7 +602,7 @@ func searchCell() {
 		}
 	}
 	if nothing {
-		showMazeMessage(2045)
+		showMazeMessage(msgSearchNothing)
 		playSound(soundBeep)
 		waitAnimating(messageDelay / 2)
 	}
@@ -638,7 +638,7 @@ func lockFrame(win *Window, right int) {
 // lockResult shows message 2113+result in the main window and closes win.
 func lockResult(win *Window, result int) {
 	eraseWindow(mainWindow, true)
-	s := getMessage(result + 2113)
+	s := getMessage(result + msgForceResultBase)
 	setCursor(mainWindow, 20-(len(s)+1)/2, 0)
 	printStringHi(mainWindow, s, 3)
 	waitAnimating(messageDelay)
@@ -658,7 +658,7 @@ func forceLock(member, ev int) int {
 		jammed = 1
 	}
 	setCursor(mainWindow, 21, 0)
-	printStringHi(mainWindow, getMessage(2112), 3)
+	printStringHi(mainWindow, getMessage(msgStrainingPress), 3)
 	pc := &party[member]
 	target := 18 - (int(pc.Stats[statStrength]) - diff) + diff
 	target = max(1, min(target, 18))
@@ -753,7 +753,7 @@ func pickLock(member, ev int) int {
 		jammed = 1
 	}
 	setCursor(mainWindow, 21, 0)
-	printStringHi(mainWindow, getMessage(2111), 3)
+	printStringHi(mainWindow, getMessage(msgTumblingPress), 3)
 	going := true
 	var result int
 	for {
@@ -814,17 +814,17 @@ func lockedDoorMenu(ev int) {
 		eraseCursorMark(mainWindow, false)
 		setCursor(mainWindow, 3, 0)
 		deferWindowDraw(mainWindow)
-		printMessage(2002, mainWindow, 18)
+		printMessage(msgPartyOptions, mainWindow, 18)
 		resumeWindowDraw(mainWindow)
 		refreshAllWindows()
-		choice := menuSelectCancel(win, 2100, enabled, 1, 1, 7, 1, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
+		choice := menuSelectCancel(win, msgLockMenu, enabled, 1, 1, 7, 1, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 		switch choice {
 		case 0, 1:
 			game := forceLock
 			if choice == 1 {
 				game = pickLock
 			}
-			if m := choosePartyMember(2110, 1); m != -1 && isMemberAble(m) && game(m, ev) == 0 {
+			if m := choosePartyMember(msgLockWhoWillTry, 1); m != -1 && isMemberAble(m) && game(m, ev) == 0 {
 				choice = 2
 			}
 		}

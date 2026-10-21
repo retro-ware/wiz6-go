@@ -118,7 +118,7 @@ func wdoptChooseTarget(msg int) int {
 	}
 	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	cancelText, cancelHi := getMessage(2027), getMessage(2028)
+	cancelText, cancelHi := getMessage(msgExit), getMessage(msgExitHi)
 	title := getMessage(msg)
 	showTitleText(title, 10-(len(title)+6)/2)
 	cx, cy := int(mainWindow.CurX), int(mainWindow.CurY)
@@ -306,7 +306,7 @@ func tryOpenLock(power int) int {
 	if result == 0 {
 		openLockAhead(ev)
 	}
-	dpResultMsg, dpResultBeep = result+2113, result
+	dpResultMsg, dpResultBeep = result+msgForceResultBase, result
 	return 0
 }
 
@@ -649,11 +649,11 @@ func wdoptItemLocationEvent(m, slot int) bool {
 			if b := extractBits(bits, 8, 8); b != 0 {
 				setBit(levelFlags[gameStateArg][:], b, true)
 			}
-			if snd := int(mazeB.Param[ev]); snd >= 14 {
+			if snd := int(mazeB.Param[ev]); snd >= loadedSound {
 				if snd != curSound {
 					loadSoundBank(snd)
 				}
-				playSound(14)
+				playSound(loadedSound)
 			} else if snd > 0 {
 				playSound(snd)
 			}
@@ -662,7 +662,7 @@ func wdoptItemLocationEvent(m, slot int) bool {
 		}
 		if isLockAhead(ev) && id == mazeB.Unk288[ev] {
 			openLockAhead(ev)
-			dpResultMsg, dpResultBeep = 2113, 0
+			dpResultMsg, dpResultBeep = msgForceResultBase, 0
 			return true
 		}
 	}
@@ -709,19 +709,19 @@ func drawSlotItemList(win *Window, m, sel int, hi bool) {
 // here, the spell it holds, a flag-swapping item of this map (useSwitchMapFlags) or the map 8
 // item (useDirectionOnMap8); otherwise "nothing happens".
 func useItemInMaze(m int) {
-	dpKeys = getMessage(2001)
+	dpKeys = getMessage(msgMenuKeys)
 	dpAnimCount = 0
 	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
 	fillWindow(list, ' ', 3)
-	title := replaceCharWithString(getMessage(2033), copyName(memberName(m)), '$')
+	title := replaceCharWithString(getMessage(msgMemberOptions), copyName(memberName(m)), '$')
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
 	deferWindowDraw(win)
 	setCursor(win, 2, 1)
-	printMessage(2034, win, 18)
+	printMessage(msgMazeUseWhichItem, win, 18)
 	resumeWindowDraw(win)
 	drawListFrame(list, false)
 	refreshAllWindows()
@@ -743,7 +743,7 @@ func useItemInMaze(m int) {
 	for i := 0; i < int(p.SwagCount); i++ {
 		add(i + packSlots)
 	}
-	cancel := getMessage(2035)
+	cancel := getMessage(msgUseCancel)
 	sel, onCancel := 0, false
 	setClickRegion(0, list.X+2, list.Y+2, list.X+19, list.Y+2)
 	setClickRegion(1, list.X+1, list.Y, list.X+1, list.Y)
@@ -807,7 +807,7 @@ func useItemInMaze(m int) {
 				level, spell := int(rec.Spell)/256, int(rec.Spell)%256
 				if spellTable[spell].Target == spellTargetMember {
 					refreshAllWindows()
-					if dpTarget = wdoptChooseTarget(2032); dpTarget == -1 {
+					if dpTarget = wdoptChooseTarget(msgUseOnWho); dpTarget == -1 {
 						spell = -1
 					}
 				}
@@ -847,7 +847,7 @@ func useItemInMaze(m int) {
 // do_cast_spell (WDOPT 7f30): member m picks a spell and power, pays the spell points
 // and stamina (passing out at 0) and casts it.
 func castSpellInMaze(m int) {
-	dpKeys = getMessage(2001)
+	dpKeys = getMessage(msgMenuKeys)
 	dpAnimCount = 0
 	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)

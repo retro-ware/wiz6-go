@@ -76,7 +76,7 @@ func waitAnimatingView(tenths int) {
 // clearCombatGroups (clear_combat_groups, WMELE 47b1) empties the seven groups and the
 // view positions.
 func clearCombatGroups() {
-	combatKeys = getMessage(3900)
+	combatKeys = getMessage(msgCombatKeys)
 	viewPosGroup = [2][5]int16{}
 	for g := range combatGroups {
 		*monsterGroups[g] = MonsterGroup{}
@@ -733,7 +733,7 @@ func beginCombat() {
 		clearWindow(partyPictureWin, false)
 		refreshAllWindows()
 		waitAnimatingView(1)
-		name, msg := cstr(groupMonsterRec[1].Names[0][:]), getMessage(3512)
+		name, msg := cstr(groupMonsterRec[1].Names[0][:]), getMessage(msgCallsForHelp)
 		setCursor(partyPictureWin, 20-(len(name)+len(msg)+1)/2, 0)
 		printString(partyPictureWin, name, 6)
 		printString(partyPictureWin, msg, 14)
@@ -742,3 +742,8 @@ func beginCombat() {
 	updatePartyAfterRound()
 	gameState = stateRedrawCombat
 }
+
+// MSG.DBS message ids.
+const (
+	msgCombatKeys = 3900
+)

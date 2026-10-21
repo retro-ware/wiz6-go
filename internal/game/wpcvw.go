@@ -259,7 +259,7 @@ func getMenuInputBlink() int {
 func waitKeyOrClick(w *Window) {
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
-	printCentered(w, getMessage(409), 2, 18)
+	printCentered(w, getMessage(msgPressContinue), 2, 18)
 	waitEnterOrClick()
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
@@ -392,3 +392,92 @@ func printNumberCol16(w *Window, y, n int) {
 	setCursor(w, 16, y)
 	printInt(w, n, 3, 1)
 }
+
+// MSG.DBS message ids.
+const (
+	msgRaceBase       = 100  // plus the race: HUMAN..MOOK
+	msgClassBase      = 120  // plus the class: FIGHTER..NINJA
+	msgSexBase        = 140  // plus the sex: MALE, FEMALE
+	msgStatAbbrevBase = 204  // plus the stat: STR..KAR
+	msgEquipSlotBase  = 351  // plus the equip slot: PRIMARY WEAPON..BOOTS
+	msgPowerNameBase  = 470  // plus the power bit: SLEEP, PARALYZE, ..
+	msgSkillPageBase  = 600  // plus the skill page: WEAPONRY, PHYSICAL, PERSONAL, ACADEMIA
+	msgRankBase       = 800  // plus Class*rankPerClass+Rank: NONE, JOURNEYMAN, ..
+	rankPerClass      = 10   // rank titles per class from msgRankBase
+	msgStatNameBase   = 5050 // plus the stat: STRENGTH, INTELLIGENCE, ..
+	msgSkillNameBase  = 5500 // plus the skill: WAND&DAGGER, SWORD, ..
+
+	msgCancelStarred                = 119 // *CANCEL*
+	msgLVL                          = 200
+	msgRNK                          = 201
+	msgEXP                          = 202
+	msgMKS                          = 203
+	msgHP                           = 212
+	msgSTM                          = 213
+	msgCND                          = 214
+	msgGP                           = 215
+	msgCC                           = 216
+	msgArmorClass                   = 217
+	msgSheetKeys                    = 300
+	msgSheetMenu                    = 301 // EQUIP
+	msgSelect                       = 350
+	msgNoneEquipped                 = 359 // NONE
+	msgInvokePower                  = 380 // INVOKE THE POWER OF YOUR
+	msgInvokeNoYes                  = 381 // NO
+	msgUseWhichItem                 = 400
+	msgNoItemCancel                 = 401 // NONE
+	msgDropWhichItem                = 402
+	msgTradeWhichItem               = 403
+	msgTradeGoldAmount              = 404
+	msgTradeHowManyAmount           = 405
+	msgMergeWhichItem               = 406
+	msgMergeWithItem                = 407
+	msgUseOnWhichItem               = 408
+	msgPressContinue                = 409
+	msgAssayWhichItem               = 450
+	msgPS                           = 451
+	msgAC                           = 452
+	msgCurse                        = 465
+	msgItemDamage                   = 466 // DAMAGE
+	msgTohit                        = 467
+	msgRegen                        = 468
+	msgSpecialPower                 = 469
+	msgDiceD                        = 478 // D
+	msgMax                          = 480
+	msgCastOnWhichItem              = 481
+	msgFailure                      = 482
+	msgSheetReviewWho               = 500 // REVIEW WHO?
+	msgTradeWithWho                 = 501
+	msgSheetCastOnWho               = 502 // CAST ON WHO?
+	msgSheetExit                    = 503 // EXIT
+	msgSheetUseOnWho                = 504 // USE ON WHO?
+	msgYouEarnedSkillBonus          = 605 // YOU EARNED A SKILL BONUS!
+	msgAdjustsSkill                 = 606
+	msgSelectsSkill                 = 607
+	msgPressForNextCategory         = 608
+	msgPressExitPadded              = 609
+	msgAssignInitialSkillBonus      = 610
+	msgRenameCharacter              = 650
+	msgSelectNewCharacterProfession = 660
+	msgOrSelectCancelAbort          = 661 // OR SELECT *CANCEL* TO ABORT
+	msgSpells                       = 700
+	msgSelectSpellCast              = 701 // SELECT THE SPELL TO CAST
+	msgYouLearnedNewSpell           = 702 // YOU LEARNED A NEW $ SPELL!
+	msgSelectNewSpellFor            = 703 // SELECT A NEW SPELL FOR YOUR SPELLBOOK
+	msgSpellHasBeenScribed          = 720 // THE SPELL HAS BEEN SCRIBED INTO YOUR
+	msgYouAreNotAdvanced            = 725 // YOU ARE NOT ADVANCED ENOUGH TO WRITE
+	msgYouAreNotEligible            = 730 // YOU ARE NOT ELIGIBLE FOR THIS SPELL.
+	msgSwagBag                      = 750
+	msgSwagMenu                     = 751 // ADD
+	msgPutWhichItemIn               = 760 // PUT WHICH ITEM IN SWAG BAG?
+	msgRemoveWhichItem              = 761
+	msgSwagDropWhichItem            = 762  // DROP WHICH ITEM?
+	msgYouMadeLevel                 = 5010 // ^, YOU MADE A $ LEVEL!
+	msgYouIncreasedStamina          = 5013
+	msgYouIncreased                 = 5014
+	msgIncreased                    = 5015
+	msgSkillPoints                  = 5530
+	msgDecoderRing                  = 11350 // USING THE PIRATE'S DECODER RING UPON
+	msgDecoderRingText              = 12200
+	msgPersonalLog                  = 18520
+)

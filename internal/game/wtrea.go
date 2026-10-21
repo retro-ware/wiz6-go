@@ -403,7 +403,7 @@ func trChooseMember(msg, refreshAll int) int {
 	}
 	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	exitHi, exitLo := getMessage(2027), getMessage(2028)
+	exitHi, exitLo := getMessage(msgExit), getMessage(msgExitHi)
 	printChestPrompt(msg, 10-(len(getMessage(msg))+6)/2)
 	exitX, exitY := int(mainWindow.CurX), int(mainWindow.CurY)
 	if refreshAll == 0 {
@@ -545,7 +545,7 @@ func trTrapDamageMember(m, count, sides int) {
 		return
 	}
 	num := itoa(n)
-	pre, post := getMessage(5231), getMessage(5232)
+	pre, post := getMessage(msgTakes), getMessage(msgTrapDamage)
 	if int(p.HP) < n {
 		n = int(p.HP)
 	}
@@ -554,9 +554,9 @@ func trTrapDamageMember(m, count, sides int) {
 	drawMemberStatus(m)
 	if p.HP <= 0 {
 		trWaitAnimating(4)
-		trInflictCondition(m, 5264, 0, conditionDead)
+		trInflictCondition(m, msgTrapConditionBase+conditionDead, 0, conditionDead)
 	} else {
-		playSound(2)
+		playSound(soundHurt)
 		trWaitAnimating(messageDelay)
 	}
 }
@@ -586,3 +586,53 @@ func trInflictStatus(m, msg, resist, status, count, sides, base int) {
 	drawMemberStatus(m)
 	trWaitAnimating(messageDelay)
 }
+
+// MSG.DBS message ids.
+const (
+	msgTrapStatusBase    = 5250 // plus the status: SILENCED..CURSED
+	msgTrapConditionBase = 5261 // plus the condition: CRITICAL..DIES!
+
+	msgYouHaveDefeatedMonsters    = 5000 // YOU HAVE DEFEATED THE MONSTERS
+	msgEverySurvivorEarnsExp      = 5001
+	msgEachShareLootWorth         = 5002 // EACH SHARE OF LOOT WORTH $ GOLD
+	msgEveryoneReceivesExpBonus   = 5003 // EVERYONE RECEIVES A $ EXP BONUS
+	msgYouFound                   = 5004
+	msgPotion                     = 5006
+	msgScroll                     = 5007
+	msgPowder                     = 5008
+	msgTreasureKeys               = 5100
+	msgDivvyLoot                  = 5101
+	msgTakeItem                   = 5102
+	msgLootNone                   = 5103 // NONE
+	msgWeight                     = 5104
+	msgWhoTakesIt                 = 5105
+	msgLootFull                   = 5108 // ^_full_^
+	msgImportantItem              = 5109
+	msgChest                      = 5200 // a chest
+	msgChestMenu                  = 5201 // INSPECT
+	msgWhoDisarms                 = 5220
+	msgWhoInspects                = 5223
+	msgChestWhoCasts              = 5224 // who_casts}
+	msgWhoOpens                   = 5225
+	msgTrap                       = 5226
+	msgTrapWasTriggered           = 5227 // THE TRAP WAS TRIGGERED!
+	msgChestWasNotTrapped         = 5228 // THE CHEST WAS NOT TRAPPED
+	msgYouDisarmedTrap            = 5229 // YOU DISARMED THE TRAP!
+	msgYouCouldNotDisarm          = 5230 // YOU COULD NOT DISARM IT!
+	msgTakes                      = 5231
+	msgTrapDamage                 = 5232 // DAMAGE
+	msgChestOpens                 = 5234 // THE CHEST OPENS!
+	msgChestDidNotOpen            = 5235 // THE CHEST DID NOT OPEN
+	msgSlain                      = 5260
+	msgWeakened                   = 5265
+	msgLost                       = 5266
+	msgStrength                   = 5267
+	msgVitality                   = 5268
+	msgHitPoints                  = 5269
+	msgPhantasmalHandMaterializes = 5270 // A PHANTASMAL HAND MATERIALIZES!
+	msgIsAttacked                 = 5271
+	msgIsBeatenSeverely           = 5272
+	msgIsChokedSmashedAnd         = 5273 // IS CHOKED, SMASHED AND SQUISHED!
+	msgPhantomHandWavesAnd        = 5274 // THE PHANTOM HAND WAVES AND DEPARTS...
+	msgNauseated                  = 5275
+)

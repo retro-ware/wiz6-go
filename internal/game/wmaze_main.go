@@ -258,8 +258,8 @@ func drawMemberStatus(m int) {
 // init_maze_screen (WMAZE 4e89) reads the key prompts, draws the panels and resets the
 // view animation.
 func initMazeScreen() {
-	explorePrompt = getMessage(2000)
-	menuPrompt = getMessage(2001)
+	explorePrompt = getMessage(msgExploreKeys)
+	menuPrompt = getMessage(msgMenuKeys)
 	for m := 0; m < partyCount; m++ {
 		drawMemberStatus(m)
 	}
@@ -305,8 +305,8 @@ func choosePartyMember(msg, cancel int) int {
 	if cancel == 1 {
 		mainWindow.CurX++
 		exitX, exitY = int(mainWindow.CurX), int(mainWindow.CurY)
-		exitHi = getMessage(2027)
-		exitLo = getMessage(2028)
+		exitHi = getMessage(msgExit)
+		exitLo = getMessage(msgExitHi)
 		if mousePresent {
 			printStringHi(mainWindow, exitHi, 3)
 		} else {
@@ -438,7 +438,7 @@ func killParty(msg int) {
 	showMazeMessage(msg)
 	for m := 0; m < partyCount; m++ {
 		if party[m].Condition < conditionDead {
-			playSound(int(party[m].Sex) + 8)
+			playSound(int(party[m].Sex) + soundDeathBase)
 		}
 		party[m].Condition = conditionDead
 		party[m].HP = 0
@@ -546,7 +546,7 @@ func tryMove(dir int) int {
 	stepPosition(dir, 1)
 	if moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY)) != 0 {
 		if gameStateArg != 10 && gameStateArg != 12 {
-			killParty(2022)
+			killParty(msgYouAreInRock)
 			return 1
 		}
 		restorePosition()
@@ -561,11 +561,11 @@ func tryMove(dir int) int {
 	if pit {
 		switch gameStateArg {
 		case 0, 2, 3, 4, 6, 11:
-			killParty(10000)
+			killParty(msgYouFellYourDeath)
 			return 1
 		case 1:
 			if partyBlock != 10 {
-				killParty(10000)
+				killParty(msgYouFellYourDeath)
 				return 1
 			}
 			redrawMazeView()
@@ -591,7 +591,7 @@ func tryMove(dir int) int {
 		}
 	}
 	if b2 && gameStateArg == 2 {
-		killParty(2022)
+		killParty(msgYouAreInRock)
 		return 1
 	}
 	cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
@@ -636,7 +636,7 @@ func moveParty(turn int) {
 		}
 	case 1, 2:
 		if wall == wallDoor && dir == int(partyFacing) {
-			showMessageHeld(2021, 2, messageDelay/2)
+			showMessageHeld(msgLocked, 2, messageDelay/2)
 		} else {
 			showMessageHeld(int(mzBumpMessage), 2, 2)
 		}

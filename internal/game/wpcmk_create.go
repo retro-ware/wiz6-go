@@ -107,7 +107,7 @@ func drawSkillPage(win *Window, page int) []int {
 	setCursor(win, 1, 1)
 	printStringHi(win, "                  ", 3)
 	setCursor(win, 6, 1)
-	printMessage(page+600, win, 18)
+	printMessage(page+msgSkillPageBase, win, 18)
 	pages := [4]struct {
 		left, right byte
 		first, last int
@@ -121,14 +121,14 @@ func drawSkillPage(win *Window, page int) []int {
 	for i := p.first; i <= p.last; i++ {
 		if pcmkSkillShown[i] {
 			setCursor(win, 1, len(list)+3)
-			printMessage(i+5500, win, p.color)
+			printMessage(i+msgSkillNameBase, win, p.color)
 			setCursor(win, 16, len(list)+3)
 			printInt(win, int(newPC.Skills[i]), 3, 1)
 			list = append(list, i)
 		}
 	}
 	setCursor(win, 1, 14)
-	printMessage(5530, win, 9)
+	printMessage(msgSkillPoints, win, 9)
 	setCursor(win, 16, 14)
 	printInt(win, int(newPC.SkillPoints), 3, 1)
 	resumeWindowDraw(win)
@@ -144,11 +144,11 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 	fillWindow(win, ' ', 3)
 	refreshWindow(win)
 	setCursor(win, 7, 1)
-	printMessage(610, win, 18)
+	printMessage(msgAssignInitialSkillBonus, win, 18)
 	setCursor(win, 2, 2)
-	printMessage(606, win, 18)
+	printMessage(msgAdjustsSkill, win, 18)
 	win.CurX += 3
-	printMessage(607, win, 18)
+	printMessage(msgSelectsSkill, win, 18)
 	var added [10]int
 	row := 0
 	x, y := win.X, win.Y
@@ -165,7 +165,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 	mark(100, 4)
 	for {
 		setCursor(win, 7, 3)
-		msg, ex := 609, byte(18)
+		msg, ex := msgPressExitPadded, byte(18)
 		if points > 0 {
 			msg, ex = 608, 13
 		}
@@ -182,7 +182,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 				*s--
 				added[row]--
 				points++
-				playSound(1)
+				playSound(soundClick)
 				printSkillValue(skillWin, row+3, int(*s))
 				printSkillValue(skillWin, 14, points)
 			} else {
@@ -201,7 +201,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 				*s++
 				added[row]++
 				points--
-				playSound(1)
+				playSound(soundClick)
 				printSkillValue(skillWin, row+3, int(*s))
 				printSkillValue(skillWin, 14, points)
 			} else {
@@ -315,20 +315,20 @@ func chooseFromMenu(x, msg, status, first int, enabled []int) int {
 
 // chooseRace (WPCMK 75f1) asks for the race and sets its base stats.
 func chooseRace() {
-	r := chooseFromMenu(9, 1104, 1116, 100, []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1})
+	r := chooseFromMenu(9, msgSelectCharacterRace, msgCharacterRace, msgRaceBase, []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1})
 	newPC.Race = uint8(r)
 	setCursor(sheetWin, 15, 1)
-	printMsgColor(int(newPC.Race)+100, sheetWin, 1)
+	printMsgColor(int(newPC.Race)+msgRaceBase, sheetWin, 1)
 	raiseStatsToMinimum(raceMinStats[r])
 	drawStats()
 }
 
 // chooseSex (WPCMK 770a) asks for the sex.
 func chooseSex() {
-	s := chooseFromMenu(10, 1105, 1117, 140, []int{1, 1, -1})
+	s := chooseFromMenu(10, msgSelectCharacterSex, msgCharacterSex, msgSexBase, []int{1, 1, -1})
 	newPC.Sex = uint8(s)
 	setCursor(sheetWin, 13, 1)
-	putChar(sheetWin, getMessage(int(newPC.Sex) + 140)[0], 1)
+	putChar(sheetWin, getMessage(int(newPC.Sex) + msgSexBase)[0], 1)
 	putChar(sheetWin, '-', 1)
 	applySexModifiers(s)
 	drawStats()
@@ -345,9 +345,9 @@ func chooseClass() {
 		}
 	}
 	enabled[classCount] = -1
-	c := chooseFromMenu(7, 1106, 1118, 120, enabled)
+	c := chooseFromMenu(7, msgSelectCharacterProfession, msgProfession, msgClassBase, enabled)
 	newPC.Class = uint8(c)
-	printMsgAt(int(newPC.Class)+120, sheetWin, 13, 2, 1)
+	printMsgAt(int(newPC.Class)+msgClassBase, sheetWin, 13, 2, 1)
 	checkClassEligible(c, classReqs[c], true)
 	drawStats()
 }
@@ -359,11 +359,11 @@ func distributeBonusPoints() {
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	setCursor(w, 7, 1)
-	printMessage(1120, w, 18)
+	printMessage(msgAssignAbilityScoreBonus, w, 18)
 	setCursor(w, 1, 2)
-	printMessage(1108, w, 18)
+	printMessage(msgAdjustsAbility, w, 18)
 	w.CurX += 2
-	printMessage(1109, w, 18)
+	printMessage(msgSelectsAbility, w, 18)
 	var added [8]int
 	stat := 0
 	mark := func(ch byte) {
@@ -381,7 +381,7 @@ func distributeBonusPoints() {
 	for {
 		setCursor(w, 12, 3)
 		if bonusPoints == 0 {
-			printMessage(1110, w, 18)
+			printMessage(msgPressExit, w, 18)
 			setClickRegion(4, x+18, y+3, x+18, y+3)
 			setClickRegion(5, clickRegionsEnd, 0, 0, 0)
 		} else {
@@ -400,7 +400,7 @@ func distributeBonusPoints() {
 				newPC.Stats[stat]--
 				added[stat]--
 				bonusPoints++
-				playSound(1)
+				playSound(soundClick)
 				drawStats()
 			} else {
 				playSound(soundBeep)
@@ -418,7 +418,7 @@ func distributeBonusPoints() {
 				newPC.Stats[stat]++
 				added[stat]++
 				bonusPoints--
-				playSound(1)
+				playSound(soundClick)
 				drawStats()
 			} else {
 				playSound(soundBeep)
@@ -447,7 +447,7 @@ func rollKarma() {
 	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
-	printMessage(1111, promptWin, 18)
+	printMessage(msgCastingKarmaPress, promptWin, 18)
 	for rolling := true; rolling; {
 		newPC.Stats[statKarma] = uint8(random(karmaRoll))
 		if newPC.Sex == sexFemale {
@@ -772,11 +772,11 @@ func choosePortrait() {
 	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
-	printMessage(1112, promptWin, 18)
+	printMessage(msgReviewPortraits, promptWin, 18)
 	setCursor(promptWin, 12, 2)
-	printMessage(1113, promptWin, 18)
+	printMessage(msgPressSelect, promptWin, 18)
 	shown := -1
-	printStatusCentered(1119)
+	printStatusCentered(msgCharacterPortrait)
 	x, y := promptWin.X, promptWin.Y
 	setClickRegion(0, x+9, y+1, x+9, y+1)
 	setClickRegion(1, x+10, y+1, x+10, y+1)
@@ -874,8 +874,8 @@ func createCharacter(name string, slot int) {
 	fillWindow(promptWin, ' ', 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 6, 1)
-	printMessage(1103, promptWin, 18)
-	if yesNo(1114, 0) {
+	printMessage(msgSaveThisCharacter, promptWin, 18)
+	if yesNo(msgSaveYesNo, 0) {
 		pcfileRecordIO(&newPC, slot, true)
 		rosterSlotUsed[slot] = rosterSlotAvailable
 		stopSound()
@@ -919,7 +919,7 @@ func drawSheetSpellWindow(w *Window) {
 	g(0, 1, 13)
 	g(19, 1, 5)
 	setCursor(w, 1, 1)
-	printMessage(700, w, 18)
+	printMessage(msgSpells, w, 18)
 	putIconAt(w, 2, 1, 34)
 	putIconAt(w, 17, 1, 34)
 	for i := 3; i < 9; i++ {
@@ -951,7 +951,7 @@ func drawSheetSpellWindow(w *Window) {
 		putCharAt(w, i+3, 12, byte(i+24))
 	}
 	setCursor(w, 1, 14)
-	printMessage(3957, w, 18)
+	printMessage(msgCost, w, 18)
 	blank := func(x, y, n int) {
 		setCursor(w, x, y)
 		for range n {
@@ -991,7 +991,7 @@ func drawSheetSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
 		if cursor && d == 0 {
 			color = realmColors[realm]
 		}
-		printMessage(spells[i]+4000, w, color)
+		printMessage(spells[i]+msgSpellNameBase, w, color)
 		if cursor && d == 0 {
 			for w.CurX < 18 {
 				putChar(w, ' ', realmColors[realm])
@@ -1031,13 +1031,13 @@ func selectSpell(sheet, win *Window) int {
 				setCursor(w, 11, 12)
 				if realm == -1 {
 					putCharAt(w, 1, 12, 99)
-					printMessage(3956, w, 9)
+					printMessage(msgSpellBookCancel, w, 9)
 					spells, none = nil, false
 					clearWindowArea(w, 6, 14, 8, 14)
 					drawListBox(list, true)
 				} else {
 					putCharAt(sheet, realm/3*10+1, realm%3<<1+14, 99)
-					printMessage(realm+3950, w, realmColors[realm])
+					printMessage(realm+msgRealmBase, w, realmColors[realm])
 					clearWindowArea(w, 6, 14, 8, 14)
 					spells = listRealmSpells(realm)
 					none = len(spells) == 0
@@ -1170,7 +1170,7 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 	fillWindow(win, ' ', 3)
 	deferWindowDraw(win)
 	setCursor(win, 1, 1)
-	printMessage(703, win, 18)
+	printMessage(msgSelectNewSpellFor, win, 18)
 	resumeWindowDraw(win)
 	var savedSP [realmCount]int16
 	for r := range realmCount {

@@ -37,13 +37,13 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				setCursor(win, 13, 1)
 				if realm == -1 {
 					pvBlinkX, pvBlinkY = 13, 3
-					printMessage(3956, win, 9)
+					printMessage(msgSpellBookCancel, win, 9)
 					clearWindowArea(win, 18, 5, 20, 5)
 					count = -1
 					drawListFrame(list, true)
 				} else {
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, win, realmColors[realm])
+					printMessage(realm+msgRealmBase, win, realmColors[realm])
 					clearWindowArea(win, 18, 5, 20, 5)
 					count = countKnownSpells(m, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
@@ -116,7 +116,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		for {
 			pvBlinkState = 1
-			pvBlinkText[1] = getMessage(spells[sel] + 4000)
+			pvBlinkText[1] = getMessage(spells[sel] + msgSpellNameBase)
 			pvBlinkColor[1] = realmColors[realm]
 			drawBookSpellList(list, realm, sel, true, count, spells[:])
 			cost := int(spellTable[spells[sel]].Cost)
@@ -168,7 +168,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	drawListFrame(list, false)
 	deferWindowDraw(list)
 	setCursor(list, 2, 2)
-	printMessage(spell+4000, list, 18)
+	printMessage(spell+msgSpellNameBase, list, 18)
 	resumeWindowDraw(list)
 	refreshWindow(list)
 	pvBlinkWin = win
@@ -196,7 +196,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				pvBlinkColor = [2]int{17, 5}
 				clearWindowArea(win, 13, 1, 20, 1)
 				setCursor(win, 13, 1)
-				printMessage(3956, win, 9)
+				printMessage(msgSpellBookCancel, win, 9)
 				clearWindowArea(win, 18, 5, 20, 5)
 			} else {
 				pvBlinkX, pvBlinkY = level+14, 3
@@ -239,7 +239,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 					unhighlightBookRealm(win, -1)
 					clearWindowArea(win, 13, 1, 20, 1)
 					setCursor(win, 13, 1)
-					printMessage(realm+3950, win, realmColors[realm])
+					printMessage(realm+msgRealmBase, win, realmColors[realm])
 					level, redraw = 1, true
 				} else if level < maxLevel {
 					unmark()
@@ -258,7 +258,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	}
 	if sp.Target == spellTargetMember {
 		refreshAllWindows()
-		if chooseTarget(2030) == -1 {
+		if chooseTarget(msgCastOnWho) == -1 {
 			return -1
 		}
 	}

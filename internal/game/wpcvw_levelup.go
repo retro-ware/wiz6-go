@@ -48,7 +48,7 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	setCursor(w, 1, 1)
 	printStringHi(w, "                    ", 3)
 	setCursor(w, 6, 1)
-	printMessage(pg+600, w, 18)
+	printMessage(pg+msgSkillPageBase, w, 18)
 	pages := [4][5]int{ // icon left, icon right, first skill, last skill, colour
 		{1, 1, 0, firstPhysicalSkill - 1, 2}, {36, 37, firstPhysicalSkill, firstPersonalSkill - 1, 14},
 		{36, 37, firstPersonalSkill, firstAcademiaSkill - 1, 12}, {33, 33, firstAcademiaSkill, skillCount - 1, 11},
@@ -60,7 +60,7 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	for k := pd[2]; k <= pd[3]; k++ {
 		if pvSkillShown[k] {
 			setCursor(w, 1, n+3)
-			printMessage(k+5500, w, pd[4])
+			printMessage(k+msgSkillNameBase, w, pd[4])
 			setCursor(w, 16, n+3)
 			printInt(w, int(p.Skills[k]), 3, 1)
 			shown[n] = k
@@ -68,7 +68,7 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 		}
 	}
 	setCursor(w, 1, 14)
-	printMessage(5530, w, 9)
+	printMessage(msgSkillPoints, w, 9)
 	setCursor(w, 16, 14)
 	printInt(w, int(p.SkillPoints), 3, 1)
 	resumeWindowDraw(w)
@@ -104,7 +104,7 @@ func doSkillsMenu(menu *Window, m int) {
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		pg = menuSelect(menu, 600, enabled, 2, 1, 10, 2, 5, sel, getMenuInputBlink)
+		pg = menuSelect(menu, msgSkillPageBase, enabled, 2, 1, 10, 2, 5, sel, getMenuInputBlink)
 	}
 	fillWindow(menu, ' ', 3)
 	destroyWindow(w, true)
@@ -118,9 +118,9 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	setCursor(menu, 2, 1)
-	printMessage(606, menu, 18)
+	printMessage(msgAdjustsSkill, menu, 18)
 	menu.CurX += 3
-	printMessage(607, menu, 18)
+	printMessage(msgSelectsSkill, menu, 18)
 	var added [10]int
 	row := 0
 	mx, my := int(menu.X), int(menu.Y)
@@ -138,10 +138,10 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 		setCursor(menu, 7, 2)
 		x := 18
 		if left > 0 {
-			printMessage(608, menu, 18)
+			printMessage(msgPressForNextCategory, menu, 18)
 			x = 13
 		} else {
-			printMessage(609, menu, 18)
+			printMessage(msgPressExitPadded, menu, 18)
 		}
 		setRegion(4, mx+x, my+2, mx+x, my+2)
 		k := getMenuInputBlink()
@@ -155,7 +155,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				*sk--
 				added[row]--
 				left++
-				playSound(1)
+				playSound(soundClick)
 				printNumberCol16(w, row+3, int(*sk))
 				printNumberCol16(w, 14, left)
 			} else {
@@ -174,7 +174,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				*sk++
 				added[row]++
 				left--
-				playSound(1)
+				playSound(soundClick)
 				printNumberCol16(w, row+3, int(*sk))
 				printNumberCol16(w, 14, left)
 			} else {
@@ -205,7 +205,7 @@ func spendSkillPoints(menu *Window, m int) {
 	}
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
-	showCenteredMsg(menu, getMessage(605), true)
+	showCenteredMsg(menu, getMessage(msgYouEarnedSkillBonus), true)
 	w := createWindow(20, 4, 20, 16, 25, borderNone, 0, false)
 	personal := hasPersonalSkills(m)
 	var shown [10]int
@@ -305,12 +305,12 @@ func levelUpStats(sheet, menu *Window, m int) {
 		if p.Stats[s] < maxStat && !done[s] {
 			done[s] = true
 			p.Stats[s]++
-			msg := replaceCharWithString(getMessage(5014), getMessage(s+5050), '$')
-			printMsgAt(s+204, sheet, 1, s+5, -5)
+			msg := replaceCharWithString(getMessage(msgYouIncreased), getMessage(s+msgStatNameBase), '$')
+			printMsgAt(s+msgStatAbbrevBase, sheet, 1, s+5, -5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, -1)
 			showCenteredMsg(menu, msg, true)
-			printMsgAt(s+204, sheet, 1, s+5, 5)
+			printMsgAt(s+msgStatAbbrevBase, sheet, 1, s+5, 5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, 1)
 		}
@@ -366,7 +366,7 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 		pct = 1
 	}
 	printInt(sheet, pct, 3, -6)
-	showCenteredMsg(menu, getMessage(5013), true)
+	showCenteredMsg(menu, getMessage(msgYouIncreasedStamina), true)
 	setCursor(sheet, 15, 8)
 	printInt(sheet, pct, 3, 6)
 	msg := 5012
@@ -504,8 +504,8 @@ func doLevelUp(sheet, menu *Window, m int) {
 	drawSheet(sheet, menu, m)
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
-	s := replaceCharWithString(getMessage(5010), memberName(m), '^')
-	s = replaceCharWithString(s, getMessage(int(p.Class)+120), '$')
+	s := replaceCharWithString(getMessage(msgYouMadeLevel), memberName(m), '^')
+	s = replaceCharWithString(s, getMessage(int(p.Class)+msgClassBase), '$')
 	showCenteredMsg(menu, s, true)
 	levelUpStats(sheet, menu, m)
 	levelUpHPStamina(sheet, menu, m)
@@ -555,7 +555,7 @@ func checkLevelUp(m int) {
 func levelUpEntry() {
 	returnCmd = int16(stateExplore)
 	gameState = stateExplore
-	menuKeys = getMessage(300)
+	menuKeys = getMessage(msgSheetKeys)
 	for m := 0; m < partyCount; m++ {
 		checkLevelUp(m)
 	}
@@ -619,10 +619,10 @@ func doChangeClass(sheet, menu *Window, m int) {
 	}
 	enabled[p.Class+1] = 0 // not the class it has
 	setCursor(menu, 4, 1)
-	printMessage(660, menu, 18)
+	printMessage(msgSelectNewCharacterProfession, menu, 18)
 	setCursor(menu, 6, 2)
-	printMessage(661, menu, 18)
-	c := menuSelect(w, 119, enabled, 1, 1, 10, 11, 5, 0, getMenuInputBlink)
+	printMessage(msgOrSelectCancelAbort, menu, 18)
+	c := menuSelect(w, msgCancelStarred, enabled, 1, 1, 10, 11, 5, 0, getMenuInputBlink)
 	destroyWindow(w, false)
 	if c <= 0 {
 		return
@@ -648,7 +648,7 @@ func doRename(w *Window, m int) {
 	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	setCursor(w, 1, 1)
-	printMessage(1128, w, 18)
+	printMessage(msgNewName, w, 18)
 	x, y := int(w.CurX), int(w.CurY)
 	clearWindowArea(w, x, y, x+nameLength, y)
 	setCursor(w, x, y)
@@ -670,9 +670,9 @@ func doChoosePortrait(w *Window, m int) {
 	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	setCursor(w, 9, 1)
-	printMessage(1112, w, 18)
+	printMessage(msgReviewPortraits, w, 18)
 	setCursor(w, 12, 2)
-	printMessage(1113, w, 18)
+	printMessage(msgPressSelect, w, 18)
 	wx, wy := int(w.X), int(w.Y)
 	setRegion(0, wx+9, wy+1, wx+9, wy+1)
 	setRegion(1, wx+10, wy+1, wx+10, wy+1)
@@ -722,7 +722,7 @@ func doModifyMenu(sheet, menu *Window, m int) {
 		refreshAllWindows()
 		// Entry 3 is off: the C's enabled array overlaps a local it zeroes.
 		enabled := []int{1, 1, 1, 0, 1, -1}
-		k := menuSelect(menu, 650, enabled, 2, 1, 18, 2, 5, countEnabledItems(enabled, editMenuExit), getMenuInputBlink)
+		k := menuSelect(menu, msgRenameCharacter, enabled, 2, 1, 18, 2, 5, countEnabledItems(enabled, editMenuExit), getMenuInputBlink)
 		switch k {
 		case editMenuRename:
 			doRename(menu, m)

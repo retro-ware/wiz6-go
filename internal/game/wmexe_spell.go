@@ -126,8 +126,8 @@ func doCastAction(c *Combatant) int {
 	power, spell := int(c.Choice)/256, int(c.Choice)%256
 	sp := &spellTable[spell]
 	mexeName = combatantName(actGroup, actMember)
-	mexeVerb = getMessage(3308)
-	mexeText = getMessage(spell + 4000)
+	mexeVerb = getMessage(msgCasts)
+	mexeText = getMessage(spell + msgSpellNameBase)
 	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, realmColors[sp.Realm])
 	mexeBackfire, mexeFizzle = 0, 0
 	grp := monsterGroups[actGroup]
@@ -172,11 +172,11 @@ func doCastAction(c *Combatant) int {
 	switch {
 	case silenceable && c.Status[statusSilenced] > 0:
 		combatDelay(2)
-		printMsgCentered(3200, 3, 2)
+		printMsgCentered(msgSilenced, 3, 2)
 		combatDelay(int(delaySetting) / 2)
 	case mexeFizzle == 1:
 		combatDelay(2)
-		printMsgCentered(3201, 5, 2)
+		printMsgCentered(msgFizzle, 5, 2)
 		combatDelay(int(delaySetting) / 2)
 	default:
 		backfire(c)
@@ -203,7 +203,7 @@ func checkMiscast(sp *Spell) {
 func backfire(c *Combatant) {
 	if mexeBackfire == 1 {
 		combatDelay(2)
-		printMsgCentered(3202, 4, 2)
+		printMsgCentered(msgBackfire, 4, 2)
 		combatDelay(int(delaySetting) / 2)
 		c.TargetGroup, c.TargetMember = int8(actGroup), int8(actMember)
 	}
@@ -223,18 +223,18 @@ func doUseItemAction(c *Combatant) {
 			power, spell = int(rec.Spell)/256, int(rec.Spell)%256
 			switch rec.Type {
 			case itemTypePotion:
-				mexeVerb = getMessage(3313)
+				mexeVerb = getMessage(msgUses)
 			case itemTypeScroll:
-				mexeVerb = getMessage(3314)
+				mexeVerb = getMessage(msgIncants)
 				skill = skillScribe
 			case itemTypePowder:
-				mexeVerb = getMessage(3315)
+				mexeVerb = getMessage(msgTosses)
 			default:
 				switch {
 				case spell >= 80:
-					mexeVerb = getMessage(3318)
+					mexeVerb = getMessage(msgConsumes)
 				case power != 0:
-					mexeVerb = getMessage(3312)
+					mexeVerb = getMessage(msgInvokes)
 					skill = skillArtifacts
 				default:
 					if p.Class == classBard {
@@ -243,22 +243,22 @@ func doUseItemAction(c *Combatant) {
 						power = min(max(power, 0), 6)
 					}
 					if power == 0 {
-						mexeVerb = getMessage(3305)
+						mexeVerb = getMessage(msgAbuses)
 					} else {
-						mexeVerb = getMessage(3304)
+						mexeVerb = getMessage(msgPlays)
 					}
 				}
 			}
 			useActorItemCharge(item)
 		} else if rec.Type == itemTypeWeaponT || rec.Type == itemTypeMissile {
-			mexeVerb = getMessage(3317)
+			mexeVerb = getMessage(msgFumblesWithThrown)
 		} else {
-			mexeVerb = getMessage(3316)
+			mexeVerb = getMessage(msgFumblesWith)
 		}
 		if rec.UseAction == 7 {
 			g4352 = 1
 			skill = -1
-			mexeVerb = getMessage(3312)
+			mexeVerb = getMessage(msgInvokes)
 		}
 		printCombatLine(mexeName, mexeVerb, mexeText, 1, 14, 11)
 	}
@@ -289,7 +289,7 @@ func doUseItemAction(c *Combatant) {
 	checkMiscast(&spellTable[spell])
 	if mexeFizzle == 1 {
 		combatDelay(2)
-		printMsgCentered(3201, 5, 2)
+		printMsgCentered(msgFizzle, 5, 2)
 		combatDelay(int(delaySetting) / 2)
 		return
 	}
@@ -319,66 +319,66 @@ func doBreath(c *Combatant) int {
 	smax := int(c.StaminaMax)
 	switch c.Choice {
 	case 1:
-		actorLine(3340, 3700, 12, 0)
+		actorLine(msgBreathes, msgFire, 12, 0)
 		spellAnimation(g, 0, 0, true)
 		hitDamage(g, -pow, 2, 5, pow, resistFire, mod)
 		cost = random(4) + smax/6
 	case 2:
-		actorLine(3341, 3705, 9, 0)
+		actorLine(msgSpews, msgBoulders, 9, 0)
 		spellAnimation(g, 0, 9, false)
 		hitDamage(g, -pow, 2, 5, pow, 7, mod)
 		cost = random(2) + smax/20
 	case 3:
-		actorLine(3340, 3701, 2, 0)
+		actorLine(msgBreathes, msgIce, 2, 0)
 		spellAnimation(g, 0, 1, true)
 		hitDamage(g, -pow, 3, 4, pow, resistCold, mod)
 		cost = random(4) + smax/6
 	case 8:
-		actorLine(3340, 3706, 6, 0)
+		actorLine(msgBreathes, msgAcid, 6, 0)
 		spellAnimation(g, 0, 3, true)
 		hitDamage(g, -pow, 1, 7, pow, 8, mod)
 		cost = random(6) + smax/4
 	case 10:
-		if !actorLine(3345, -1, 6, silenced) {
+		if !actorLine(msgShrieks, -1, 6, silenced) {
 			spellAnimation(g, 0, 16, false)
 			hitDamage(g, -(pow + 1), 2, 4, pow, resistMental, mod)
 		}
 		cost = random(4) + smax/10
 	case 12:
-		if !actorLine(3346, -1, 5, silenced) {
+		if !actorLine(msgSings, -1, 5, silenced) {
 			spellAnimation(g, 0, 16, false)
-			hitDamageThen(g, -(pow + 1), 3479, resistMental, pow, mod, 1, 4, statusInsane, false, pow*10, 2, pow*10, 0, 0)
+			hitDamageThen(g, -(pow + 1), msgCombatStatusBase+statusInsane, resistMental, pow, mod, 1, 4, statusInsane, false, pow*10, 2, pow*10, 0, 0)
 		}
 		cost = random(4) + smax/10
 	case 4:
-		actorLine(3341, 3702, 15, 0)
+		actorLine(msgSpews, msgDarkVapor, 15, 0)
 		spellAnimation(g, 0, 16, false)
-		hitEffect(g, -pow, 3475, 4, statusParalyzed, mod, false, pow*2, 1, pow)
+		hitEffect(g, -pow, msgCombatStatusBase+statusParalyzed, 4, statusParalyzed, mod, false, pow*2, 1, pow)
 		cost = random(4) + smax/10
 	case 5:
-		actorLine(3342, 3703, 14, 0)
+		actorLine(msgVomits, msgStinkingOdor, 14, 0)
 		spellAnimation(g, 0, 3, false)
-		hitDamageThen(g, -(pow + 1), 3480, 5, pow, mod, 1, 6, statusNauseated, false, pow, 4, pow, 0, 0)
+		hitDamageThen(g, -(pow + 1), msgCombatStatusBase+statusNauseated, 5, pow, mod, 1, 6, statusNauseated, false, pow, 4, pow, 0, 0)
 		cost = random(4) + smax/6
 	case 6:
-		actorLine(3340, 3704, 11, 0)
+		actorLine(msgBreathes, msgPoison, 11, 0)
 		spellAnimation(g, 0, 3, false)
-		hitDamageThen(g, -pow, 3477, resistPoison, pow, mod, 1, 5, statusPoisoned, false, pow*10, 2, pow, 0, 0)
+		hitDamageThen(g, -pow, msgCombatStatusBase+statusPoisoned, resistPoison, pow, mod, 1, 5, statusPoisoned, false, pow*10, 2, pow, 0, 0)
 		cost = random(3) + smax/8
 	case 7:
-		actorLine(3343, -1, 5, 0)
+		actorLine(msgGazes, -1, 5, 0)
 		spellAnimation(g, 0, 16, false)
-		hitEffect(g, i, 3498, 13, 6, 15, false, 5, 5, 5)
+		hitEffect(g, i, msgHypnotized, 13, 6, 15, false, 5, 5, 5)
 		cost = random(2) + smax/20
 	case 9:
-		actorLine(3344, 3707, 7, 0)
+		actorLine(msgEmits, msgWhiteMist, 7, 0)
 		spellAnimation(g, 0, 16, false)
-		hitEffect(g, -(pow + 1), 3474, 9, statusAsleep, mod, false, pow, 2, pow)
+		hitEffect(g, -(pow + 1), msgCombatStatusBase+statusAsleep, 9, statusAsleep, mod, false, pow, 2, pow)
 		cost = random(3) + smax/10
 	case 11:
-		if !actorLine(3347, -1, 3, silenced) {
+		if !actorLine(msgCries, -1, 3, silenced) {
 			spellAnimation(g, 0, 16, false)
-			hitEffect(g, -10, 3473, resistMental, statusAfraid, mod, false, pow, 1, pow)
+			hitEffect(g, -10, msgCombatStatusBase+statusAfraid, resistMental, statusAfraid, mod, false, pow, 1, pow)
 		}
 		cost = random(3) + smax/8
 	}
@@ -403,7 +403,7 @@ func weakenGroup(g, who, mod, power int, weak bool) {
 		printCombatCentered(mexeName, nameColor(g), 2)
 		n := resistReduce(g, power, resistCold, mod)
 		if n <= 0 || random(100) <= int(groupMonsterRec[g].Resist[3])-mod {
-			printMsgCentered(3471, 14, 3)
+			printMsgCentered(msgEffectUnaffected, 14, 3)
 			combatDelay(int(delaySetting) / 2)
 			return
 		}
@@ -453,7 +453,7 @@ func chaosStrike(g, who, power, mod int) {
 			combatDelay(1)
 			mexeName = combatantName(g, i)
 			printCombatCentered(mexeName, nameColor(g), 2)
-			printMsgCentered(3471, 14, 3)
+			printMsgCentered(msgEffectUnaffected, 14, 3)
 			combatDelay(int(delaySetting) / 2)
 			return
 		}
@@ -461,21 +461,21 @@ func chaosStrike(g, who, power, mod int) {
 		case 0:
 			damageRoll(g, i, 4, 7, power, 12, mod)
 		case 1:
-			hitEffect(g, i, 3476, 2, statusBlinded, mod, false, power*2, 4, power)
+			hitEffect(g, i, msgCombatStatusBase+statusBlinded, 2, statusBlinded, mod, false, power*2, 4, power)
 		case 2:
-			hitEffect(g, i, 3474, 9, statusAsleep, mod, false, power, 2, 0)
+			hitEffect(g, i, msgCombatStatusBase+statusAsleep, 9, statusAsleep, mod, false, power, 2, 0)
 		case 3:
-			hitEffect(g, i, 3475, 4, statusParalyzed, mod, false, power*2, 1, power)
+			hitEffect(g, i, msgCombatStatusBase+statusParalyzed, 4, statusParalyzed, mod, false, power*2, 1, power)
 		case 4:
-			hitEffect(g, i, 3480, 5, statusNauseated, mod, false, power, 4, power)
+			hitEffect(g, i, msgCombatStatusBase+statusNauseated, 5, statusNauseated, mod, false, power, 4, power)
 		case 5:
-			hitEffect(g, i, 3489, 11, 3, mod-25, true, 0, 0, 0)
+			hitEffect(g, i, msgWhithersAndDies, 11, 3, mod-25, true, 0, 0, 0)
 		case 6:
 			damageRoll(g, i, power*2, 4, power*2, 0, mod)
 		case 7:
-			hitEffect(g, i, 3479, resistMental, statusInsane, mod, false, power, 2, power)
+			hitEffect(g, i, msgCombatStatusBase+statusInsane, resistMental, statusInsane, mod, false, power, 2, power)
 		case 8:
-			hitEffect(g, i, 3485, 11, 2, mod-25, true, 0, 0, 0)
+			hitEffect(g, i, msgCombatConditionBase+conditionStoned, 11, 2, mod-25, true, 0, 0, 0)
 		case 9:
 			damageRoll(g, i, 4, 7, power, resistFire, mod)
 		}
@@ -492,14 +492,14 @@ func summonGroup(mons [6]int, power int) {
 	case partySide():
 		g = allyGroup
 		if monsterGroups[allyGroup].Count > 0 {
-			printMsgCentered(3217, 6, 2)
+			printMsgCentered(msgNothingAppears, 6, 2)
 			return
 		}
 	case power > 0 && monsterGroupCount < 5:
 		monsterGroupCount++
 		g = monsterGroupCount
 	default:
-		printMsgCentered(3217, 6, 2)
+		printMsgCentered(msgNothingAppears, 6, 2)
 		return
 	}
 	*monsterGroups[g] = MonsterGroup{}
@@ -541,9 +541,9 @@ func summonGroup(mons [6]int, power int) {
 	mexeName = itoa(int(grp.Count))
 	mexeVerb = cstr(rec.Names[b2i(grp.Count != 1)][:])
 	if grp.Count == 1 {
-		mexeText = getMessage(3215)
+		mexeText = getMessage(msgAppears)
 	} else {
-		mexeText = getMessage(3216)
+		mexeText = getMessage(msgAppear)
 	}
 	setCursor(partyPictureWin, 20-(len(mexeName)+len(mexeVerb)+len(mexeText)+3)/2, 2)
 	printCombatLine(mexeName, mexeVerb, mexeText, 1, 6, 6)
@@ -578,7 +578,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, ti, 1, 7, power, resistFire, mod)
 	case spellBlindingFlash:
 		spellAnimation(tg, ti, 3, false)
-		hitEffect(tg, -(power + 1), 3476, 2, statusBlinded, mod, false, power, 2, power)
+		hitEffect(tg, -(power + 1), msgCombatStatusBase+statusBlinded, 2, statusBlinded, mod, false, power, 2, power)
 	case spellFireball:
 		spellAnimation(tg, 0, 0, true)
 		hitDamage(tg, -(power + 3), 2, 5, power, resistFire, mod)
@@ -605,7 +605,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, ti, 1, 6, power, resistCold, mod)
 	case spellTerror:
 		spellAnimation(tg, 0, 16, false)
-		hitEffect(tg, -10, 3473, resistMental, statusAfraid, mod, false, power, 3, power)
+		hitEffect(tg, -10, msgCombatStatusBase+statusAfraid, resistMental, statusAfraid, mod, false, power, 3, power)
 	case spellWeaken:
 		spellAnimation(tg, 0, 16, false)
 		weakenGroup(tg, -(power + 3), mod, power, true)
@@ -625,33 +625,33 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, -(power + 4), 3, 4, power, resistCold, mod)
 	case spellParalyze:
 		spellAnimation(tg, ti, 16, false)
-		hitEffect(tg, ti, 3475, 4, statusParalyzed, mod, false, power*2, 1, power)
+		hitEffect(tg, ti, msgCombatStatusBase+statusParalyzed, 4, statusParalyzed, mod, false, power*2, 1, power)
 	case spellDeepFreeze:
 		spellAnimation(tg, ti, 1, true)
 		hitDamage(tg, ti, 3, 10, power, resistCold, mod)
 	case spellPoison:
 		spellAnimation(tg, ti, 3, false)
-		hitDamageThen(tg, ti, 3477, resistPoison, power, mod, 1, 5, statusPoisoned, false, power*10, 2, power, 0, 0)
+		hitDamageThen(tg, ti, msgCombatStatusBase+statusPoisoned, resistPoison, power, mod, 1, 5, statusPoisoned, false, power*10, 2, power, 0, 0)
 	case spellMissileShield:
 		raiseWard(&own.Wards[2], power*15)
 	case spellStinkBomb:
 		spellAnimation(tg, 0, 3, true)
-		hitDamageThen(tg, -3, 3480, 5, power, mod, 1, 6, statusNauseated, false, power, 4, power, 0, 0)
+		hitDamageThen(tg, -3, msgCombatStatusBase+statusNauseated, 5, power, mod, 1, 6, statusNauseated, false, power, 4, power, 0, 0)
 	case spellAirPocket:
 		raiseWard(&own.Wards[3], power*15)
 	case spellSilence:
 		spellAnimation(tg, 0, 16, false)
-		hitEffect(tg, -(power + 3), 3472, 12, statusSilenced, mod, false, power, 2, 0)
+		hitEffect(tg, -(power + 3), msgCombatStatusBase+statusSilenced, 12, statusSilenced, mod, false, power, 2, 0)
 	case spellPoisonGas:
 		spellAnimation(tg, 0, 3, false)
-		hitDamageThen(tg, -10, 3477, resistPoison, power, mod, 1, 4, statusPoisoned, false, power*10, 2, power, 0, 0)
+		hitDamageThen(tg, -10, msgCombatStatusBase+statusPoisoned, resistPoison, power, mod, 1, 4, statusPoisoned, false, power*10, 2, power, 0, 0)
 		startCloud(tg, 1, power)
 	case spellWhirlwind:
 		spellAnimation(tg, 0, 4, false)
 		hitDamage(tg, -(power + 3), 1, 7, power, 5, mod)
 	case spellPurifyAir:
 		clearMsgLine(3)
-		printMsgCentered(3224, 3, 3)
+		printMsgCentered(msgLethalCloudsReduced, 3, 3)
 		combatDelay(int(delaySetting) / 2)
 		for k := range own.CloudPower {
 			own.CloudPower[k] = uint8(max(int(own.CloudPower[k])-power, 0))
@@ -661,28 +661,28 @@ func doCastSpell(c *Combatant, spell, power int) {
 			own.Wards[3] = int8(v)
 			clearMsgLine(3)
 			if v == 0 {
-				printMsgCentered(3225, 3, 3)
+				printMsgCentered(msgAirBubbleDestroyed, 3, 3)
 			} else {
-				printMsgCentered(3226, 3, 3)
+				printMsgCentered(msgAirBubbleReduced, 3, 3)
 			}
 		}
 	case spellDeadlyPoison:
 		spellAnimation(tg, ti, 3, false)
 		if random(100) < power*5 {
-			hitEffect(tg, ti, 3489, resistPoison, 3, mod, true, 0, 0, 0)
+			hitEffect(tg, ti, msgWhithersAndDies, resistPoison, 3, mod, true, 0, 0, 0)
 		} else {
-			hitDamageThen(tg, ti, 3477, resistPoison, power, mod, 3, 5, statusPoisoned, false, power*10, 4, power*10, 0, 0)
+			hitDamageThen(tg, ti, msgCombatStatusBase+statusPoisoned, resistPoison, power, mod, 3, 5, statusPoisoned, false, power*10, 4, power*10, 0, 0)
 		}
 	case spellToxicVapors:
 		spellAnimation(tg, 0, 3, false)
-		hitDamageThen(tg, -10, 3480, 5, power, mod, 2, 3, statusNauseated, false, power, 4, power, 0, 0)
+		hitDamageThen(tg, -10, msgCombatStatusBase+statusNauseated, 5, power, mod, 2, 3, statusNauseated, false, power, 4, power, 0, 0)
 		startCloud(tg, 2, power)
 	case spellNoxiousFumes:
 		spellAnimation(tg, 0, 3, true)
-		hitDamageThen(tg, -(power + 3), 3480, 5, power, mod, 1, 6, statusNauseated, false, power, 4, power, 0, 0)
+		hitDamageThen(tg, -(power + 3), msgCombatStatusBase+statusNauseated, 5, power, mod, 1, 6, statusNauseated, false, power, 4, power, 0, 0)
 	case spellAsphyxiation:
 		spellAnimation(tg, 0, 4, false)
-		sideGroups(other, func(g int) { groupStatus(g, 3490, 5, 3, mod, true, power, power, power) })
+		sideGroups(other, func(g int) { groupStatus(g, msgSuffocated, 5, 3, mod, true, power, power, power) })
 	case spellDeadlyAir:
 		spellAnimation(b2i(actGroup == 0), 0, 4, false)
 		sideGroups(other, func(g int) { hitDamage(g, -10, 4, 4, power, 5, mod) })
@@ -691,7 +691,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, ti, 1, 7, power, 8, mod)
 	case spellItchingSkin:
 		spellAnimation(tg, ti, 3, false)
-		hitEffect(tg, -3, 3487, 8, 9, mod, false, power, 2, power)
+		hitEffect(tg, -3, msgIrritated, 8, 9, mod, false, power, 2, power)
 	case spellArmorShield:
 		t := fighter(tg, ti)
 		t.ArmorMod = int8(clampToward(power, int(t.ArmorMod), 1))
@@ -700,7 +700,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, -(power + 3), 2, 4, power, 7, mod)
 	case spellWeb:
 		spellAnimation(tg, ti, 2, false)
-		hitEffect(tg, ti, 3488, 4, statusParalyzed, mod, false, power*2, 1, power)
+		hitEffect(tg, ti, msgCaptured, 4, statusParalyzed, mod, false, power*2, 1, power)
 	case spellAcidBomb:
 		spellAnimation(tg, 0, 3, true)
 		hitDamage(tg, -10, 1, 6, power, 8, mod)
@@ -727,10 +727,10 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 	case spellMentalAttack:
 		spellAnimation(tg, ti, 16, true)
-		hitDamageThen(tg, ti, 3479, resistMental, power, mod, 1, 7, statusInsane, false, power, 1, power, 0, 0)
+		hitDamageThen(tg, ti, msgCombatStatusBase+statusInsane, resistMental, power, mod, 1, 7, statusInsane, false, power, 1, power, 0, 0)
 	case spellSleep:
 		spellAnimation(tg, 0, 16, false)
-		hitEffect(tg, -(power + 3), 3474, 9, statusAsleep, mod, false, power, 2, 0)
+		hitEffect(tg, -(power + 3), msgCombatStatusBase+statusAsleep, 9, statusAsleep, mod, false, power, 2, 0)
 	case spellBless:
 		n := (power-1)/2 + 1
 		for i := 0; int(own.Count) > i; i++ {
@@ -740,7 +740,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 	case spellCharmNPC:
 		spellAnimation(tg, ti, 16, false)
-		hitEffect(tg, ti, 3496, 9, statusParalyzed, mod, false, power*2, 1, power)
+		hitEffect(tg, ti, msgBeholden, 9, statusParalyzed, mod, false, power*2, 1, power)
 	case spellIdentify:
 		for g := 1; g <= monsterGroupCount; g++ {
 			if random(100) < power*10+80-gameStateArg*5 {
@@ -749,10 +749,10 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 	case spellHoldMonsters:
 		spellAnimation(tg, 0, 16, false)
-		hitEffect(tg, -(power + 3), 3492, 9, statusParalyzed, mod, false, power, 2, 0)
+		hitEffect(tg, -(power + 3), msgHeld, 9, statusParalyzed, mod, false, power, 2, 0)
 	case spellPsionicBlast:
 		spellAnimation(tg, 0, 16, true)
-		hitDamageThen(tg, -(power + 3), 3479, resistMental, power, mod, 1, 7, statusInsane, false, power*2, 2, power, 0, 0)
+		hitDamageThen(tg, -(power + 3), msgCombatStatusBase+statusInsane, resistMental, power, mod, 1, 7, statusInsane, false, power*2, 2, power, 0, 0)
 	case spellIllusion:
 		switch {
 		case partySide():
@@ -768,7 +768,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 	case spellDeath:
 		spellAnimation(tg, ti, 16, false)
-		hitEffect(tg, ti, 3482, 11, 3, mod-35, true, 0, 0, 0)
+		hitEffect(tg, ti, msgSlainSpell, 11, 3, mod-35, true, 0, 0, 0)
 	case spellMindFlay:
 		spellAnimation(tg, 0, 16, true)
 		sideGroups(other, func(g int) { hitDamage(g, -10, 4, 4, power, resistMental, mod) })
@@ -780,7 +780,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, -(power + 1), 1, 7, power, 12, mod)
 	case spellDispelUndead, spellAstralGate:
 		spellAnimation(tg, 0, 2, true)
-		kind, msg := uint8(classUndead), 3493
+		kind, msg := uint8(classUndead), msgDispelled
 		if spell == spellAstralGate {
 			kind, msg = 21, 3497
 		}
@@ -823,7 +823,9 @@ func doCastSpell(c *Combatant, spell, power int) {
 		sideGroups(other, func(g int) { hitDamage(g, -10, 4, 4, power, 11, mod) })
 	case spellDeathWish:
 		spellAnimation(tg, 0, 16, false)
-		sideGroups(other, func(g int) { groupStatus(g, 3486, 11, 3, mod, true, power, power, power) })
+		sideGroups(other, func(g int) {
+			groupStatus(g, msgCombatConditionBase+conditionDead, 11, 3, mod, true, power, power, power)
+		})
 	case spellHolyWater:
 		spellAnimation(tg, ti, 4, false)
 		k := groupMonsterRec[tg].Class

@@ -186,7 +186,7 @@ func damageEffect(g, i, n, r, cond, mod, report int) {
 	loadPartyResist(g, i)
 	if r != 0 && random(100) <= int(groupMonsterRec[g].Resist[r])-mod {
 		if report == 1 {
-			effectMsg(g, i, 3471, 0, 0)
+			effectMsg(g, i, msgEffectUnaffected, 0, 0)
 		}
 		return
 	}
@@ -214,7 +214,7 @@ func statusEffect(g, i, n, r, s, mod, count, sides, base, report int) {
 	d = resistReduce(g, d, r, mod)
 	if d <= 0 || random(100) <= int(groupMonsterRec[g].Resist[r])-mod {
 		if report == 1 {
-			effectMsg(g, i, 3471, 0, 0)
+			effectMsg(g, i, msgEffectUnaffected, 0, 0)
 		}
 		return
 	}
@@ -258,9 +258,9 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 	mexeName = combatantName(g, i)
 	printCombatCentered(mexeName, nameColor(g), 2)
 	if dmg <= 0 {
-		printMsgCentered(3310, 14, 3)
+		printMsgCentered(msgUnaffected, 14, 3)
 	} else {
-		printMsgCentered(3302, 4, 3)
+		printMsgCentered(msgHit, 4, 3)
 		combatDelay(2)
 		mexeName = itoa(dmg)
 		mexeVerb = getMessage(3309)
@@ -270,10 +270,10 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 		c.HP -= int16(dmg)
 		if c.HP <= 0 {
 			combatDelay(int(delaySetting) / 4)
-			damageEffect(g, i, 3486, 0, conditionDead, 0, 0)
+			damageEffect(g, i, msgCombatConditionBase+conditionDead, 0, conditionDead, 0, 0)
 		} else {
 			if g == 0 {
-				playSound(2)
+				playSound(soundHurt)
 				drawCardX(i, true)
 			}
 			combatDelay(int(delaySetting) / 4)
@@ -320,7 +320,7 @@ func wardPair(g, r int, ns ...*int) {
 		}
 	}
 	if changed {
-		showCombatMsg(3213)
+		showCombatMsg(msgSpellReduced)
 	}
 }
 
@@ -421,7 +421,7 @@ func groupStatus(g, n, r, s, mod int, isDamage bool, count, sides, base int) {
 		if r == 5 {
 			if int(uint8(monsterGroups[g].Wards[3]))/5 > count {
 				clearMsgLine(2)
-				printMsgCentered(3212, 5, 2)
+				printMsgCentered(msgSpellDeflected, 5, 2)
 				combatDelay(int(delaySetting) / 2)
 				return
 			}
@@ -452,7 +452,7 @@ func doAttack(c *Combatant, slot, kind int) {
 	atkRec := groupMonsterRec[actGroup]
 	if actGroup == 0 {
 		p := &party[actMember]
-		mexeVerb = getMessage(kind + 3350)
+		mexeVerb = getMessage(kind + msgPartyAttackVerbBase)
 		item := int(p.Equipped[slot])
 		if kind == 8 {
 			item = int(p.Equipped[1])
@@ -466,7 +466,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			if thrownOrBash {
 				if kind == 4 && rec.Spell != 0 {
 					spell = int(rec.Spell)
-					mexeVerb = getMessage(3384)
+					mexeVerb = getMessage(msgMonsterThrows)
 				}
 				switch p.Items[item].Icon {
 				case 0:
@@ -491,9 +491,9 @@ func doAttack(c *Combatant, slot, kind int) {
 			}
 		}
 	} else if atkRec.AttackKind[slot] > 3 {
-		mexeVerb = getMessage(int(atkRec.AttackKind[slot]) + 3371)
+		mexeVerb = getMessage(int(atkRec.AttackKind[slot]) + msgMonsterAttackVerbBase)
 	} else {
-		mexeVerb = getMessage(kind + 3350)
+		mexeVerb = getMessage(kind + msgPartyAttackVerbBase)
 		if c.Stance != stanceNone && !thrownOrBash {
 			mexeVerb = getMessage(random(2) + 3385)
 		}
@@ -515,11 +515,11 @@ func doAttack(c *Combatant, slot, kind int) {
 				spell = int(d.Count)<<8 + int(d.Sides)
 			}
 			if spell != -1 {
-				mexeVerb = getMessage(3384)
+				mexeVerb = getMessage(msgMonsterThrows)
 			}
 		}
 		if v := atkRec.AttackVerb[slot]; v > 0 {
-			mexeText = getMessage(int(v) + 3799)
+			mexeText = getMessage(int(v) + msgItemNameBase)
 		}
 	}
 	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, 11)
@@ -718,7 +718,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		}
 	}
 	if s := groupMonsterRec[1].Sound; actGroup != 0 && !quiet && s > 0 && s != 6 && atkRec.Sound == s {
-		playSound(14)
+		playSound(loadedSound)
 	}
 	combatDelay(int(delaySetting) / 4)
 
@@ -756,27 +756,27 @@ func doAttack(c *Combatant, slot, kind int) {
 		}
 		switch {
 		case thrownOrBash && random(100) < int(uint8(monsterGroups[tg].Wards[2])):
-			printMsgCentered(3214, 14, 3)
-			playSound(7)
+			printMsgCentered(msgDeflected, 14, 3)
+			playSound(soundHit)
 		case roll < 5 || roll < 95 && toHit-ac*5 >= roll && spell == -1:
-			printMsgCentered(3301, 14, 3)
+			printMsgCentered(msgMissed, 14, 3)
 		case spell != -1:
 			mexeBackfire = 1
 			doCastSpell(c, spell%256, spell/256)
 		default:
-			printMsgCentered(3302, 4, 3)
-			playSound(7)
+			printMsgCentered(msgHit, 4, 3)
+			playSound(soundHit)
 			if tRec.Class == 17 {
-				mexeName = getMessage(area + 3330)
+				mexeName = getMessage(area + msgTreeAreaBase)
 			} else {
-				mexeName = getMessage(area + 3320)
+				mexeName = getMessage(area + msgBodyAreaBase)
 			}
 			if c.Stance == stanceHidden {
 				c.Stance = stanceHiddenStruck
 			}
 			dmg := (rollDice(dice) + bonus) * mult
 			if dmg <= 0 || roll < 95 && toHit-areaAC*5 >= roll {
-				mexeVerb = getMessage(3303)
+				mexeVerb = getMessage(msgNoPenetration)
 				setCursor(partyPictureWin, 0, 4)
 				mexeText = ""
 				printCombatLine(mexeName, mexeVerb, mexeText, 4, 14, 0)
@@ -791,13 +791,13 @@ func doAttack(c *Combatant, slot, kind int) {
 			t.Status[statusParalyzed] = uint8(min(max(int(t.Status[statusParalyzed])-(random(3)+2), 0), 255))
 			if t.HP <= 0 {
 				combatDelay(int(delaySetting) / 4)
-				damageEffect(tg, ti, 3486, 0, conditionDead, 0, 0)
+				damageEffect(tg, ti, msgCombatConditionBase+conditionDead, 0, conditionDead, 0, 0)
 				if c.Stance == stanceHiddenStruck {
 					c.Stance = stanceHidden
 				}
 			} else {
 				if tg == 0 {
-					playSound(2)
+					playSound(soundHurt)
 					drawCardX(ti, true)
 				}
 				combatDelay(int(delaySetting) / 4)
@@ -828,13 +828,13 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 		pow := int(c.Level)/3 + 1
 		switch k {
 		case handSleep:
-			statusEffect(g, i, 3474, 9, statusAsleep, mod, pow, 2, pow, 0)
+			statusEffect(g, i, msgCombatStatusBase+statusAsleep, 9, statusAsleep, mod, pow, 2, pow, 0)
 		case handParalyze:
-			statusEffect(g, i, 3475, 4, statusParalyzed, mod, pow*pow*2, 5, pow, 0)
+			statusEffect(g, i, msgCombatStatusBase+statusParalyzed, 4, statusParalyzed, mod, pow*pow*2, 5, pow, 0)
 		case handPoison:
-			statusEffect(g, i, 3477, resistPoison, statusPoisoned, mod, pow*10, 2, int(fx[hitPoisonStr]), 0)
+			statusEffect(g, i, msgCombatStatusBase+statusPoisoned, resistPoison, statusPoisoned, mod, pow*10, 2, int(fx[hitPoisonStr]), 0)
 		case handStone:
-			damageEffect(g, i, 3485, 11, conditionDown, mod, 0)
+			damageEffect(g, i, msgCombatConditionBase+conditionStoned, 11, conditionDown, mod, 0)
 		case handDrain:
 			if actGroup == 0 {
 				break
@@ -865,7 +865,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			}
 			mexeName = combatantName(g, i)
 			mexeText = replaceCharWithString(getMessage(msg), itoa(drained), '$')
-			mexeVerb = getMessage(3750)
+			mexeVerb = getMessage(msgDrained)
 			clearMsgLine(4)
 			drainColor := 5
 			if g == 0 {
@@ -878,7 +878,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			}
 			combatDelay(int(delaySetting) / 2)
 			if fighter(g, i).HP <= 0 {
-				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
+				damageEffect(g, i, msgCombatConditionBase+conditionDead, 0, conditionDead, mod, 0)
 			}
 		case handCritical:
 			r := 13
@@ -887,12 +887,12 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			}
 			if random(100) > int(groupMonsterRec[g].Resist[r])-mod {
 				clearMsgLine(4)
-				printMsgCentered(3495, 5, 4)
+				printMsgCentered(msgCritical, 5, 4)
 				combatDelay(int(delaySetting) / 4)
-				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
+				damageEffect(g, i, msgCombatConditionBase+conditionDead, 0, conditionDead, mod, 0)
 			}
 		case handKnockout:
-			statusEffect(g, i, 3484, 9, statusAsleep, mod, pow*2, 3, pow, 0)
+			statusEffect(g, i, msgCombatConditionBase+1, 9, statusAsleep, mod, pow*2, 3, pow, 0) // FALLS UNCONSCIOUS!
 		}
 	}
 }

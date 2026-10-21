@@ -27,7 +27,7 @@ func reorderParty() {
 	var pcfiles [6]int
 	var portraits [6]uint8
 	for k := 0; n-1 > k; k++ {
-		curMember = int16(choosePartyMember(2037, 0))
+		curMember = int16(choosePartyMember(msgMarchingOrder, 0))
 		c := int(curMember)
 		saved[k] = party[c]
 		pcfiles[k] = memberPcfileIndex[c]
@@ -113,7 +113,7 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 // rest_party (WMAZE 63f4) rests the party for up to eight hours; true if an encounter
 // interrupts it.
 func restParty() bool {
-	showMazeMessage(2036)
+	showMazeMessage(msgResting)
 	mzWaitCut = 0
 	hours := 8
 	s := &saveState
@@ -190,8 +190,8 @@ func showError(s string) {
 // and the party; -1 on a failure. The floppy prompts of the C are no-ops in one
 // directory and are left out.
 func saveGame() int {
-	done := getMessage(2257)
-	failed := getMessage(2258)
+	done := getMessage(msgSavingGame)
+	failed := getMessage(msgDiskError)
 	eraseWindow(mainWindow, false)
 	stopSound()
 	eraseCursorMark(bottomLineWin, false)
@@ -234,10 +234,10 @@ func diskOptionsMenu() {
 	eraseWindow(bottomLineWin, false)
 	refreshAllWindows()
 	mzRefreshPending = 1
-	showMazeMessage(2200)
+	showMazeMessage(msgDiskOptions)
 	// The C's l36[3] and l36[6] are its locals l30 (0) and l24 (-1, the end).
 	enabled := []int{1, 1, 1, 0, 1, 1, -1}
-	choice := menuSelectCancel(win, 2201, enabled, 1, 1, 20, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
+	choice := menuSelectCancel(win, msgDiskMenu, enabled, 1, 1, 20, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:
@@ -269,33 +269,33 @@ func mazePartyMenu() {
 	refreshAllWindows()
 	mzRefreshPending = 1
 	setCursor(mainWindow, 3, 0)
-	printMessage(2002, mainWindow, 18)
+	printMessage(msgPartyOptions, mainWindow, 18)
 	mainWindow.CurX++
 	// The C's l36[9] is its local l18, -1, which ends the list.
 	enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
 	if partyCount < 2 {
 		enabled[5] = 0 // the C's l26 is enabled[5]
 	}
-	choice := menuSelectCancel(win, 2005, enabled, 1, 1, 7, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
+	choice := menuSelectCancel(win, msgPartyMenu, enabled, 1, 1, 7, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:
 		searchCell()
 		tickEffectTimers(1)
 	case 1:
-		if curMember = int16(choosePartyMember(2026, 1)); curMember != -1 {
+		if curMember = int16(choosePartyMember(msgMazeReviewWho, 1)); curMember != -1 {
 			tickEffectTimers(1)
 			gameState = stateViewCharacter
 			returnCmd = int16(stateExplore)
 		}
 	case 2:
-		if curMember = int16(choosePartyMember(2029, 1)); curMember != -1 && isMemberAble(int(curMember)) {
+		if curMember = int16(choosePartyMember(msgWhoCasts, 1)); curMember != -1 && isMemberAble(int(curMember)) {
 			tickEffectTimers(1)
 			gameState = stateCastSpellInMaze
 			returnCmd = int16(stateExplore)
 		}
 	case 3:
-		if curMember = int16(choosePartyMember(2031, 1)); curMember != -1 && isMemberAble(int(curMember)) && party[curMember].ItemCount > 0 {
+		if curMember = int16(choosePartyMember(msgWhoWillUse, 1)); curMember != -1 && isMemberAble(int(curMember)) && party[curMember].ItemCount > 0 {
 			tickEffectTimers(1)
 			gameState = stateUseItemInMaze
 			returnCmd = int16(stateExplore)
@@ -416,12 +416,12 @@ func mazeMainLoop() {
 		case (gameStateArg == 5 || gameStateArg == 12 && partyBlock > 8) && testBit(mazeA.SpecialCells[:], partyCell()):
 			eraseWindow(mainWindow, true)
 			delayLong()
-			showMazeMessage(2023)
+			showMazeMessage(msgDark)
 			mzClearMessage = 1
 		case gameStateArg == 8 && partyCounters[0].B == 1:
 			eraseWindow(mainWindow, true)
 			delayLong()
-			showMazeMessage(2054)
+			showMazeMessage(msgFlying)
 			mzClearMessage = 1
 		case mzClearMessage == 1:
 			eraseWindow(mainWindow, true)
@@ -541,7 +541,7 @@ func showPrevPosition() {
 // show_fleeing_msg (WMAZE 7859).
 func showFleeingMsg() bool {
 	refreshAllWindows()
-	showMazeMessage(2041)
+	showMazeMessage(msgRunning)
 	return true
 }
 

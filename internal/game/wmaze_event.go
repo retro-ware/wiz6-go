@@ -323,7 +323,7 @@ func spinnerEvent() {
 				stepPosition(int(partyFacing), int16(dist))
 			}
 			if moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY)) == 1 {
-				killParty(2022)
+				killParty(msgYouAreInRock)
 				return
 			}
 			cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
@@ -381,7 +381,7 @@ func doTeleportEvent() {
 	case 0, 1:
 		teleportParty()
 	case 2:
-		showMazeMessage(2052)
+		showMazeMessage(msgChute)
 		playSound(8)
 		waitAnimating(messageDelay / 4)
 		mzClearMessage = 1
@@ -419,7 +419,7 @@ func doMessageEvent() {
 func showMemberNotice(m int) {
 	openEventTextWin(false)
 	refreshAllWindows()
-	s := replaceCharWithString(getMessage(2040), memberName(m), '^')
+	s := replaceCharWithString(getMessage(msgDetectsSomethingUnusual), memberName(m), '^')
 	setCursor(textWin, 20-(len(s)+1)/2, 1)
 	printString(textWin, s, 5)
 	playSound(soundBeep)
@@ -583,7 +583,7 @@ func trapDamageMember(m, count, sides int) {
 		return
 	}
 	num := itoa(n)
-	pre, post := getMessage(5231), getMessage(5232)
+	pre, post := getMessage(msgTakes), getMessage(msgTrapDamage)
 	if int(p.HP) < n {
 		n = int(p.HP)
 	}
@@ -594,7 +594,7 @@ func trapDamageMember(m, count, sides int) {
 		waitAnimating(2)
 		inflictCondition(m, 5264, 0, 3)
 	} else {
-		playSound(2)
+		playSound(soundHurt)
 		waitAnimating(messageDelay)
 	}
 }
@@ -631,7 +631,7 @@ func inflictStatus(m, msg, resist, status, count, sides, base int) {
 func trapEvent() {
 	bits := eventBits()
 	if extractBits(bits, 8, 4) == 4 {
-		killParty(10000)
+		killParty(msgYouFellYourDeath)
 		return
 	}
 	eventScreenDirty = 1
@@ -656,7 +656,7 @@ func trapEvent() {
 	noDamage := extractBits(bits, 15, 1)
 	if warded != 0 && partyCounters[5].Duration > 0 {
 		noDamage = 1
-		s := getMessage(2056)
+		s := getMessage(msgProtectedByLevitation)
 		clearWindow(textWin, false)
 		refreshAllWindows()
 		setCursor(textWin, 20-(len(s)+1)/2, 1)
@@ -676,9 +676,9 @@ func trapEvent() {
 		switch {
 		case kind <= 0:
 		case kind < 6:
-			inflictCondition(m, kind+5261, resist, kind)
+			inflictCondition(m, msgTrapConditionBase+kind, resist, kind)
 		default:
-			inflictStatus(m, kind+5244, resist, kind-6, count, 10, count)
+			inflictStatus(m, msgTrapStatusBase+kind-6, resist, kind-6, count, 10, count)
 		}
 	}
 	setEventFlags(extractBits(eventBits(), 13, 2))

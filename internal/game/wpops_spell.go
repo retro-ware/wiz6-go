@@ -74,7 +74,7 @@ func drawBookSpellWindow(w *Window, m int) {
 		putCharAt(w, i+15, 3, byte(i+24))
 	}
 	setCursor(w, 13, 5)
-	printMessage(3957, w, 18)
+	printMessage(msgCost, w, 18)
 	setCursor(w, 13, 6)
 	for range 4 {
 		putCharHi(w, ' ', 3)
@@ -99,7 +99,7 @@ func drawBookSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
 		if lit {
 			color = realmColors[realm]
 		}
-		printMessage(list[i]+4000, w, color)
+		printMessage(list[i]+msgSpellNameBase, w, color)
 		for lit && w.CurX < 17 {
 			putChar(w, ' ', realmColors[realm])
 		}
@@ -143,13 +143,13 @@ func chooseCombatSpell(win *Window, m int) int {
 				setCursor(book, 13, 1)
 				if realm == -1 {
 					pvBlinkX, pvBlinkY = 13, 3
-					printMessage(3956, book, 9)
+					printMessage(msgSpellBookCancel, book, 9)
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = -1
 					drawListFrame(list, true)
 				} else {
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, book, realmColors[realm])
+					printMessage(realm+msgRealmBase, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = countKnownSpells(m, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
@@ -222,7 +222,7 @@ func chooseCombatSpell(win *Window, m int) int {
 		chosen = true
 		for k := 0; k != 5; {
 			pvBlinkState = 1
-			pvBlinkText[1] = getMessage(spells[pos] + 4000)
+			pvBlinkText[1] = getMessage(spells[pos] + msgSpellNameBase)
 			pvBlinkColor[1] = realmColors[realm]
 			drawBookSpellList(list, realm, pos, true, count, spells[:])
 			cost := int(spellTable[spells[pos]].Cost)
@@ -269,7 +269,7 @@ func chooseCombatSpell(win *Window, m int) int {
 	drawListFrame(list, false)
 	deferWindowDraw(list)
 	setCursor(list, 2, 2)
-	printMessage(spell+4000, list, 18)
+	printMessage(spell+msgSpellNameBase, list, 18)
 	resumeWindowDraw(list)
 	refreshWindow(list)
 	pvBlinkWin = book
@@ -296,7 +296,7 @@ func chooseCombatSpell(win *Window, m int) int {
 				pvBlinkColor = [2]int{17, 5}
 				clearWindowArea(book, 13, 1, 20, 1)
 				setCursor(book, 13, 1)
-				printMessage(3956, book, 9)
+				printMessage(msgSpellBookCancel, book, 9)
 				clearWindowArea(book, 18, 5, 20, 5)
 			} else {
 				pvBlinkX, pvBlinkY = level+14, 3
@@ -336,7 +336,7 @@ func chooseCombatSpell(win *Window, m int) int {
 					unhighlightBookRealm(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
 					setCursor(book, 13, 1)
-					printMessage(realm+3950, book, rc)
+					printMessage(realm+msgRealmBase, book, rc)
 					level, redraw = 1, true
 				} else if level < maxLevel {
 					unlight()
@@ -359,13 +359,13 @@ func chooseCombatSpell(win *Window, m int) int {
 		fillWindow(win, 32, 3)
 		refreshAllWindows()
 		c.TargetGroup = 0
-		t := selectPartyMember(3609)
+		t := selectPartyMember(msgCombatCastOnWho)
 		if t == -1 {
 			return -1
 		}
 		c.TargetMember = int8(t)
 	case spellTargetGroup:
-		t := selectMonsterGroup(win, 3603, 3, 0)
+		t := selectMonsterGroup(win, msgCastOn, 3, 0)
 		if t == -1 {
 			return -1
 		}
@@ -420,7 +420,7 @@ func chooseCombatItem(win *Window, m int) int {
 	fillWindow(list, 32, 3)
 	deferWindowDraw(prompt)
 	setCursor(prompt, 2, 1)
-	printMessage(3504, prompt, 18)
+	printMessage(msgCombatUseWhichItem, prompt, 18)
 	resumeWindowDraw(prompt)
 	drawListFrame(list, false)
 	refreshAllWindows()
@@ -433,7 +433,7 @@ func chooseCombatItem(win *Window, m int) int {
 			counts[i] = int(p.Items[i].Qty)
 		}
 	}
-	cancel := getMessage(3505)
+	cancel := getMessage(msgCombatUseCancel)
 	pos, onCancel := 0, false
 	setClickRegion(0, list.X+2, list.Y+2, list.X+19, list.Y+2)
 	setClickRegion(1, list.X+1, list.Y, list.X+1, list.Y)
@@ -494,13 +494,13 @@ func chooseCombatItem(win *Window, m int) int {
 			fillWindow(win, 32, 3)
 			refreshAllWindows()
 			c.TargetGroup = 0
-			t := selectPartyMember(3610)
+			t := selectPartyMember(msgCombatUseOnWho)
 			if t == -1 {
 				return -1
 			}
 			c.TargetMember = int8(t)
 		case spellTargetGroup:
-			t := selectMonsterGroup(win, 3604, 3, 0)
+			t := selectMonsterGroup(win, msgUseOn, 3, 0)
 			if t == -1 {
 				return -1
 			}

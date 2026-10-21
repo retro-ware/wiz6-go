@@ -507,7 +507,7 @@ func setupGameWindows() {
 	drawGlyph2x2(movePadWin, 16, 3, 15, 10, 16, 12)
 	for i := range 4 {
 		setCursor(movePadWin, 1, i+1)
-		printMessage(i+1300, movePadWin, 18)
+		printMessage(i+msgPressReturnBase, movePadWin, 18)
 	}
 	resumeWindowDraw(movePadWin)
 	curEvent = [4]int16{}
@@ -665,7 +665,7 @@ func countEnabledItems(enabled []int, n int) int {
 // doMasterOptions (WBASE 709a) is the camp menu: add, review and dismiss members, start a
 // new or saved game, the character menu, configuration, the title page and quit.
 func doMasterOptions() {
-	menuKeys = getMessage(1000)
+	menuKeys = getMessage(msgCampKeys)
 	loadMonsterPicSlot(8, 4)
 	campAnimTick = 0
 	animPhase = 0
@@ -682,7 +682,7 @@ func doMasterOptions() {
 		sel = campStart
 	}
 	for gameState = -1; gameState < 0; {
-		showMessageLine(1001)
+		showMessageLine(msgMasterOptions)
 		eraseWindow(bottomLineWin, false)
 		win := createWindow(0, 19, 40, 5, 15, borderNone, 0, false)
 		fillWindow(win, ' ', 3)
@@ -706,7 +706,7 @@ func doMasterOptions() {
 			enabled[campResume] = 0
 		}
 		sel = countEnabledItems(enabled, sel)
-		choice := runCampMenu(win, 1002, enabled, 2, 1, 19, 4, 5, sel)
+		choice := runCampMenu(win, msgCampMenu, enabled, 2, 1, 19, 4, 5, sel)
 		destroyWindow(win, false)
 		sel = 0
 		if partyCount >= len(party) {
@@ -719,13 +719,13 @@ func doMasterOptions() {
 				sel = campStart
 			}
 		case campReview:
-			if curMember = int16(choosePartyMemberWbase(1202)); curMember != -1 {
+			if curMember = int16(choosePartyMemberWbase(msgCampReviewWho)); curMember != -1 {
 				gameState = stateViewCharacter
 				returnCmd = int16(stateMasterOptions)
 			}
 			sel = campReview
 		case campRemove:
-			if curMember = int16(choosePartyMemberWbase(1203)); curMember != -1 {
+			if curMember = int16(choosePartyMemberWbase(msgDismissWho)); curMember != -1 {
 				removePartyMember(int(curMember))
 			}
 			if partyCount > 0 {
@@ -775,3 +775,19 @@ func closeGameWindows() {
 	}
 	stopSound()
 }
+
+// MSG.DBS message ids.
+const (
+	msgPressReturnBase = 1300 // plus 0..3: PRESS, RETURN, FOR, OPTIONS
+
+	msgCampKeys        = 1000
+	msgMasterOptions   = 1001
+	msgCampMenu        = 1002 // ADD PARTY MEMBER
+	msgAddMember       = 1201
+	msgCampReviewWho   = 1202 // review_who}
+	msgDismissWho      = 1203
+	msgAddWho          = 1206
+	msgAddCancel       = 1207 // CANCEL
+	msgEntering        = 1212
+	msgBaneCosmicForge = 1213 // BANE OF THE COSMIC FORGE
+)

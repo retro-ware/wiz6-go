@@ -175,5 +175,66 @@ const (
 	classUndead       = 20 // a monster class (MonsterRec.Class): DISPEL UNDEAD
 	classCount        = 14
 	soundBeep         = 0
+	soundClick        = 1 // a point moved in a skill/ability adjuster
+	soundHurt         = 2 // a member hurt but alive
+	soundHit          = 7 // a melee hit
 	soundDeathBase    = 8 // plus Sex
+)
+
+// MSG.DBS message ids.
+const (
+	msgDrinkResultBase = 2048 // plus the result: no effect, refreshing, poison, unusual
+	msgForceResultBase = 2113 // plus the result: success, failure, jammed
+	msgConfigItemBase  = 2300 // plus the item: SOUND, DELAY, LEVEL, ..
+	msgSoundModeBase   = 2350 // plus SoundMode
+	msgLevelBase       = 2357 // plus Level: NORMAL, EASY, EXPERT
+	msgInputBase       = 2360 // plus Input: KEYBOARD, MOUSE, JOYSTICK
+	msgGmodeBase       = 2363 // plus Gmode: VGA, ..
+
+	msgExploreKeys             = 2000
+	msgMenuKeys                = 2001
+	msgPartyOptions            = 2002
+	msgPartyMenu               = 2005 // SEARCH
+	msgLocked                  = 2021
+	msgYouAreInRock            = 2022
+	msgDark                    = 2023
+	msgEncounter               = 2025 // ^_an_encounter_^
+	msgMazeReviewWho           = 2026 // review_who}
+	msgExit                    = 2027
+	msgExitHi                  = 2028 // EXIT
+	msgWhoCasts                = 2029
+	msgCastOnWho               = 2030
+	msgWhoWillUse              = 2031
+	msgUseOnWho                = 2032
+	msgMemberOptions           = 2033 // $`s_options
+	msgMazeUseWhichItem        = 2034 // USE WHICH ITEM?
+	msgUseCancel               = 2035 // CANCEL
+	msgResting                 = 2036
+	msgMarchingOrder           = 2037
+	msgYouMay                  = 2038
+	msgAnswer                  = 2039
+	msgDetectsSomethingUnusual = 2040
+	msgRunning                 = 2041
+	msgSearching               = 2043
+	msgPressButton             = 2044
+	msgSearchNothing           = 2045 // ^_nothing_^
+	msgWhoDrinks               = 2047
+	msgChute                   = 2052 // a chute
+	msgFlying                  = 2054
+	msgProtectedByLevitation   = 2056
+	msgLockMenu                = 2100 // FORCE
+	msgLockWhoWillTry          = 2110 // who_will_try}
+	msgTumblingPress           = 2111
+	msgStrainingPress          = 2112
+	msgDiskOptions             = 2200
+	msgDiskMenu                = 2201 // SAVE GAME & RESUME
+	msgSavingGame              = 2257
+	msgDiskError               = 2258
+	msgLoadingGame             = 2259
+	msgSavegameDrive           = 2305
+	msgScenarioDrive           = 2306
+	msgGameConfiguration       = 2307
+	msgConfigExit              = 2308  // exit
+	msgConfigExitHi            = 2309  // EXIT
+	msgYouFellYourDeath        = 10000 // you_fell_to_your_death
 )

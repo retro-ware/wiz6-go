@@ -379,7 +379,7 @@ func runCombatRound() {
 							c.Stance = stanceCharging
 							clearWindow(partyPictureWin, true)
 							combatDelay(2)
-							actorLine(3518, -1, 6, 0)
+							actorLine(msgBlinksOut, -1, 6, 0)
 							combatDelay(int(delaySetting) / 2)
 						}
 						c.B35[b35BlinkAt] = int8(max(initiative-random(10)-5, 1))
@@ -417,16 +417,16 @@ func runCombatRound() {
 				chance := power*5 + 25
 				switch k {
 				case 0:
-					groupEffectMsg(3220, 4)
+					groupEffectMsg(msgFirestorm, 4)
 					hitDamage(actGroup, -10, 2, 4, power, resistFire, chance)
 				case 1:
-					groupEffectMsg(3221, 3)
-					hitDamageThen(actGroup, -10, 3477, resistPoison, power, chance, 1, 4, statusPoisoned, false, power*10, 2, power, 0, 0)
+					groupEffectMsg(msgPoisonGas, 3)
+					hitDamageThen(actGroup, -10, msgCombatStatusBase+statusPoisoned, resistPoison, power, chance, 1, 4, statusPoisoned, false, power*10, 2, power, 0, 0)
 				case 2:
-					groupEffectMsg(3222, 6)
-					hitDamageThen(actGroup, -10, 3480, 5, power, chance, 2, 3, statusNauseated, false, power, 4, power, 0, 0)
+					groupEffectMsg(msgToxicVapors, 6)
+					hitDamageThen(actGroup, -10, msgCombatStatusBase+statusNauseated, 5, power, chance, 2, 3, statusNauseated, false, power, 4, power, 0, 0)
 				case 3:
-					groupEffectMsg(3223, 6)
+					groupEffectMsg(msgAcidCloud, 6)
 					hitDamage(actGroup, -10, 1, 6, power, 8, chance)
 				}
 			}
@@ -442,7 +442,7 @@ func landCharge(c *Combatant) {
 	c.B35[b35BlinkAt] = 0
 	clearWindow(partyPictureWin, true)
 	combatDelay(2)
-	actorLine(3519, -1, 6, 0)
+	actorLine(msgBlinksIn, -1, 6, 0)
 	combatDelay(int(delaySetting) / 2)
 }
 
@@ -475,7 +475,7 @@ func actorLine(verb, text, color, silenced int) bool {
 	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), color, color)
 	if silenced == 1 {
 		combatDelay(2)
-		printMsgCentered(3200, 3, 2)
+		printMsgCentered(msgSilenced, 3, 2)
 		combatDelay(int(delaySetting) / 2)
 		return true
 	}
@@ -669,7 +669,7 @@ func performAction() {
 		clearWindow(partyPictureWin, true)
 		combatDelay(2)
 		mexeName = combatantName(actGroup, actMember)
-		mexeVerb = getMessage(3211)
+		mexeVerb = getMessage(msgTurnsOnComrades)
 		mexeText = ""
 		printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, 0)
 		playSound(soundBeep)
@@ -777,7 +777,7 @@ func firstAttackMode(g, i int) int16 {
 // doChangeEquipment (do_change_equipment, WMEXE c012).
 func doChangeEquipment() {
 	mexeName = combatantName(actGroup, actMember)
-	mexeVerb = getMessage(3311)
+	mexeVerb = getMessage(msgChangesEquipment)
 	mexeText = ""
 	printCombatLine(mexeName, mexeVerb, mexeText, 1, 15, 0)
 	combatDelay(int(delaySetting) / 2)
@@ -798,14 +798,14 @@ func doHide(c *Combatant) {
 			chance -= int(party[i].Level) + int(party[i].Stats[statIntelligence])
 		}
 	}
-	actorFlavour(3515)
+	actorFlavour(msgHides)
 	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
 		c.Stance = stanceHidden
 		mexeRaiseSkill(actMember, skillHide, 1)
-		printMsgCentered(3520, 6, 2)
+		printMsgCentered(msgShadows, 6, 2)
 	} else {
-		printMsgCentered(3521, 6, 2)
+		printMsgCentered(msgFailed, 6, 2)
 	}
 	combatDelay(int(delaySetting) / 4)
 }
@@ -828,13 +828,13 @@ func doRunAway(c *Combatant) {
 	if noEscape == 1 {
 		chance = 0
 	}
-	actorFlavour(3517)
+	actorFlavour(msgRuns)
 	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
 		c.Stance = stanceFled
-		printMsgCentered(3522, 6, 2)
+		printMsgCentered(msgAway, 6, 2)
 	} else {
-		printMsgCentered(3523, 6, 2)
+		printMsgCentered(msgBlocked, 6, 2)
 	}
 	combatDelay(int(delaySetting) / 4)
 }
@@ -855,10 +855,10 @@ func doAdvanceRetreat(from, to int) {
 	mexeName = combatantName(actGroup, actMember)
 	step := 2
 	if from > to {
-		mexeVerb = getMessage(3513)
+		mexeVerb = getMessage(msgAdvances)
 		step = -2
 	} else {
-		mexeVerb = getMessage(3514)
+		mexeVerb = getMessage(msgRetreats)
 	}
 	mexeText = ""
 	printCombatLine(mexeName, mexeVerb, mexeText, 1, 14, 0)
@@ -880,3 +880,76 @@ func itoa(n int) string {
 	}
 	return strconv.Itoa(n)
 }
+
+// MSG.DBS message ids.
+const (
+	msgBodyAreaBase          = 3320 // plus the hit area: BACK, WING, ..
+	msgTreeAreaBase          = 3330 // plus the hit area on a plant: TRUNK, BRANCH, ..
+	msgPartyAttackVerbBase   = 3350 // plus the attack kind: SWINGS..SHOOTS
+	msgMonsterAttackVerbBase = 3371 // plus AttackKind: CLAWS, BITES, ..
+	msgCombatStatusBase      = 3472 // plus the status: SILENCED..NAUSEOUS
+	msgCombatConditionBase   = 3483 // plus the condition: CRITICAL!..DIES!
+	msgItemNameBase          = 3799 // plus the item id (1-based)
+
+	msgSilenced            = 3200
+	msgFizzle              = 3201
+	msgBackfire            = 3202
+	msgTurnsOnComrades     = 3211
+	msgSpellDeflected      = 3212
+	msgSpellReduced        = 3213
+	msgDeflected           = 3214
+	msgAppears             = 3215
+	msgAppear              = 3216
+	msgNothingAppears      = 3217
+	msgFirestorm           = 3220
+	msgPoisonGas           = 3221
+	msgToxicVapors         = 3222
+	msgAcidCloud           = 3223
+	msgLethalCloudsReduced = 3224
+	msgAirBubbleDestroyed  = 3225
+	msgAirBubbleReduced    = 3226
+	msgMissed              = 3301
+	msgHit                 = 3302
+	msgNoPenetration       = 3303
+	msgPlays               = 3304
+	msgAbuses              = 3305
+	msgCasts               = 3308
+	msgUnaffected          = 3310
+	msgChangesEquipment    = 3311
+	msgInvokes             = 3312
+	msgUses                = 3313
+	msgIncants             = 3314
+	msgTosses              = 3315
+	msgFumblesWith         = 3316
+	msgFumblesWithThrown   = 3317 // FUMBLES WITH
+	msgConsumes            = 3318
+	msgBreathes            = 3340
+	msgSpews               = 3341
+	msgVomits              = 3342
+	msgGazes               = 3343
+	msgEmits               = 3344
+	msgShrieks             = 3345
+	msgSings               = 3346
+	msgCries               = 3347
+	msgMonsterThrows       = 3384 // THROWS
+	msgEffectUnaffected    = 3471 // UNAFFECTED!
+	msgSlainSpell          = 3482 // SLAIN!
+	msgIrritated           = 3487
+	msgCaptured            = 3488
+	msgWhithersAndDies     = 3489
+	msgSuffocated          = 3490
+	msgHeld                = 3492
+	msgDispelled           = 3493
+	msgCritical            = 3495
+	msgBeholden            = 3496
+	msgHypnotized          = 3498
+	msgFire                = 3700
+	msgIce                 = 3701
+	msgDarkVapor           = 3702
+	msgStinkingOdor        = 3703
+	msgPoison              = 3704
+	msgBoulders            = 3705
+	msgAcid                = 3706
+	msgWhiteMist           = 3707
+	msgDrained             = 3750
+)

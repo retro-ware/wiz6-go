@@ -143,13 +143,13 @@ func showEncounterView(wide int) {
 	}
 	if meleAnnounce == 1 {
 		eraseWindow(mainWindow, true)
-		printCentered(mainWindow, getMessage(2025), 0, 18)
+		printCentered(mainWindow, getMessage(msgEncounter), 0, 18)
 		meleAnnounce = 0
 	}
 	loud := random(4)
 	for flash := 0; flash < 4; flash++ {
 		if (random(8) == 0 || flash == loud) && groupMonsterRec[1].Sound > 0 {
-			playSound(14)
+			playSound(loadedSound)
 		}
 		viewAnimState = viewAnimMaze
 		animateViewStep()

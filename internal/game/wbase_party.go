@@ -49,10 +49,10 @@ func writePcfileHeader() {
 // prompts of the C have nothing to ask for.
 func loadGame(resume int) int {
 	stopSound()
-	entering := getMessage(1212)
-	title := getMessage(1213)
-	diskError := getMessage(2258)
-	loading := getMessage(2259)
+	entering := getMessage(msgEntering)
+	title := getMessage(msgBaneCosmicForge)
+	diskError := getMessage(msgDiskError)
+	loading := getMessage(msgLoadingGame)
 	name := "NEWGAME.DBS"
 	if resume != 0 {
 		name = "SAVEGAME.DBS"
@@ -156,22 +156,22 @@ func drawPcfileList(win *Window, top, highlight int) {
 			for win.CurX < pclistSexColumn {
 				putChar(win, ' ', 1)
 			}
-			putChar(win, getMessage(e.sex + 140)[0], 7)
+			putChar(win, getMessage(e.sex + msgSexBase)[0], 7)
 			putChar(win, '-', 9)
-			printString(win, abbrev3(getMessage(e.race+100)), 6)
+			printString(win, abbrev3(getMessage(e.race+msgRaceBase)), 6)
 			putChar(win, 32, 1)
-			printString(win, abbrev3(getMessage(e.class+120)), 3)
+			printString(win, abbrev3(getMessage(e.class+msgClassBase)), 3)
 			continue
 		}
 		printStringHi(win, e.name, 3)
 		for win.CurX < pclistSexColumn {
 			putCharHi(win, ' ', 3)
 		}
-		putCharHi(win, getMessage(e.sex + 140)[0], 3)
+		putCharHi(win, getMessage(e.sex + msgSexBase)[0], 3)
 		putCharHi(win, '-', 3)
-		printStringHi(win, abbrev3(getMessage(e.race+100)), 3)
+		printStringHi(win, abbrev3(getMessage(e.race+msgRaceBase)), 3)
 		win.CurX++
-		printStringHi(win, abbrev3(getMessage(e.class+120)), 3)
+		printStringHi(win, abbrev3(getMessage(e.class+msgClassBase)), 3)
 	}
 	resumeWindowDraw(win)
 	refreshWindow(win)
@@ -200,16 +200,16 @@ func choosePcfileChar() int {
 	fillWindow(titleWin, ' ', 3)
 	listWin := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
 	fillWindow(listWin, ' ', 3)
-	title := getMessage(1201)
+	title := getMessage(msgAddMember)
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
 	deferWindowDraw(titleWin)
 	setCursor(titleWin, 6, 1)
-	printMessage(1206, titleWin, 18)
+	printMessage(msgAddWho, titleWin, 18)
 	resumeWindowDraw(titleWin)
 	drawListFrame(listWin, false)
 	refreshAllWindows()
-	cancel := getMessage(1207)
+	cancel := getMessage(msgAddCancel)
 	top, onCancel := 0, false
 	lx, ly := listWin.X, listWin.Y
 	setClickRegion(0, lx+2, ly+2, lx+18, ly+2)
@@ -314,8 +314,8 @@ func choosePartyMemberWbase(msg int) int {
 	}
 	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	cancelText := getMessage(2027)
-	cancelHilite := getMessage(2028)
+	cancelText := getMessage(msgExit)
+	cancelHilite := getMessage(msgExitHi)
 	title := getMessage(msg)
 	showTitleText(title, 10-(len(title)+6)/2)
 	cx, cy := int(mainWindow.CurX), int(mainWindow.CurY)
@@ -427,15 +427,15 @@ func drawSettingValue(win *Window, item, row, color int) {
 	var text string
 	switch item {
 	case 0:
-		text = getMessage(int(scenarioHdr.SoundMode) + 2350)
+		text = getMessage(int(scenarioHdr.SoundMode) + msgSoundModeBase)
 	case 1:
 		text = strconv.Itoa(int(scenarioHdr.Delay))
 	case 2:
-		text = getMessage(int(scenarioHdr.Level) + 2357)
+		text = getMessage(int(scenarioHdr.Level) + msgLevelBase)
 	case 3:
-		text = getMessage(int(scenarioHdr.Input) + 2360)
+		text = getMessage(int(scenarioHdr.Input) + msgInputBase)
 	case 4:
-		text = getMessage(int(scenarioHdr.Gmode) + 2363)
+		text = getMessage(int(scenarioHdr.Gmode) + msgGmodeBase)
 	case 5:
 		text = pathString(3)
 	case 6:
@@ -476,22 +476,22 @@ func settingColor(sel int) int {
 // doGameConfiguration (WBASE 76b5) is the configuration menu: sound, delay, level, input,
 // graphics mode and the drives. Changes are saved to SCENARIO.HDR.
 func doGameConfiguration() {
-	menuKeys = getMessage(1000)
+	menuKeys = getMessage(msgCampKeys)
 	changed := false
 	win := createWindow(0, 19, 40, 5, 22, borderNone, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
-	doneText := getMessage(2308)
-	doneHilite := getMessage(2309)
-	showMessageLine(2307)
+	doneText := getMessage(msgConfigExit)
+	doneHilite := getMessage(msgConfigExitHi)
+	showMessageLine(msgGameConfiguration)
 	dx, dy := int(mainWindow.CurX), int(mainWindow.CurY)
 	deferWindowDraw(win)
 	wx, wy := int(win.X), int(win.Y)
 	region := func(i, x1, y1, x2, y2 int) { setClickRegion(i, byte(x1), byte(y1), byte(x2), byte(y2)) }
 	for i := range 5 {
 		setCursor(win, 1, i)
-		printMessage(i+2300, win, 18)
+		printMessage(i+msgConfigItemBase, win, 18)
 		drawSettingValue(win, i, i, settingColor(i))
 		x, width := 7, 10
 		if i == 1 {
@@ -500,12 +500,12 @@ func doGameConfiguration() {
 		region(i, wx+x, wy+i, wx+x+width-1, wy+i)
 	}
 	setCursor(win, 22, 0)
-	printMessage(2305, win, 18)
+	printMessage(msgSavegameDrive, win, 18)
 	clearWindowArea(win, 19, 1, 38, 1)
 	drawSettingValue(win, 5, 1, 7)
 	region(5, wx+19, wy+1, wx+38, wy+1)
 	setCursor(win, 22, 2)
-	printMessage(2306, win, 18)
+	printMessage(msgScenarioDrive, win, 18)
 	clearWindowArea(win, 19, 3, 38, 3)
 	drawSettingValue(win, 6, 3, 4)
 	region(6, wx+19, wy+3, wx+38, wy+3)
@@ -616,7 +616,7 @@ func doGameConfiguration() {
 	}
 	stopSound()
 	if changed {
-		diskError := getMessage(2258)
+		diskError := getMessage(msgDiskError)
 		f, err := os.OpenFile(dbs.Path(dataDir, "SCENARIO.HDR"), os.O_RDWR, 0)
 		if err != nil {
 			exitGame(19)
