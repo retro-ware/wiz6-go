@@ -1,0 +1,45 @@
+blink_cursor_text WDOPT:46ae WPOPS:50a2 variants=2
+choose_party_member WBASE:6c2b WTREA:5649 variants=2
+choose_spell WDOPT:6bfd WPCVW:780a variants=2
+copy_name WDOPT:4ca5 WPOPS:6fea variants=2
+count_known_spells WDOPT:6ae2 WPCVW:76ee IDENTICAL
+do_cast_spell WDOPT:7f30 WMEXE:9405 variants=2
+do_use_item WDOPT:7860 WPCVW:8fbf variants=2
+draw_floor_ceiling WMELE:8718 WPOPS:9e95 variants=2
+draw_gauge WBASE:5fb0 WPCVW:48e8 variants=2
+draw_item_list WDOPT:76d5 WPOPS:7017 variants=2
+draw_maze_view WMELE:8a4c WPOPS:a1c9 variants=2
+draw_member_name WBASE:6be6 WPCVW:8937 WPOPS:59ee variants=3
+draw_portrait WPCMK:5176 WPCVW:a8ab variants=2
+draw_side_walls WMELE:7fe1 WPOPS:9ca6 variants=2
+draw_spell_list WDOPT:6b3d WPCMK:673f WPCVW:7749 variants=3
+draw_spell_points WDOPT:6953 WPCMK:50d1 WPCVW:53fa variants=3
+draw_spell_window WPCMK:6216 WPCVW:721a variants=2
+draw_sprite WMEXE:655c WPOPS:4ebc variants=2
+f4572 WMEXE:4572 WMNPC:4572 variants=2
+format_dice WMAZE:9f25 WTREA:5ac7 IDENTICAL
+get_left_wall WMELE:7b86 WPOPS:9303 variants=2
+get_menu_input WPCMK:45fc WPCVW:8891 variants=2
+get_right_wall WMELE:7d43 WPOPS:94c0 variants=2
+get_wall_in_direction WDOPT:53c4 WMAZE:548e variants=2
+inflict_condition WMAZE:ab6c WTREA:5c0f variants=2
+inflict_status WMAZE:ad18 WTREA:5dbb variants=2
+input_text WBASE:7418 WPCMK:4654 variants=2
+is_member_able WMAZE:65ea WPCVW:a075 WTREA:908d variants=3
+load_portrait WBASE:5072 WPCMK:8ffe WPCVW:a78d variants=3
+ovmain WBASE:4572 WDOPT:4572 WINIT:4572 WMAZE:4572 WMELE:4572 WMEXE:7230 WMNPC:6a6d WPCMK:4572 WPCVW:4572 WPOPS:4572 WTREA:4572 variants=11
+print_member_message WMAZE:aa50 WTREA:5af6 variants=2
+print_msg_at WPCMK:5022 WPCVW:50df variants=2
+put_char_at WPCMK:611b WPCVW:711f IDENTICAL
+put_char_at_c5 WPOPS:5f84 WTREA:74a4 IDENTICAL
+put_glyph_at WPCMK:507f WPCVW:513c IDENTICAL
+queue_monster_sprite WMELE:66bf WPOPS:4c7d variants=2
+redraw_maze_view WDOPT:9e83 WMAZE:98cb variants=2
+remove_item WDOPT:4e09 WPCVW:5d5b variants=2
+roll_dice WMAZE:9ef6 WMELE:4829 WPCVW:6a65 WTREA:5a98 variants=2
+run_menu WBASE:47c0 WPCVW:45d0 variants=2
+trap_damage_member WMAZE:ac20 WTREA:5cc3 variants=2
+try_skill_gain WMAZE:9a24 WTREA:5a56 variants=2
+unhighlight_realm WPCMK:6144 WPCVW:7148 IDENTICAL
+use_item_charge WDOPT:4faf WPCVW:5f53 variants=2
+view_character WPCMK:99c0 WPCVW:ad5a variants=2
