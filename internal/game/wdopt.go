@@ -562,7 +562,7 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 	t := &party[target]
 	pc := &partyCounters
 	sub := func(v uint8, n int) uint8 { // v - n, at least 0
-		return uint8(max(int(v)-n, 0))
+		return uint8(max(int(int16(int(v)-n)), 0)) // C int wraps
 	}
 	switch s {
 	case 53:
@@ -593,7 +593,7 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 			t.PoisonStr = 0
 		}
 	case 46:
-		if t.Condition == 2 && power*3 > 21-int(t.Stats[3]) {
+		if t.Condition == 2 && int(int16(power*3)) > 21-int(t.Stats[3]) { // C int wraps
 			t.Stats[3]--
 			if random(21) <= int(t.Stats[3]) {
 				t.Condition = 0
@@ -610,7 +610,7 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 	case 64:
 		t.HP = min(t.HP+int16(rollDice(formatDice(power, 7, power))), t.HPMax)
 	case 77:
-		if t.Condition == 3 && power*3 > 18-int(t.Stats[3]) {
+		if t.Condition == 3 && int(int16(power*3)) > 18-int(t.Stats[3]) { // C int wraps
 			t.Stats[3]--
 			t.Condition, t.HP, t.Stamina = 0, 1, t.StaminaMax/10
 			t.Unk026++
