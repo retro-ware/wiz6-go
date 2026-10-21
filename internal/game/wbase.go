@@ -500,6 +500,9 @@ func drawGauge(win *Window, x, y, cur, max, glyph int) {
 // drawMemberPanel (WBASE 6091) draws party member i in a side panel: name, portrait,
 // condition, status, class, hands and the HP and stamina gauges.
 func drawMemberPanel(i int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	win := g4fba
 	if i%2 != 0 {
 		win = g4fb8

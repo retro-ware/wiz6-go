@@ -60,6 +60,9 @@ var charFuncs = map[string]func(a []int) int{
 		}
 		return 0
 	},
+	"base_6b30": func(a []int) int { removePartyMember(a[0]); return 0 },
+	"base_6fd4": func(a []int) int { removeAllMembers(); return 0 },
+	"base_5190": func(a []int) int { return findFreePortraitSlot(a[0]) },
 	"pcvw_a11b": func(a []int) int {
 		t := ""
 		for _, c := range a[2:] {
@@ -85,6 +88,7 @@ var charRoots = map[string]any{
 	"party": &party, "partyCount": &partyCount,
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
 	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed, "partyCounters": &partyCounters,
+	"memberPcfileIndex": &memberPcfileIndex, "memberPortrait": &memberPortrait, "rosterSlotUsed": &rosterSlotUsed,
 }
 
 func init() {
