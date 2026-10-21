@@ -15,7 +15,7 @@ import (
 // (write false) or writes roster record index of PCFILE.DBS.
 func pcfileRecordIO(pc *PC, index int, write bool) {
 	stopSound()
-	f, err := os.OpenFile(dbs.Path(dataDir, "PCFILE.DBS"), os.O_RDWR, 0)
+	f, err := os.OpenFile(dataPath("PCFILE.DBS"), os.O_RDWR, 0)
 	if err != nil {
 		return // the C ignores a failed open too
 	}
@@ -34,7 +34,7 @@ func pcfileRecordIO(pc *PC, index int, write bool) {
 // create_character, delete_character).
 func writePcfileHeader() {
 	stopSound()
-	f, err := os.OpenFile(dbs.Path(dataDir, "PCFILE.DBS"), os.O_RDWR, 0)
+	f, err := os.OpenFile(dataPath("PCFILE.DBS"), os.O_RDWR, 0)
 	if err != nil {
 		return
 	}
@@ -57,7 +57,7 @@ func loadGame(resume int) int {
 	if resume != 0 {
 		name = "SAVEGAME.DBS"
 	}
-	b, err := os.ReadFile(dbs.Path(dataDir, name))
+	b, err := os.ReadFile(dataPath(name))
 	if err != nil {
 		showErrorText(diskError, true)
 		return -1
@@ -617,7 +617,7 @@ func doGameConfiguration() {
 	stopSound()
 	if changed {
 		diskError := getMessage(msgDiskError)
-		f, err := os.OpenFile(dbs.Path(dataDir, "SCENARIO.HDR"), os.O_RDWR, 0)
+		f, err := os.OpenFile(dataPath("SCENARIO.HDR"), os.O_RDWR, 0)
 		if err != nil {
 			exitGame(19)
 		}

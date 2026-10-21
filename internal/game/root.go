@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 
 	"github.com/retro-ware/wiz6-go/internal/dbs"
@@ -98,9 +99,27 @@ func run(dir string, start func()) (code int) {
 	}
 }
 
+// SaveDir is where the game writes its files (savedFiles); "" keeps them in the data folder.
+var SaveDir string
+
+// savedFiles are the data files the game writes: the roster, the saved game and the
+// configuration.
+var savedFiles = []string{"PCFILE.DBS", "SAVEGAME.DBS", "SCENARIO.HDR"}
+
+// dataPath is the path of data file name: in SaveDir for the savedFiles, else in dataDir.
+// SavedFiles lists the data files the game writes.
+func SavedFiles() []string { return slices.Clone(savedFiles) }
+
+func dataPath(name string) string {
+	if SaveDir != "" && slices.Contains(savedFiles, name) {
+		return dbs.Path(SaveDir, name)
+	}
+	return dbs.Path(dataDir, name)
+}
+
 // openData reads a data file (make_data_path and open); fatal error code if it is missing.
 func openData(name string, code int) []byte {
-	b, err := os.ReadFile(dbs.Path(dataDir, name))
+	b, err := os.ReadFile(dataPath(name))
 	if err != nil {
 		exitGame(code)
 	}

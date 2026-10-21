@@ -10,8 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/retro-ware/wiz6-go/internal/dbs"
 	"github.com/retro-ware/wiz6-go/internal/game"
 	"github.com/retro-ware/wiz6-go/internal/host"
+	"gpu"
 )
 
 func main() {
@@ -44,6 +46,10 @@ func main() {
 		*data = "."
 		if _, err := os.Stat(filepath.Join("data", "SCENARIO.DBS")); err == nil {
 			*data = "data"
+			if err := useSaveDir("save", *data); err != nil {
+				fmt.Fprintln(os.Stderr, "wiz6:", err)
+				os.Exit(1)
+			}
 		}
 	}
 	if _, err := os.Stat(filepath.Join(*data, "SCENARIO.DBS")); err != nil {
@@ -74,6 +80,7 @@ func main() {
 		}
 		time.AfterFunc(d, func() { scriptAction(act) })
 	}
+	gpu.SetFullscreen(os.Getenv("GOPLAY_FULLSCREEN") == "1") // goplay starts games fullscreen
 	code := 0
 	if err := host.Run("Wizardry VI", func() {
 		if *fight >= 0 {
@@ -180,4 +187,28 @@ func runSteps(acts []string, dir string, first time.Duration) {
 	waitSettled(500 * time.Millisecond)
 	shot(len(acts) - 1)
 	host.Quit()
+}
+
+// useSaveDir makes the game write its files to dir (goplay's ./save), first copying
+// the ones dir lacks from the data folder, where the original keeps them.
+func useSaveDir(dir, data string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, name := range game.SavedFiles() {
+		if _, err := os.Stat(dbs.Path(dir, name)); err == nil {
+			continue
+		}
+		b, err := os.ReadFile(dbs.Path(data, name))
+		if os.IsNotExist(err) {
+			continue // SAVEGAME.DBS until the first save
+		} else if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), b, 0o644); err != nil {
+			return err
+		}
+	}
+	game.SaveDir = dir
+	return nil
 }

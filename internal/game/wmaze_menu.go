@@ -197,7 +197,7 @@ func saveGame() int {
 	eraseCursorMark(bottomLineWin, false)
 	resumeWindowDraw(movePadWin)
 	refreshAllWindows()
-	path := dbs.Path(dataDir, "SAVEGAME.DBS")
+	path := dataPath("SAVEGAME.DBS")
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
 	if err != nil {
 		showError(failed)
