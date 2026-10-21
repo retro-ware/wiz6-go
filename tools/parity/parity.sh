@@ -43,6 +43,10 @@ cp -R "$ORIG/" "$OUT/work/dos/"
 # tick count (26 8B 07 -> 31 C0 90 at 0x1F4A) and key_available no longer calls step_random
 # (E8 66 FF -> 90 90 90 at 0x2850). The port does the same under -detrng.
 DET=${DETRNG:-1}
+# Sound off (SCENARIO.HDR byte 408 = 5) in both copies: the original's sound player reprograms
+# the PIT and hooks IRQ0, which speeds up INT 1Ch and so KEYFEED's clock.
+nosound() { printf '\005' | dd of="$1/SCENARIO.HDR" bs=1 seek=408 conv=notrunc 2>/dev/null; }
+nosound "$OUT/work/dos"
 if [ "$DET" = 1 ]; then
   python3 - "$OUT/work/dos/WROOT.EXE" <<'P'
 import sys
@@ -57,9 +61,8 @@ LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
 # Keys: KEYFEED.COM (keyfeed.asm), a TSR that puts each key in the BIOS buffer at its time on
 # the emulated clock (18.2 ticks/s), so key and frame times line up exactly. (DOSBox-X's
 # AUTOTYPE runs on host time and aborts at random with "MAPPER: Couldn't find a button".)
-# TPS is INT 1Ch ticks per second of capture time: nominally 18.2065, but measured against
-# the AVI the ticks run about 8.7% slow (keys landed 2.8 s late after 32 s), so 16.75.
-TPS=${TPS:-16.75}
+# TPS: INT 1Ch ticks per second (18.2065 with the PIT left alone; see nosound).
+TPS=${TPS:-18.2065}
 { cat "$HERE/keyfeed.asm"
   prev=0
   for i in $(seq 0 $((N-1))); do
@@ -108,7 +111,7 @@ done
 # --- port: same keys, each sent once the screen has settled (-steps), frames saved there ---
 [ -n "$DOSONLY" ] && exit 0
 (cd "$GO" && CGO_ENABLED=0 go build -tags nofakecgo -o "$OUT/work/wiz6" ./cmd/wiz6)
-cp -R "$ORIG/" "$OUT/work/godata/"
+cp -R "$ORIG/" "$OUT/work/godata/"; nosound "$OUT/work/godata"
 in=""
 for k in "${KEYS[@]}"; do in+="k$(scan "$k"),"; done
 (cd "$OUT/work" && timeout -s KILL $((WAIT + N*10 + 30)) ./wiz6 -data godata -steps "${in%,}" -stepdir "$OUT/go" \
