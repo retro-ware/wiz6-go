@@ -95,7 +95,7 @@ func sortEquippedFirst(m int) {
 // to 0..125.
 func addSkillBonus(m, r, v int) {
 	p := &party[m]
-	p.Resist[r] = uint8(min(max(int(p.Resist[r])+v, 0), 125))
+	p.Resist[r] = uint8(min(max(int(int16(int(p.Resist[r])+v)), 0), 125)) // C int sum wraps
 }
 
 // levelCap is member m's level capped at limit, or its level before a class
