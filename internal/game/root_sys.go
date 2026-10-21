@@ -112,8 +112,8 @@ func getBitfield(a []byte, idx, width int) int {
 	return w >> (pos & 7) & (1<<width - 1)
 }
 
-// extractBits (ROOT 2962) is width bits of v from bit shift on.
-func extractBits(v, shift, width int) int { return v >> shift & (1<<width - 1) }
+// extractBits (ROOT 2962) is width bits of the 16-bit word v from bit shift on.
+func extractBits(v, shift, width int) int { return int(uint16(v)) >> shift & (1<<width - 1) }
 
 // Delays. calibrate_delay counts the busy loops of one BIOS tick (54.9 ms); delay_tick
 // runs 2/132 of a tick's worth and delay_long two ticks less a delay_tick.

@@ -63,6 +63,13 @@ var charFuncs = map[string]func(a []int) int{
 	"base_6b30": func(a []int) int { removePartyMember(a[0]); return 0 },
 	"base_6fd4": func(a []int) int { removeAllMembers(); return 0 },
 	"base_5190": func(a []int) int { return findFreePortraitSlot(a[0]) },
+	"root_09e2": func(a []int) int { return random(a[0]) },
+	"root_2556": func(a []int) int { return randomWord() },
+	"root_2881": func(a []int) int { setBit(party[0].Skills[:], a[0], a[1] != 0); return 0 },
+	"root_28af": func(a []int) int { return b2i(testBit(party[0].Skills[:], a[0])) },
+	"root_28da": func(a []int) int { setBitfield(party[0].Skills[:], a[0], a[1], a[2]); return 0 },
+	"root_2925": func(a []int) int { return getBitfield(party[0].Skills[:], a[0], a[1]) },
+	"root_2962": func(a []int) int { return extractBits(a[0], a[1], a[2]) },
 	"pcvw_a11b": func(a []int) int {
 		t := ""
 		for _, c := range a[2:] {
