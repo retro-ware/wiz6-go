@@ -53,3 +53,42 @@ and message/number/sound log must match. `go test -tags nofakecgo -run TestDiff 
 | WMEXE | 7816 calc_spell_level_value | spellPower | 1000 | match |
 | WMEXE | 4c48 do_attack | doAttack | 1000 | match (inputs: thrown attacks need an item; the C indexes item 255 otherwise, Go guards) |
 | WMEXE | 47a3 apply_hit_effects | applyHitEffects | 1000 | match |
+
+## Maze (WMAZE, WDOPT, WINIT)
+
+Specs in specs_maze.py, Go in difftest_maze_test.go. `mazeA`/`mazeB` are single-pointer
+roots (PTRS count 0; paths `mazeA.Walls0[3]`). The C's show_message_text_m, puzzle_event,
+riddle_event, locked_door_menu, load_sound_bank and the drawing/waiting functions are
+stubbed; their Go ports return at once under `dtLog`, and keyAvailable is false.
+
+| Overlay | Function | Go | Cases | Status |
+|---|---|---|---|---|
+| WMAZE | 55b7 tick_effect_timers | tickEffectTimers | 300 | match |
+| WMAZE | 61f8 heal_member | healMember | 300 | match |
+| WMAZE | 63f4 rest_party | restParty | 300 | match (harness: key_available stub skips step_random) |
+| WMAZE | ae49 trap_event | trapEvent (+trapDamageMember, inflictCondition, inflictStatus) | 300 | match (harness: number log via itoa) |
+| WMAZE | 5949 move_party | moveParty | 300 | match |
+| WMAZE | 56f4 try_move | tryMove | 300 | match |
+| WMAZE | 7868 flee_party | fleeParty (+tryStep, canEnterCell) | 300 | match |
+| WMAZE | c8eb run_cell_events | runCellEvents (all 25 event kinds) | 300 | match (harness: drawMazeView not stubbed in Go; inputs: event fields in game ranges) |
+| WMAZE | a4f5 check_secret_detect | checkSecretDetect | 300 | match |
+| WMAZE | ccd2 search_cell | searchCell | 300 | match |
+| WMAZE | db1e handle_locked_door | handleLockedDoor | 300 | match |
+| WMAZE | 4735 flood_mark_cells | floodMarkCells | 300 | match |
+| WMAZE | 9a24 try_skill_gain | trySkillGain | 300 | match |
+| WDOPT | 6054 | applySpellOutsideCombat | 300 | match |
+| WDOPT | 517b try_open_lock | tryOpenLock | 300 | match |
+| WDOPT | 6561 check_item_location_event | wdoptItemLocationEvent | 300 | match |
+| WDOPT | 4faf use_item_charge | useItemCharge | 300 | match |
+| WDOPT | 4e09 remove_item | removeItem | 300 | match |
+
+Open: force_lock (ced8), pick_lock (d3b3), locked_door_menu (d8a9), puzzle_event, riddle_event,
+do_use_item, do_cast_spell: they loop on input, which the harness stubs to nothing (would need
+scripted key/click returns). save_game, load_maze_level/alloc_maze_buffers: disk and far buffers.
+
+Skipped (UI, drawing, input, disk, dispatch): WMAZE view and panel drawing (4ac7 4ba8 4e89 7d8c
+8175 8332 84f1 8f79 903b 98cb), input/menus (4f2c 5534 5ad8 606f 6bcd 6cf8 7020 9a66 9aae 9c19
+9cde 9d0c 9e51), text/notice (53b8 53e5 6631 77ea 7859 a421 aa50 c3e5), door/view animation (b3ac
+b500), 9948 sound load; WDOPT ovmain, menus, map and spell-list drawing (4688..48e0 5273 5357..5be2
+6737..6bfd 76d5 80d3 8aa9 9531 95f3 9e83); all of WINIT (file loading, credits, title,
+graveyard, screen setup).

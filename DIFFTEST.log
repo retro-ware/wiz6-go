@@ -25,3 +25,7 @@
 2026-10-21 10:38:52 [combat] fc66e performAction, fd109 runCombatRound x300 match. PORT BUG fixed: confused fighter's 2nd attack kind -1 -> C reads AC[7] (Go panicked on Unk198[-1]); kindAC helper.
 2026-10-21 10:41:17 [char] WPCVW 6b3c cast_spell, 8353 learn_new_spell, a11b match; next WBASE + root helpers
 2026-10-21 10:41:52 [maze] WDOPT f6054 (spells outside combat), try_open_lock, check_item_location_event, use_item_charge, remove_item: 300 each match; lock mini-games loop on stubbed input, looking
+2026-10-21 10:43:01 [npc] WTREA spring_trap/pick_chest_trap/give_item/share_gold/open_treasure match (fixed msg order in trLoseMessage); WMNPC specs in progress
+2026-10-21 10:43:27 [char] WBASE 6b30 6fd4 5190 match. HARNESS: layout memberPortrait was [6]uint8, the C has int[6] -> fixed to [6]int16 (cases naming memberPortrait need regenerating)
+2026-10-21 10:44:50 [char] ROOT random/random_word/set_bit/test_bit/set_bitfield/get_bitfield/extract_bits match; fixed extractBits (unsigned 16-bit shift)
+2026-10-21 10:45:22 [maze] done: 18 functions x300 match, no port bugs; lock mini-games/puzzle/riddle/use/cast open (input loops); DIFFTEST.md Maze section

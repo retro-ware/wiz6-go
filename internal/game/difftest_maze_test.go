@@ -16,6 +16,9 @@ var mazeFuncs = map[string]func(a []int) int{
 	"f6561": func(a []int) int { mzWins(); return b2i(wdoptItemLocationEvent(a[0], a[1])) },
 	"f4faf": func(a []int) int { mzWins(); useItemCharge(a[0], a[1]); return 0 },
 	"f4e09": func(a []int) int { mzWins(); removeItem(a[0], a[1]); return 0 },
+	"fdb1e": func(a []int) int { mzWins(); handleLockedDoor(); return 0 },
+	"f4735": func(a []int) int { mzWins(); floodMarkCells(a[0], a[1], a[2], a[3]); return 0 },
+	"f9a24": func(a []int) int { mzWins(); trySkillGain(a[0], a[1], a[2]); return 0 },
 	"fccd2": func(a []int) int { mzWins(); searchCell(); return 0 },
 }
 
