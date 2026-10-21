@@ -26,9 +26,9 @@ var (
 	dpGlDark, dpGlNoNorth, dpGlNoWest, dpGlSolid int // g50f8, g50fc, g5130, pclist_sex
 	dpGlStairUp, dpGlStairDown, dpGlVoid         int // g5164, g5166, g5168
 	dpGlSpecial                                  int // g516a
-	dpGlN1, dpGlN3, dpGlNDoor                     int // g516c, g516e, g5170
-	dpGlW1, dpGlW3, dpGlWDoor                     int // g5172, g5174, g5176
-	dpGlCorner, dpGlFloor, dpGlBorder, dpGlParty  int // g5178, g51b2, g51b0, g51b4
+	dpGlN1, dpGlN3, dpGlNDoor                    int // g516c, g516e, g5170
+	dpGlW1, dpGlW3, dpGlWDoor                    int // g5172, g5174, g5176
+	dpGlCorner, dpGlFloor, dpGlBorder, dpGlParty int // g5178, g51b2, g51b0, g51b4
 
 	// The use item list (do_use_item): the slots shown (g51ba, g51b8 of them), and by
 	// slot the item's name (0x51e6) and quantity (g5346, 0 none).
