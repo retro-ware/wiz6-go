@@ -12,3 +12,4 @@
 2026-10-21 09:02:04 step 3 save: DOS run now writes SAVEGAME.DBS; port with -detrng diverges at maze entry (no gate message at step 14, HMMMM later) - investigating port RNG use
 2026-10-21 09:04:44 step 3 save: idle ambient roll random(40) (WMAZE f4655/WDOPT 4688/WTREA 45b8) consumed RNG per idle step; now patched out in OVRs (call random -> mov ax,1) and skipped under -detrng. Re-running save.keys
 2026-10-21 09:19:29 save.keys det: port steps now wait >= DOS key gap (sv11); still diverges from step 14: after magic word DOS shows the gate message at once, port shows the gate with no message until the next key, then an extra HMMMM. Tracing the maze main loop's event dispatch.
+2026-10-21 09:42:11 copy protection cut: DOS copy patched (WBASE.OVR 0xEE6 jne->jmp), save.keys minus the magic-word Enter; re-running save.keys
