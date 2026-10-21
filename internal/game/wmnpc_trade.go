@@ -265,7 +265,6 @@ func npcPriceWares() {
 // npcStockWares (WMNPC b805) rolls the NPC's wares from its treasure table (kind 2
 // entries: items A.. with B tries of Chance% each).
 func npcStockWares() {
-	npcWares = [30]npcWare{}
 	n := 0
 	if npcRec.Treasure > 0 {
 		t := npcRecord[TreasureRec](7, int(npcRec.Treasure))
@@ -281,6 +280,7 @@ func npcStockWares() {
 			}
 		}
 	}
+	npcWares[n].ID = 0 // as the C, only an end mark: wares past it from an earlier stocking stay listed
 	npcListWares()
 	npcPriceWares()
 }
