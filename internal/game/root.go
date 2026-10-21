@@ -67,6 +67,8 @@ func Main(dir string) (code int) {
 			wmazeMain()
 		case 5, 6, 23:
 			wmazeMain()
+		case 17, 22:
+			wpcvwMain()
 		case 3:
 			shutdownGame(0)
 			return 0
@@ -81,6 +83,7 @@ func Main(dir string) (code int) {
 var (
 	wbaseMain = overlayMissing
 	wmazeMain = overlayMissing
+	wpcvwMain = overlayMissing
 )
 
 func overlayMissing() {
