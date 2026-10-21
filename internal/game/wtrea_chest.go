@@ -526,23 +526,9 @@ func drawChestListBox(w *Window, refresh bool) {
 	}
 }
 
-// trSpellFrame (ROOT g02ca): the spell window's frame, x, y, glyph and run (run%128 the
-// end, run/128 vertical; 0 a single glyph).
-var trSpellFrame = [49][4]uint8{
-	{0, 0, 1, 0}, {21, 0, 3, 0}, {0, 6, 6, 0}, {21, 6, 8, 0}, {1, 0, 2, 12}, {1, 6, 7, 12},
-	{13, 0, 2, 21}, {15, 2, 12, 21}, {18, 4, 12, 21}, {18, 6, 7, 21}, {0, 1, 4, 134}, {21, 1, 5, 134},
-	{1, 2, 12, 12}, {1, 4, 12, 12}, {2, 1, 13, 134}, {6, 1, 13, 134}, {8, 1, 13, 134}, {12, 1, 13, 132},
-	{12, 4, 5, 134}, {17, 5, 4, 0}, {17, 6, 6, 0}, {0, 2, 9, 0}, {0, 4, 9, 0}, {21, 2, 10, 0},
-	{21, 4, 10, 0}, {2, 0, 25, 0}, {6, 0, 25, 0}, {8, 0, 25, 0}, {12, 0, 25, 0}, {2, 6, 11, 0},
-	{6, 6, 11, 0}, {8, 6, 11, 0}, {12, 6, 8, 0}, {2, 2, 16, 0}, {2, 4, 16, 0}, {6, 2, 16, 0},
-	{6, 4, 16, 0}, {8, 2, 16, 0}, {8, 4, 16, 0}, {12, 2, 16, 0}, {12, 4, 23, 0}, {13, 2, 12, 0},
-	{13, 4, 7, 0}, {14, 2, 14, 0}, {14, 3, 13, 0}, {14, 4, 11, 0}, {15, 4, 7, 0}, {16, 4, 7, 0},
-	{17, 4, 24, 0},
-}
-
 // draw_chest_spell_frame (WTREA 75ed) puts the frame glyphs into the window's cells.
 func drawChestSpellFrame(w *Window) {
-	for _, f := range trSpellFrame {
+	for _, f := range spellFrame {
 		end, vertical := int(f[3]%128), f[3]/128 != 0
 		switch {
 		case end == 0:

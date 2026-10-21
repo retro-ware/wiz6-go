@@ -97,11 +97,9 @@ const (
 
 // The stat tables are a letter per stat, 'A' being 0: STR INT PIE VIT DEX SPD PER.
 var (
-	// classReqs (0x5006): the stats each class needs.
+	// classReqs (0x5006, and WPCMK's copy): the stats each class needs. The equal table at
+	// 0x5084 is the floor a new class raises the stats to; it is this one too.
 	classReqs = [14]string{"MAAAAAAA", "AMAAAAAA", "AAMAAAIA", "AAAAMIAA", "KIILKIIA", "ANAANAAA", "AKAAMIMA",
-		"KOAOAAKA", "KALLKLIA", "APPAAAIA", "MJMMJJOA", "MLAJMOIA", "NINAKNIA", "MKKMMMAA"}
-	// classMinStats (0x5084): a new class raises the stats to these.
-	classMinStats = [14]string{"MAAAAAAA", "AMAAAAAA", "AAMAAAIA", "AAAAMIAA", "KIILKIIA", "ANAANAAA", "AKAAMIMA",
 		"KOAOAAKA", "KALLKLIA", "APPAAAIA", "MJMMJJOA", "MLAJMOIA", "NINAKNIA", "MKKMMMAA"}
 	// raceMinStats (0x5102): the race's starting stats, the floor after a class change.
 	raceMinStats = [11]string{"JIIJJIIA", "HKKHJJIA", "LGKMHHHA", "KHNKIGGA", "IHGJKHNA", "FLGGKOMA",

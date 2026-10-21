@@ -8,35 +8,6 @@ import "github.com/retro-ware/wiz6-go/internal/dbs"
 // WPCMK data: the class and race tables (ds:4ffd..5459). Stat strings are 8 letters
 // STR..KAR, 'A' = 0.
 var (
-	// classSkillMasks are per class the skills a class can learn ('1'): weaponry (skills
-	// 0..9), physical (10..16), personal (17..21) and academia (22..29).
-	classSkillMasks = [14][4]string{
-		{"1111111110", "0100000", "00000", "11100000"},
-		{"1000111100", "0101000", "00000", "11100010"},
-		{"0001101010", "0101000", "00000", "11101000"},
-		{"1111111110", "0101111", "00000", "11100000"},
-		{"1111111110", "0100111", "00000", "11110000"},
-		{"1001110000", "0100000", "00000", "11110000"},
-		{"1111111110", "0111111", "00000", "11100010"},
-		{"1001111000", "0101000", "00000", "11100100"},
-		{"1111111110", "0101000", "00000", "11101000"},
-		{"0001101010", "0101000", "00000", "11101010"},
-		{"1111111110", "0101000", "00000", "11101000"},
-		{"1111111110", "0101000", "00000", "11100011"},
-		{"1001111101", "0101001", "00000", "11100101"},
-		{"1111111111", "0100111", "00000", "11110001"},
-	}
-	// classMinimums are the stats each class needs (the C has two equal copies, for
-	// checking and for raising).
-	classMinimums = [14]string{
-		"MAAAAAAA", "AMAAAAAA", "AAMAAAIA", "AAAAMIAA", "KIILKIIA", "ANAANAAA", "AKAAMIMA",
-		"KOAOAAKA", "KALLKLIA", "APPAAAIA", "MJMMJJOA", "MLAJMOIA", "NINAKNIA", "MKKMMMAA",
-	}
-	// raceBase are the races' base stats.
-	raceBase = [11]string{
-		"JIIJJIIA", "HKKHJJIA", "LGKMHHHA", "KHNKIGGA", "IHGJKHNA", "FLGGKOMA", "MFFOIKDA",
-		"KHGMKIGA", "HKHHKMKA", "IGMKIIKA", "KKGKHHJA",
-	}
 	// classResists are the resistances, 'A' = 0 in steps of 4, by class.
 	classResists = [14]string{
 		0: "ACBCBCCCCHCHBA", 4: "ACCCCDCCCHHKDA", 8: "ACCCCDCCCHHKDA", 10: "ACCCCDCCCIFKEA",
@@ -85,7 +56,7 @@ func printSkillValue(win *Window, row, v int) {
 // drawSkillPage (WPCMK 5b3b) draws skill page page (weaponry, physical, personal,
 // academia) into win; the skills listed, in order.
 func drawSkillPage(win *Window, page int) []int {
-	setClassSkillMasks(classSkillMasks[newPC.Class])
+	setClassSkillMasks(classSkills[newPC.Class])
 	fillWindow(win, 0, 1, false)
 	g := func(x, y int, ch byte) { setFrameGlyph(win, x, y, ch) }
 	g(0, 0, 14)
@@ -287,7 +258,7 @@ func computeEligibleClasses() {
 			classEligible[c] = false
 			continue
 		}
-		checkClassEligible(c, classMinimums[c], false)
+		checkClassEligible(c, classReqs[c], false)
 	}
 }
 
@@ -323,7 +294,7 @@ func chooseRace() {
 	newPC.Race = uint8(r)
 	setCursor(sheetWin, 15, 1)
 	printMsgColor(int(newPC.Race)+100, sheetWin, 1)
-	raiseStatsToMinimum(raceBase[r])
+	raiseStatsToMinimum(raceMinStats[r])
 	drawStats()
 }
 
@@ -352,7 +323,7 @@ func chooseClass() {
 	c := chooseFromMenu(7, 1106, 1118, 120, enabled)
 	newPC.Class = uint8(c)
 	printMsgAt(int(newPC.Class)+120, sheetWin, 13, 2, 1)
-	checkClassEligible(c, classMinimums[c], true)
+	checkClassEligible(c, classReqs[c], true)
 	drawStats()
 }
 

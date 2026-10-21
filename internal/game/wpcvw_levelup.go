@@ -658,7 +658,7 @@ func doChangeClass(sheet, menu *Window, m int) {
 	if int(p.Race) < len(raceMinStats) {
 		limitStats(m, raceMinStats[p.Race], true)
 	}
-	limitStats(m, classMinStats[p.Class], false)
+	limitStats(m, classReqs[p.Class], false)
 	drawSheet(sheet, menu, m)
 	doEquipItems(sheet, menu, m)
 }

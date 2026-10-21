@@ -11,11 +11,10 @@ import (
 
 // Root data tables the door animation reads (ROOT data 0x0022..0x0052), per view depth.
 var (
-	doorStep   = [4]int{8, 5, 3, 0}                                             // g0022
-	doorStart  = [4]int{48, 30, 18, 0}                                          // g002a
-	doorClipL  = [4]int{136, 146, 153, 0}                                       // g0032 (stride 4)
-	doorClipR  = [4]int{184, 174, 167, 0}                                       // g0034 (stride 4)
-	doorColumn = [4][3]int{{0, 0, 0}, {-64, 0, 64}, {-32, 0, 32}, {-16, 0, 16}} // g0052
+	doorStep  = [4]int{8, 5, 3, 0}       // g0022
+	doorStart = [4]int{48, 30, 18, 0}    // g002a
+	doorClipL = [4]int{136, 146, 153, 0} // g0032 (stride 4)
+	doorClipR = [4]int{184, 174, 167, 0} // g0034 (stride 4)
 )
 
 // eventData is the current cell event's Data, Unk288 and DirBits words.
@@ -760,7 +759,7 @@ func animateDoor(opening, col, depth, sound int) {
 		frame := depth + 10
 		if depth > 0 || col == 1 {
 			pic := &monsterPics[2]
-			x0 := doorColumn[depth][col]
+			x0 := viewObjXOff[depth][col]
 			drv.DrawFrames(2, x0+int(pic.Pairs[frame][0])+i*step-start, int(pic.Unk57[frame]),
 				x0+doorClipL[depth], x0+doorClipR[depth], 0, false, []byte{byte(frame)})
 		}
