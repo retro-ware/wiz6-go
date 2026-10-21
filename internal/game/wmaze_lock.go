@@ -807,9 +807,6 @@ func pickLock(member, ev int) int {
 // lockedDoorMenu (WMAZE d8a9): force or pick lock event ev until it opens or the player
 // leaves.
 func lockedDoorMenu(ev int) {
-	if dtLog != nil { // stubbed in the difftest (input)
-		return
-	}
 	diff := extractBits(int(mazeB.Param[ev]), 0, 5)
 	for i := range lockTumblers {
 		lockTumblers[i] = int16(random(diff * 5))

@@ -16,9 +16,12 @@ var mazeFuncs = map[string]func(a []int) int{
 	"f6561": func(a []int) int { mzWins(); return b2i(wdoptItemLocationEvent(a[0], a[1])) },
 	"f4faf": func(a []int) int { mzWins(); useItemCharge(a[0], a[1]); return 0 },
 	"f4e09": func(a []int) int { mzWins(); removeItem(a[0], a[1]); return 0 },
-	"fdb1e": func(a []int) int { mzWins(); handleLockedDoor(); return 0 },
+	"fdb1e": func(a []int) int { mzWins(); mzPrompts(); handleLockedDoor(); return 0 },
 	"f4735": func(a []int) int { mzWins(); floodMarkCells(a[0], a[1], a[2], a[3]); return 0 },
 	"f9a24": func(a []int) int { mzWins(); trySkillGain(a[0], a[1], a[2]); return 0 },
+	"fced8": func(a []int) int { mzWins(); return forceLock(a[0], a[1]) },
+	"fd3b3": func(a []int) int { mzWins(); return pickLock(a[0], a[1]) },
+	"fd8a9": func(a []int) int { mzWins(); mzPrompts(); lockedDoorMenu(a[0]); return 0 },
 	"fccd2": func(a []int) int { mzWins(); searchCell(); return 0 },
 }
 
@@ -29,6 +32,11 @@ func mzWins() {
 			*w = createWindow(0, 0, 40, 25, 8, -1, 0, false)
 		}
 	}
+}
+
+// mzPrompts sets init_maze_screen's key sets (the cases set the C's).
+func mzPrompts() {
+	mzMsg2000, mzMsg2001 = string(msgs.Get(2000)), string(msgs.Get(2001))
 }
 
 // mazeRoots: the globals their cases name.

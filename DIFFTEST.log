@@ -32,3 +32,7 @@
 2026-10-21 10:46:08 [combat] WMELE end_combat_round 724f, advance_monster_groups 574b, start_encounter 62ce x300 match. PORT BUGS fixed: g4330/g4326 were separate vars but alias pic_slot_monster[4..6]/pic_slot_loaded[4..6] (merged into picSlotMonster/picSlotLoaded); advanceMonsterGroups power sums wrap int16; message 3510/3511 fetched once.
 2026-10-21 10:46:22 [char] WPCVW 8fbf do_use_item match
 2026-10-21 10:46:39 [combat] f70ce redraw_combat_screen x300 match. Combat done; DIFFTEST.md table updated.
+2026-10-21 10:47:10 [char] WPCVW f784 do_level_up, f8c6 check_level_up match; writing DIFFTEST.md section
+[widths] 10:47 WMNPC charm/mood wraps committed
+[widths] 10:47 inflictStatus resist wrap committed; audit done
+2026-10-21 10:54:53 [maze] harness: scripted input (case 'keys': key_available/get_key; Go dtKeys), real message texts per spec (texts=True; Go dtTexts), char_index runs real, state now includes preset fields written back unchanged (emu tracks writes). force_lock, pick_lock, locked_door_menu, handle_locked_door match

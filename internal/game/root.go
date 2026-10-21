@@ -134,7 +134,9 @@ func accessScenarioRecord(typ, index int, buf []byte, write bool) {
 func getMessage(msg int) string {
 	if dtLog != nil {
 		dtLog("msg", msg)
-		return ""
+		if !dtTexts {
+			return ""
+		}
 	}
 	b := msgs.Get(msg)
 	msgNotFound = b == nil

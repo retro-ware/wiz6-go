@@ -29,6 +29,8 @@ type diffCase struct {
 	Out   map[string]int64
 	RNG   [][]int
 	Log   [][]any
+	Keys  []int // scripted input (getKey)
+	Texts bool  // getMessage gives the real text
 }
 
 // diffFuncs runs the Go port of each tested original function, by case file name;
@@ -115,6 +117,7 @@ func resetDiffState() {
 			dir = "../../../wiz6-re/gog/x/app"
 		}
 		scen, _ = dbs.OpenScenario(dir) // nil: functions that read records fail
+		msgs, _ = dbs.OpenMessages(dir)
 	}
 	if partyPictureWin == nil {
 		partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
@@ -177,6 +180,7 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 	for p, n := range c.State {
 		setInt(field(t, p), n)
 	}
+	dtKeys, dtTexts = append([]int(nil), c.Keys...), c.Texts
 	for i, s := range c.Seeds {
 		seeds[i] = s
 	}
@@ -194,8 +198,16 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 			msg = fmt.Sprint("panic: ", r, " ", panicSite())
 		}
 	}()
+	before := snapshot()
 	ret := run(append([]int(nil), c.Args...))
 	var diffs []string
+	for p, v := range snapshot() {
+		_, out := c.Out[p]
+		_, in := c.State[p]
+		if old, ok := before[p]; ok && old != v && !out && !in {
+			diffs = append(diffs, fmt.Sprintf("%s = %d, want unchanged %d", p, v, old))
+		}
+	}
 	if c.Ret != nil && ret != *c.Ret {
 		diffs = append(diffs, fmt.Sprintf("return %d, want %d", ret, *c.Ret))
 	}
@@ -218,6 +230,38 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 		diffs = append(diffs, fmt.Sprintf("log %v, want %v", log, c.Log))
 	}
 	return strings.Join(diffs, "; ")
+}
+
+// snapshot flattens every root the cases can name into {path: value}, so a case also
+// catches Go writes to fields the original left alone.
+func snapshot() map[string]int64 {
+	m := map[string]int64{}
+	var walk func(p string, v reflect.Value)
+	walk = func(p string, v reflect.Value) {
+		switch v.Kind() {
+		case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			m[p] = getInt(v)
+		case reflect.Pointer:
+			if !v.IsNil() && v.Elem().Type() != reflect.TypeFor[Window]() {
+				walk(p, v.Elem())
+			}
+		case reflect.Array:
+			for i := range v.Len() {
+				walk(fmt.Sprintf("%s[%d]", p, i), v.Index(i))
+			}
+		case reflect.Struct:
+			for i := range v.NumField() {
+				if n := v.Type().Field(i).Name; n != "_" {
+					walk(p+"."+n, v.Field(i))
+				}
+			}
+		}
+	}
+	for k, r := range diffRoots {
+		walk(k, reflect.ValueOf(r).Elem())
+	}
+	return m
 }
 
 // panicSite is the innermost game-code line of a panic's stack.

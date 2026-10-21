@@ -243,8 +243,8 @@ func accepts(class, c int) bool {
 // keyAvailable (ROOT 2643, asm) is whether a key of class is waiting; keys the class does
 // not take are thrown away. It steps the random numbers.
 func keyAvailable(class int) bool {
-	if dtLog != nil { // the difftest stubs it (no step_random, no key)
-		return false
+	if dtLog != nil { // the difftest stubs it: no step_random, the scripted keys
+		return len(dtKeys) > 0
 	}
 	if !DetRNG {
 		stepRandom()
@@ -263,6 +263,14 @@ func keyAvailable(class int) bool {
 
 // getKey (ROOT 2724, asm) waits for a key of class and returns it.
 func getKey(class int) int {
+	if dtLog != nil {
+		if len(dtKeys) == 0 {
+			panic("difftest: input exhausted")
+		}
+		k := dtKeys[0]
+		dtKeys = dtKeys[1:]
+		return k
+	}
 	for !keyAvailable(class) {
 	}
 	k := mapKey(keyBuf[0])
@@ -272,6 +280,9 @@ func getKey(class int) int {
 
 // flushKeys (ROOT 280c, asm) throws away waiting keys and a latched click.
 func flushKeys() {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	pumpKeys()
 	keyBuf = keyBuf[:0]
 	if mousePresent {
