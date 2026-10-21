@@ -104,13 +104,13 @@ func scriptAction(act string) {
 		var code uint
 		if _, err := fmt.Sscanf(act[1:], "%x", &code); err == nil {
 			host.PushKey(byte(code))
-			time.AfterFunc(100*time.Millisecond, func() { host.PushKey(byte(code) | 0x80) })
+			time.AfterFunc(100*time.Millisecond, func() { host.PushKey(byte(code) | host.KeyBreakBit) })
 		}
 	case 'p', 'r':
 		var code uint
 		if _, err := fmt.Sscanf(act[1:], "%x", &code); err == nil {
 			if act[0] == 'r' {
-				code |= 0x80
+				code |= host.KeyBreakBit
 			}
 			host.PushKey(byte(code))
 		}

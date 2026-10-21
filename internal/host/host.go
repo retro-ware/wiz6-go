@@ -33,8 +33,8 @@ const (
 	paletteSize = 256
 	dacBits     = 6 // bits of a DAC channel
 	opaque      = 255
-	// keyBreakBit is set in a break (key up) scan code.
-	keyBreakBit = 0x80
+	// KeyBreakBit is set in a break (key up) scan code.
+	KeyBreakBit = 0x80
 )
 
 // A Color is a VGA DAC entry: 6 bits each of red, green and blue.

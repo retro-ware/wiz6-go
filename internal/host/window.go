@@ -99,7 +99,7 @@ func (g *window) Update() error {
 		g.keysHeld[k] = down
 		var brk byte
 		if !down {
-			brk = keyBreakBit
+			brk = KeyBreakBit
 		}
 		if code>>8 == extendedKeyPrefix {
 			PushKey(extendedKeyPrefix)
