@@ -91,7 +91,7 @@ func playSound(n int) {
 	r := sounds[n]
 	level := r.Level
 	step := n >= 10 && n <= 12 // is_sound_10_to_12: footsteps and the like
-	switch hdr[hdrSoundMode] {
+	switch hdr.SoundMode {
 	case 1:
 		if step {
 			level /= 2

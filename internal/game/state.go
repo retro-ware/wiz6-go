@@ -3,9 +3,7 @@ package game
 // Typed game state: the record types (from dbs) and the runtime structures
 // and root globals that the C keeps in the data segment. Offsets are the C
 // layout, for translating; see LAYOUTS.md. Declared elsewhere already (not
-// repeated here): Window/Cell (root_window.go), partyCount,
-// memberPcfileIndex, picSlotMonster/picSlotLoaded (winit.go), gameState,
-// gameStateArg, the *_win windows (root.go), sounds (root_sound.go).
+// repeated here): Window/Cell (root_window.go), sounds (root_sound.go).
 
 import "github.com/retro-ware/wiz6-go/internal/dbs"
 
@@ -108,4 +106,47 @@ var (
 	combatGold     int32             // combat_gold
 	rosterSlotUsed [16]uint8         // PCFILE header Used
 	monsterPics    [10]MonsterPicRec // DS:0x36de, pic slots
+)
+
+// Root globals: the game state machine, the data files, the input and the windows.
+var (
+	gameState    int // which overlay main runs next, and what it does (game_state)
+	gameStateArg int // the map for state 25 (game_state_arg)
+
+	dataDir   string             // where the data files are (the "C:\BANE\" prefix)
+	hdr       dbs.ScenarioHeader // SCENARIO.HDR (cs:33f8, scenario_hdr)
+	scen      *dbs.Scenario      // SCENARIO.DBS and its headers (scenario_fd)
+	msgs      *dbs.Messages      // MSG.DBS (msg_fd)
+	misc      dbs.Huffman        // MISC.HDR, the text decoding tree
+	pcfileHdr dbs.PCFileHeader   // the first bytes of PCFILE.DBS (cs:4fd0); Used is rosterSlotUsed
+
+	videoFlags   int  // init_video's result: 1 EGA, 0x1000 a mouse
+	mousePresent bool // the mouse is in use (mouse_present)
+	clickFlag    bool // the last poll saw a click (click_flag)
+	messageDelay int  // (message_delay)
+	msgNotFound  bool // the last getMessage found nothing (msg_not_found)
+
+	mainWindow      *Window // the one-line message window (main_window)
+	fullscreenWin   *Window // a full-screen picture window (fullscreen_win)
+	bottomLineWin   *Window // (bottom_line_win)
+	partyPictureWin *Window // (party_picture_win)
+	pictureWin      *Window // the maze view (picture_win)
+	g4fac           *Window // the title strip above the view
+	g4fb0           *Window
+	g4fb8           *Window // the right-hand side panel
+	g4fba           *Window // the left-hand side panel
+)
+
+// Party state (WINIT/WBASE).
+var (
+	partyCount        int    // party_count
+	memberPcfileIndex [6]int // PCFILE slot of each member (member_pcfile_index)
+	g4330             [3]int8
+	g4326             [3]byte
+	g433a             int
+	msgBlockNum       int
+
+	// Monster pictures in the picture slots (pic_slot_monster, pic_slot_loaded).
+	picSlotMonster [10]int
+	picSlotLoaded  [10]bool
 )

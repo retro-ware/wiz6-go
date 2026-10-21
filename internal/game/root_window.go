@@ -10,8 +10,6 @@ import (
 // Window is a text window (the root's window struct): a rectangle of 8x8 cells on the
 // 40x25 screen, its z-order priority, a cursor, eight border glyphs of font 1 drawn just
 // outside it, and the cells it shows.
-//
-// TODO(merge): provisional; replace with the Window from state.go when it lands.
 type Window struct {
 	W, H     uint8    // size in cells (struct bytes 0, 1)
 	X, Y     uint8    // position (2, 3)

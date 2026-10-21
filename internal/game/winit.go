@@ -55,23 +55,15 @@ func loadMazeData(name string) {
 	drv.LoadMaze(m)
 }
 
-// Monster pictures in the picture slots (pic_slot_monster, pic_slot_loaded).
-var (
-	picSlotMonster [10]int
-	picSlotLoaded  [10]bool
-)
-
 // loadMonsterPic (WINIT 4721) loads MONnn.PIC for monster mon into picture slot slot and
-// marks the slots it runs over.
-//
-// TODO(merge): the monster record goes to the slot's monster struct (cs:36de + 314*slot) in
-// state.go; only the picture's extra slot count (its byte 0x134) is used here.
-func loadMonsterPic(mon, slot int) {
+// marks the slots it runs over; a missing file is fatal error code.
+func loadMonsterPic(mon, slot, code int) {
 	stopSound()
-	rec := make([]byte, 314)
-	accessScenarioRecord(8, mon, rec, false)
-	drv.LoadPic(slot, openData(fmt.Sprintf("MON%02d.PIC", mon), 9))
-	for i := 0; i <= int(rec[0x134]) && slot+i < len(picSlotMonster); i++ {
+	rec := make([]byte, dbs.Size[MonsterPicRec]())
+	accessScenarioRecord(dbs.RecMonsterPic, mon, rec, false)
+	monsterPics[slot], _ = dbs.Decode[MonsterPicRec](rec)
+	drv.LoadPic(slot, openData(fmt.Sprintf("MON%02d.PIC", mon), code))
+	for i := 0; i <= int(monsterPics[slot].FrameCount) && slot+i < len(picSlotMonster); i++ {
 		picSlotMonster[slot+i] = mon
 		picSlotLoaded[slot+i] = true
 	}
@@ -119,15 +111,15 @@ func winRect(w *Window) drv.Rect { return drv.Rect{X: int(w.X), Y: int(w.Y), W: 
 // shows the credits, opens the data files and loads the sounds.
 func initGameData() {
 	fullscreenWin, mainWindow = nil, nil
-	copy(hdr[:], openData("SCENARIO.HDR", 1))
+	hdr, _ = dbs.Decode[dbs.ScenarioHeader](openData("SCENARIO.HDR", 1)[:dbs.Size[dbs.ScenarioHeader]()])
 	messageDelay = 16
-	if hdr[hdrGmode] == 255 {
+	if hdr.Gmode == 255 {
 		exitGame(2)
 	}
 	stopSound()
 	audioOK = host.AudioInit()
 	videoFlags = 0x1001 // init_video: EGA, and a mouse, which the host always has
-	if videoFlags&0x1000 != 0 && hdr[hdrInput] == 1 {
+	if videoFlags&0x1000 != 0 && hdr.Input == 1 {
 		drv.MouseInit()
 		mousePresent = true
 	} else {
@@ -144,7 +136,8 @@ func initGameData() {
 	if scen, err = dbs.OpenScenario(dataDir); err != nil {
 		exitGame(8)
 	}
-	copy(pcfile[:], openData("PCFILE.DBS", 6))
+	pcfileHdr, _ = dbs.Decode[dbs.PCFileHeader](openData("PCFILE.DBS", 6)[:24])
+	rosterSlotUsed = pcfileHdr.Used
 	if misc, err = dbs.ReadMiscTable(dataDir); err != nil {
 		exitGame(6)
 	}
@@ -288,7 +281,7 @@ func showTitleSequence() {
 // showGraveyard (WINIT 535a) takes down the game windows, shows the graveyard and waits
 // for a key.
 func showGraveyard() {
-	drv.LoadMaze(nil) // TODO(merge): free the maze (maze_data) and g4fa8 in state.go
+	mazeA, mazeB = nil, nil
 	partyCount = 0
 	for _, w := range []*Window{g4fb0, g4fac, pictureWin, fullscreenWin, partyPictureWin, g4fba, g4fb8, mainWindow, bottomLineWin} {
 		destroyWindow(w, false)
@@ -305,16 +298,6 @@ func showGraveyard() {
 	flushKeys()
 }
 
-// TODO(merge): party state belongs in state.go.
-var (
-	partyCount        int
-	memberPcfileIndex [6]int
-	g4330             [3]int8
-	g4326             [3]byte
-	g433a             int
-	msgBlockNum       int
-)
-
 // initMainScreen (WINIT 54a7) loads the monster pictures and DRAGONSC, and makes the game's
 // windows.
 func initMainScreen() {
@@ -323,7 +306,7 @@ func initMainScreen() {
 		picSlotMonster[j], picSlotLoaded[j] = -1, false
 	}
 	for _, p := range [][2]int{{3, 0}, {1, 1}, {2, 2}, {7, 3}, {4, 7}, {5, 8}, {6, 9}} {
-		loadMonsterPic(p[0], p[1])
+		loadMonsterPic(p[0], p[1], 9)
 	}
 	loadFullscreenPic("DRAGONSC.EGA", false)
 	partyPictureWin = createWindow(0, 19, 40, 5, 4, -1, 0, false)

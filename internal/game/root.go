@@ -13,46 +13,6 @@ import (
 	"github.com/retro-ware/wiz6-go/internal/drv"
 )
 
-// TODO(merge): these globals belong with the game state in state.go; they are here until it
-// lands.
-var (
-	gameState    int // which overlay main runs next, and what it does (game_state)
-	gameStateArg int // the map for state 25 (game_state_arg)
-
-	dataDir string        // where the data files are (the "C:\BANE\" prefix)
-	hdr     [414]byte     // SCENARIO.HDR (cs:33f8)
-	scen    *dbs.Scenario // SCENARIO.DBS and its headers (scenario_fd)
-	msgs    *dbs.Messages // MSG.DBS (msg_fd)
-	misc    dbs.Huffman   // MISC.HDR, the text decoding tree
-	pcfile  [24]byte      // the first bytes of PCFILE.DBS (cs:4fd0)
-
-	videoFlags   int  // init_video's result: 1 EGA, 0x1000 a mouse
-	mousePresent bool // the mouse is in use (mouse_present)
-	clickFlag    bool // the last poll saw a click (click_flag)
-	messageDelay int  // (message_delay)
-	msgNotFound  bool // the last getMessage found nothing (msg_not_found)
-
-	mainWindow      *Window // the one-line message window (main_window)
-	fullscreenWin   *Window // a full-screen picture window (fullscreen_win)
-	bottomLineWin   *Window // (bottom_line_win)
-	partyPictureWin *Window // (party_picture_win)
-	pictureWin      *Window // the maze view (picture_win)
-	g4fac           *Window // the title strip above the view
-	g4fb0           *Window
-	g4fb8           *Window // the right-hand side panel
-	g4fba           *Window // the left-hand side panel
-)
-
-// SCENARIO.HDR configuration bytes (offsets into hdr).
-const (
-	hdrSoundPort = 368 // g3568, g3569, g356a: the sound hardware
-	hdrSoundMode = 408 // sound_mode: 0 all, 1 quieter steps, 2 no steps, 3 quiet, 4 quiet no steps, 5 off
-	hdrDelay     = 409 // cfg_delay
-	hdrDisks     = 410 // g3592: 1 hard disk; 2..5 floppy layouts
-	hdrInput     = 412 // cfg_input: 1 mouse
-	hdrGmode     = 413 // cfg_gmode: 1 EGA
-)
-
 // exitCode unwinds the game to Main with the code exit_game gave.
 type exitCode int
 
