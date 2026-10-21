@@ -8,6 +8,17 @@ var charFuncs = map[string]func(a []int) int{
 	"pcmk_7532": func(a []int) int { raiseStatsToMinimum(raceMinStats[a[0]]); return 0 },
 	"pcmk_75d2": func(a []int) int { applySexModifiers(a[0]); return 0 },
 	"pcmk_7e92": func(a []int) int { initNPCAttitudes(); return 0 },
+	"pcmk_55ad": func(a []int) int {
+		var m [4]string
+		for g, r := range [4][2]int{{0, 10}, {10, 17}, {17, 22}, {22, 30}} {
+			for _, d := range a[r[0]:r[1]] {
+				m[g] += string(rune('0' + d))
+			}
+		}
+		setClassSkillMasks(m)
+		return 0
+	},
+	"pcmk_66ea": func(a []int) int { return len(listRealmSpells(a[0])) },
 	"pcmk_81ad": func(a []int) int {
 		for _, id := range classItems[newPC.Class] {
 			if id > 0 {
@@ -22,6 +33,7 @@ var charFuncs = map[string]func(a []int) int{
 var charRoots = map[string]any{
 	"party": &party, "partyCount": &partyCount,
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
+	"pcmkSkillShown": &pcmkSkillShown,
 }
 
 func init() {
