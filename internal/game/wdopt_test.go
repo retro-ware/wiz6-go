@@ -33,7 +33,7 @@ func TestWdoptScreens(t *testing.T) {
 		loadMazeLevel(gameStateArg)
 		redrawMazeView()
 		close(ready)
-		for _, s := range []int{20, 19} {
+		for _, s := range []gameStateID{stateUseItemInMaze, stateCastSpellInMaze} {
 			gameState, curMember = s, 0
 			for m := partyCount - 1; m >= 0 && s == 19; m-- {
 				if party[m].SP[0].Cur > 0 {

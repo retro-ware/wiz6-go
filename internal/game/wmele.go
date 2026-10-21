@@ -49,9 +49,9 @@ func monsterRecord(id int) MonsterRec {
 // sidePanel is the side panel showing party member i.
 func sidePanel(i int) *Window {
 	if i%2 == 0 {
-		return g4fba
+		return leftPanelWin
 	}
-	return g4fb8
+	return rightPanelWin
 }
 
 // waitAnimatingView (wait_animating_view, WMELE 45a6) animates the view for tenths of
@@ -141,7 +141,7 @@ func generateMonsterGroup(mon, n int) {
 			curSound = -1
 		}
 	}
-	switch hdr.Level {
+	switch scenarioHdr.Level {
 	case 1:
 		if rec.GroupSize.Base > 0 {
 			rec.GroupSize.Base--
@@ -154,7 +154,7 @@ func generateMonsterGroup(mon, n int) {
 	grp.B412 = 1
 	grp.B396 = [6]int8{}
 	grp.B402 = [4]uint8{}
-	if hdr.Level == 2 {
+	if scenarioHdr.Level == 2 {
 		rec.HP.Count++
 	}
 	for i := 0; int(grp.Count) > i; i++ {
@@ -165,7 +165,7 @@ func generateMonsterGroup(mon, n int) {
 		c.StaminaMax = int16(rollDice(rec.Stamina))
 		c.Stamina = c.StaminaMax
 		c.Pos = -1
-		switch hdr.Level {
+		switch scenarioHdr.Level {
 		case 1:
 			c.B38, c.B39, c.B41 = 2, 2, -5
 		case 2:
@@ -174,7 +174,7 @@ func generateMonsterGroup(mon, n int) {
 	}
 	limit := min((gameStateArg+1)/2+1+b2i(g4338 > 0), 5)
 	chance := 100
-	switch hdr.Level {
+	switch scenarioHdr.Level {
 	case 1:
 		chance = 150
 	case 2:
@@ -312,7 +312,7 @@ func updateCombatant(g, i, regen, drain int) bool {
 				c.Pos = -1
 			}
 			if rec := groupMonsterRec[g]; rec.Flags&1 != 0 {
-				setBit(hdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
+				setBit(scenarioHdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
 			}
 		}
 	}
@@ -605,8 +605,8 @@ func endEncounter() {
 	if dtLog != nil {
 		return
 	}
-	destroyWindow(combatWinA, false)
-	destroyWindow(combatWinB, false)
+	destroyWindow(combatActionWin, false)
+	destroyWindow(monsterListWin, false)
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	resumeWindowDraw(g4fb0)
@@ -686,15 +686,15 @@ func endCombatRound() {
 	compactMonsterGroups()
 	updateGroup(6)
 	tickCombatEffects()
-	fillWindow(combatWinA, 32, 3)
-	clearWindow(combatWinB, false)
+	fillWindow(combatActionWin, 32, 3)
+	clearWindow(monsterListWin, false)
 	clearWindow(partyPictureWin, false)
 	if combatOver == 1 {
 		for i := 0; i < partyCount; i++ {
 			drawCombatCard(i, false)
 		}
 		endEncounter()
-		gameState = int(returnCmd)
+		gameState = gameStateID(returnCmd)
 		return
 	}
 	gameState = 11
@@ -716,11 +716,11 @@ func beginCombat() {
 	clear(picSlotLoaded[4:7]) // g4326
 	monsterJitterX[0], monsterJitterY[0] = [5]uint8{}, [5]uint8{}
 	deferWindowDraw(g4fb0)
-	combatWinA = createWindow(0, 19, 19, 5, 11, -4, 0, false)
-	combatWinB = createWindow(20, 19, 20, 5, 10, -1, 0, false)
-	g4fae = nil
-	deferWindowDraw(combatWinB)
-	deferWindowDraw(combatWinA)
+	combatActionWin = createWindow(0, 19, 19, 5, 11, -4, 0, false)
+	monsterListWin = createWindow(20, 19, 20, 5, 10, -1, 0, false)
+	allyStripWin = nil
+	deferWindowDraw(monsterListWin)
+	deferWindowDraw(combatActionWin)
 	clearWindow(partyPictureWin, false)
 	setUpEncounter()
 	meleAnnounce, meleNPCFirst = 1, 0

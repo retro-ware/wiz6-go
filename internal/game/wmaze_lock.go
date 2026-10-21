@@ -134,11 +134,11 @@ func clearFlagEvent() {
 	}
 	setBit(levelFlags[gameStateArg][:], flag, false)
 	if extractBits(bits, 8, 1) == 1 {
-		setBit(hdr.LevelFlags[gameStateArg][:], flag, false)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], flag, false)
 	}
 	if gameStateArg == 7 && flag == 24 {
 		setBit(levelFlags[gameStateArg][:], 18, true)
-		setBit(hdr.LevelFlags[gameStateArg][:], 18, true)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], 18, true)
 	}
 	setEventFlags(extractBits(int(mazeB.DirBits[ev]), 9, 2))
 }
@@ -168,11 +168,11 @@ func swapLevelFlags(a, b int, swap bool) {
 	}
 	if clr != 0 {
 		setBit(levelFlags[gameStateArg][:], clr, false)
-		setBit(hdr.LevelFlags[gameStateArg][:], clr, false)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], clr, false)
 	}
 	if set != 0 {
 		setBit(levelFlags[gameStateArg][:], set, true)
-		setBit(hdr.LevelFlags[gameStateArg][:], set, true)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], set, true)
 	}
 }
 
@@ -321,7 +321,7 @@ func riddleEvent() {
 // swapFlagsEvent (WMAZE c363): event 24, swap two level flags on a scenario header bit.
 func swapFlagsEvent() {
 	ev := int(cellEventIndex)
-	set := testBit(hdr.Unk140[20:], int(mazeB.Data[ev])) // DS:0x3498
+	set := testBit(scenarioHdr.Unk140[20:], int(mazeB.Data[ev])) // DS:0x3498
 	swapLevelFlags(int(mazeB.Unk288[ev]), int(mazeB.Param[ev]), set)
 	setEventFlags(extractBits(int(mazeB.DirBits[ev]), 0, 2))
 }

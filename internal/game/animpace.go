@@ -35,10 +35,10 @@ func animPace(period time.Duration) {
 	lastAnimFlip = host.Now()
 }
 
-// paceViewCycle paces the combat/NPC view loops (15 steps, flip at state -3) where they
-// idle for input; their whole-cycle redraws are not paced.
+// paceViewCycle paces the combat/NPC view loops (15 steps, flip at viewAnimShow) where
+// they idle for input; their whole-cycle redraws are not paced.
 func paceViewCycle() {
-	if viewAnimState == -3 {
+	if viewAnimState == viewAnimShow {
 		animPace(viewAnimPeriod)
 	}
 }

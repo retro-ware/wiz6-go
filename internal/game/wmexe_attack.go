@@ -117,7 +117,7 @@ func killCombatant(g, i int) {
 			party[actMember].Kills++
 		}
 		if rec := groupMonsterRec[g]; rec.Flags&1 != 0 {
-			setBit(hdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
+			setBit(scenarioHdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
 		}
 		if c.Pos != -1 {
 			flashOffView(c, 0)
@@ -157,7 +157,7 @@ func effectMsg(g, i, n, shake, sound int) {
 		}
 		drawCardX(i, true)
 	}
-	combatDelay(int(g4fc8) / 2)
+	combatDelay(int(delaySetting) / 2)
 }
 
 // loadPartyResist puts member i's resistances into the party's monster record.
@@ -269,17 +269,17 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 		printCombatLine(mexeName, mexeVerb, mexeText, 5, 5, 0)
 		c.HP -= int16(dmg)
 		if c.HP <= 0 {
-			combatDelay(int(g4fc8) / 4)
+			combatDelay(int(delaySetting) / 4)
 			damageEffect(g, i, 3486, 0, 3, 0, 0)
 		} else {
 			if g == 0 {
 				playSound(2)
 				drawCardX(i, true)
 			}
-			combatDelay(int(g4fc8) / 4)
+			combatDelay(int(delaySetting) / 4)
 		}
 	}
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 	return dmg
 }
 
@@ -422,7 +422,7 @@ func groupStatus(g, n, r, s, mod int, isDamage bool, count, sides, base int) {
 			if int(uint8(monsterGroups[g].B396[3]))/5 > count {
 				clearMsgLine(2)
 				printMsgCentered(3212, 5, 2)
-				combatDelay(int(g4fc8) / 2)
+				combatDelay(int(delaySetting) / 2)
 				return
 			}
 			strong = 2
@@ -718,11 +718,11 @@ func doAttack(c *Combatant, slot, kind int) {
 	if s := groupMonsterRec[1].Sound; actGroup != 0 && !quiet && s > 0 && s != 6 && atkRec.Sound == s {
 		playSound(14)
 	}
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 
 	for n := 0; n < swings && uint8(t.Condition) < 3; n++ {
 		roll := 0
-		if g4fcc == 0 {
+		if alwaysHit == 0 {
 			roll = random(100)
 		}
 		var area, areaAC int
@@ -788,7 +788,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			t.Status[2] = 0
 			t.Status[3] = uint8(min(max(int(t.Status[3])-(random(3)+2), 0), 255))
 			if t.HP <= 0 {
-				combatDelay(int(g4fc8) / 4)
+				combatDelay(int(delaySetting) / 4)
 				damageEffect(tg, ti, 3486, 0, 3, 0, 0)
 				if c.Toggle == -1 {
 					c.Toggle = 1
@@ -798,13 +798,13 @@ func doAttack(c *Combatant, slot, kind int) {
 					playSound(2)
 					drawCardX(ti, true)
 				}
-				combatDelay(int(g4fc8) / 4)
+				combatDelay(int(delaySetting) / 4)
 				if tRec.Unk208 != 22 {
 					applyHitEffects(c, fx, tg, ti)
 				}
 			}
 		}
-		combatDelay(int(g4fc8) / 4)
+		combatDelay(int(delaySetting) / 4)
 	}
 	if c.Toggle == -1 {
 		c.Toggle = 0
@@ -874,7 +874,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 				playSound(int(party[i].Sex) + 8)
 				drawCardX(i, true)
 			}
-			combatDelay(int(g4fc8) / 2)
+			combatDelay(int(delaySetting) / 2)
 			if fighter(g, i).HP <= 0 {
 				damageEffect(g, i, 3486, 0, 3, mod, 0)
 			}
@@ -886,7 +886,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			if random(100) > int(groupMonsterRec[g].Resist[r])-mod {
 				clearMsgLine(4)
 				printMsgCentered(3495, 5, 4)
-				combatDelay(int(g4fc8) / 4)
+				combatDelay(int(delaySetting) / 4)
 				damageEffect(g, i, 3486, 0, 3, mod, 0)
 			}
 		case 7:

@@ -32,7 +32,7 @@ func wbaseMain() {
 	}
 	if gameState == 24 {
 		doGameConfiguration()
-		gameState = int(returnCmd)
+		gameState = gameStateID(returnCmd)
 	}
 }
 
@@ -151,7 +151,7 @@ func runCampMenu(win *Window, msgbase int, enabled []int, x0, y0, colWidth, rows
 	setClickRegion(count, 255, 0, 0, 0)
 	resumeWindowDraw(win)
 	refreshAllWindows()
-	drvShowWindow(g4fac)
+	drvShowWindow(titleStripWin)
 	drvShowWindow(pictureWin)
 	for {
 		if !mousePresent {
@@ -371,11 +371,11 @@ func inputText(win *Window, maxlen, color, mode int) string {
 }
 
 // inputTextAnimated (WBASE 529e) is inputText with the camp scene running; from the
-// third character on it sets g4f84.
+// third character on it sets magicWordTyped.
 func inputTextAnimated(win *Window, maxlen, color, mode int) string {
 	return readLine(win, maxlen, color, mode, func() int { return waitKeyAnimated(1) }, func(n int) {
 		if n > 2 {
-			g4f84 = 17210
+			magicWordTyped = 17210
 		}
 	})
 }
@@ -503,9 +503,9 @@ func drawMemberPanel(i int) {
 	if dtLog != nil { // stubbed in the difftest
 		return
 	}
-	win := g4fba
+	win := leftPanelWin
 	if i%2 != 0 {
-		win = g4fb8
+		win = rightPanelWin
 	}
 	p := &party[i]
 	x, y := 0, i/2<<2
@@ -606,13 +606,13 @@ func doMasterOptions() {
 	loadMonsterPicSlot(8, 4)
 	campAnimTick = 0
 	animPhase = 0
-	deferWindowDraw(g4fba)
-	deferWindowDraw(g4fb8)
+	deferWindowDraw(leftPanelWin)
+	deferWindowDraw(rightPanelWin)
 	for curMember = 0; int(curMember) < partyCount; curMember++ {
 		drawMemberPanel(int(curMember))
 	}
-	resumeWindowDraw(g4fba)
-	resumeWindowDraw(g4fb8)
+	resumeWindowDraw(leftPanelWin)
+	resumeWindowDraw(rightPanelWin)
 	initCampScene()
 	sel := 0
 	if partyCount >= 6 {
@@ -698,8 +698,8 @@ func doMasterOptions() {
 func resetPartyScreen() {
 	mazeA, mazeB = nil, nil
 	destroyWindow(g4fb0, false)
-	fillWindow(g4fba, 32, 3)
-	fillWindow(g4fb8, 32, 3)
+	fillWindow(leftPanelWin, 32, 3)
+	fillWindow(rightPanelWin, 32, 3)
 	fillWindow(partyPictureWin, 26, 3)
 	partyCount = 0
 	gameState = 4
@@ -707,7 +707,7 @@ func resetPartyScreen() {
 
 // closeGameWindows (WBASE 6fe7) takes down the game's windows.
 func closeGameWindows() {
-	for _, w := range []*Window{g4fac, pictureWin, fullscreenWin, partyPictureWin, g4fba, g4fb8, mainWindow, bottomLineWin} {
+	for _, w := range []*Window{titleStripWin, pictureWin, fullscreenWin, partyPictureWin, leftPanelWin, rightPanelWin, mainWindow, bottomLineWin} {
 		destroyWindow(w, false)
 	}
 	stopSound()

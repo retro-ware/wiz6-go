@@ -792,9 +792,9 @@ func npcDrawMemberStatus(m, gold int) {
 	}
 	drawMemberStatus(m)
 	if gold != 0 {
-		win := g4fb8
+		win := rightPanelWin
 		if m%2 == 0 {
-			win = g4fba
+			win = leftPanelWin
 		}
 		setCursor(win, 0, m/2<<2)
 		printLong(win, party[m].Gold, 7, 5)
@@ -1016,10 +1016,10 @@ func runNPCEncounter() {
 	npcLoadVocabulary()
 	eraseWindow(mainWindow, false)
 	deferWindowDraw(g4fb0)
-	combatWinB = createWindow(20, 19, 20, 5, 10, -1, 0, false)
-	npcDrawNameLine(combatWinB)
+	monsterListWin = createWindow(20, 19, 20, 5, 10, -1, 0, false)
+	npcDrawNameLine(monsterListWin)
 	npcMainMenu()
-	destroyWindow(combatWinB, false)
+	destroyWindow(monsterListWin, false)
 	eraseWindow(mainWindow, false)
 	resumeWindowDraw(g4fb0)
 	clear(picSlotLoaded[4:7])    // g4326
@@ -1040,7 +1040,7 @@ func initNPCEncounter() {
 	npcSeqForce = [10][5]int16{}
 	npcPicAlt = 0
 	npcRec = npcRecord[NPCRec](dbs.RecNPC, npcID)
-	copy(npcFlags[:], hdr.Unk140[28+2*npcID:])
+	copy(npcFlags[:], scenarioHdr.Unk140[28+2*npcID:])
 	npcGoldGiven = 0
 }
 
@@ -1372,14 +1372,14 @@ func npcRunScript(m, n int) int {
 			if arg > 0 && arg < 79 {
 				setBit(levelFlags[gameStateArg][:], arg, param != 0)
 				if op.Op == 15 {
-					setBit(hdr.LevelFlags[gameStateArg][:], arg, param != 0)
+					setBit(scenarioHdr.LevelFlags[gameStateArg][:], arg, param != 0)
 				}
 			}
 		case 16, 17: // set NPC flag arg (17 also the saved one)
 			if arg > 0 && arg < 15 {
 				setBit(npcFlags[:], arg, param != 0)
 				if op.Op == 17 {
-					setBit(hdr.Unk140[28+2*npcID:], arg, param != 0)
+					setBit(scenarioHdr.Unk140[28+2*npcID:], arg, param != 0)
 				}
 			}
 		case 18:

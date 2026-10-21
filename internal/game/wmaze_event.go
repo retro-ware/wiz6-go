@@ -32,7 +32,7 @@ func replaceCharWithString(s, repl string, ch byte) string {
 
 // save_level_flags (WMAZE 98d7) writes the current map's level flags and geometry back.
 func saveLevelFlags() {
-	hdr.LevelFlags[gameStateArg] = levelFlags[gameStateArg]
+	scenarioHdr.LevelFlags[gameStateArg] = levelFlags[gameStateArg]
 	mapCacheA[gameStateArg] = *mazeA
 	mapCacheB[gameStateArg] = *mazeB
 }
@@ -356,7 +356,7 @@ func setEventFlags(how int) {
 	}
 	setBit(levelFlags[gameStateArg][:], bit, true)
 	if how > 1 {
-		setBit(hdr.LevelFlags[gameStateArg][:], bit, true)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], bit, true)
 	}
 }
 
@@ -544,7 +544,7 @@ func setFlagEvent() {
 		setBit(levelFlags[m][:], bit, !testBit(levelFlags[m][:], bit))
 	}
 	if extractBits(bits, 14, 1) == 1 {
-		setBit(hdr.LevelFlags[m][:], bit, testBit(levelFlags[m][:], bit))
+		setBit(scenarioHdr.LevelFlags[m][:], bit, testBit(levelFlags[m][:], bit))
 	}
 }
 

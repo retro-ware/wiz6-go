@@ -31,7 +31,7 @@ func shutdownGame(code int) {
 }
 
 // Main runs the game from dir until it quits; the exit code.
-func Main(dir string) int { return run(dir, func() { gameState = 0 }) }
+func Main(dir string) int { return run(dir, func() { gameState = stateLoadData }) }
 
 // run boots the root, calls start (which sets gameState; the testing entries also set up
 // a game there) and runs main's game_state loop until the game quits; the exit code.
@@ -55,39 +55,39 @@ func run(dir string, start func()) (code int) {
 	start()
 	for {
 		switch gameState {
-		case 8:
+		case stateGraveyard:
 			ensureDiskFor(3, 0)
 			winitMain()
-		case 0, 1, 2:
+		case stateLoadData, stateTitle, stateMainScreen:
 			winitMain()
-		case 7, 24:
+		case stateResetPartyScreen, stateGameConfiguration:
 			ensureDiskFor(1, 0)
 			wbaseMain()
-		case 4:
+		case stateMasterOptions:
 			wbaseMain()
-		case 25:
+		case stateEnterMap:
 			ensureDiskFor(2, gameStateArg)
-			gameState = 5
+			gameState = stateExplore
 			wmazeOvmain()
-		case 5, 6, 23:
+		case stateExplore, stateLoadMap, stateFlee:
 			wmazeOvmain()
-		case 16:
+		case stateCreateCharacter:
 			wpcmkMain()
-		case 17, 22:
+		case stateViewCharacter, stateLevelUp:
 			wpcvwOvmain()
-		case 15, 21:
+		case stateTreasureAfterFight, stateTreasureFound:
 			wtreaOvmain()
-		case 10, 11, 14:
+		case stateBeginCombat, stateRedrawCombat, stateEndCombatRound:
 			wmeleOvmain()
-		case 13:
+		case stateRunCombatRound:
 			wmexeOvmain()
-		case 18:
+		case stateNPC:
 			wmnpcOvmain()
-		case 12:
+		case stateStartCombatRound:
 			wpopsOvmain()
-		case 19, 20:
+		case stateCastSpellInMaze, stateUseItemInMaze:
 			wdoptOvmain()
-		case 3:
+		case stateQuit:
 			shutdownGame(0)
 			return 0
 		default:
@@ -118,12 +118,12 @@ func promptInsertDisk(label string, disk int, closeFiles, reopen bool) {}
 func accessScenarioRecord(typ, index int, buf []byte, write bool) {
 	stopSound()
 	if write {
-		if err := scen.WriteRecord(typ, index, buf); err != nil {
+		if err := scenarioDBS.WriteRecord(typ, index, buf); err != nil {
 			exitGame(9)
 		}
 		return
 	}
-	b, err := scen.Record(typ, index)
+	b, err := scenarioDBS.Record(typ, index)
 	if err != nil {
 		exitGame(9)
 	}
@@ -138,7 +138,7 @@ func getMessage(msg int) string {
 			return ""
 		}
 	}
-	b := msgs.Get(msg)
+	b := messageDBS.Get(msg)
 	msgNotFound = b == nil
 	return string(b)
 }
@@ -165,7 +165,7 @@ func putChar(win *Window, ch byte, color int) {
 	if inverse {
 		color = -color
 	}
-	putCell(win, Cell{ch, uint8(color) << 4}, func(col, row int) { drv.Glyph(col, row, ch, uint8(color), inverse) }, inverse)
+	putCell(win, Cell{ch, uint8(color) << attrColorShift}, func(col, row int) { drv.Glyph(col, row, ch, uint8(color), inverse) }, inverse)
 }
 
 // putCharHi (ROOT 23e3, asm) puts ch at win's cursor in colour font font (1..4).
@@ -180,7 +180,7 @@ func putCell(win *Window, c Cell, draw func(col, row int), mark bool) {
 		}
 		if win.Flags&WinDeferred == 0 {
 			col, row := int(win.X)+int(win.CurX), int(win.Y)+int(win.CurY)
-			if m := row*drv.Cols + col; m >= 0 && m < len(cellOwner) && cellOwner[m]&0x3f == id {
+			if m := row*drv.Cols + col; m >= 0 && m < len(cellOwner) && cellOwner[m]&cellIDMask == id {
 				cellOwner[m] = id
 				if mark {
 					cellOwner[m] |= cellDirty
@@ -233,24 +233,26 @@ func printInt(win *Window, value, width, color int) {
 	printLong(win, int32(int16(value)), width, color)
 }
 
-// printCentered (ROOT 0b7e) prints s centred on row of a 40-column window.
+// printCentered (ROOT 0b7e) prints s centred on row of a full-width window.
 func printCentered(win *Window, s string, row, color int) {
-	setCursor(win, 20-(len(s)+1)/2, row)
+	setCursor(win, drv.Cols/2-(len(s)+1)/2, row)
 	printColored(win, s, color)
 }
 
 // waitSecondsOrEnter (ROOT 09a3) waits up to seconds, less if Enter is pressed.
 func waitSecondsOrEnter(seconds int) {
 	for n := seconds * 10; n > 0; n-- {
-		if keyAvailable(1) && getKey(1) == 13 {
+		if keyAvailable(keyClassMenu) && getKey(keyClassMenu) == keyEnter {
 			return
 		}
 		delayTick()
 	}
 }
 
-// The click regions (cs:3598): x1, y1, x2, y2 in cells; x1 255 ends the table.
+// The click regions (cs:3598): x1, y1, x2, y2 in cells; x1 clickRegionsEnd ends the table.
 var clickRegions [4 * 40]byte
+
+const clickRegionsEnd = 255
 
 // setClickRegion (ROOT 0c16) sets click region i.
 func setClickRegion(i int, x1, y1, x2, y2 byte) {
@@ -280,8 +282,8 @@ func checkScreenClick() bool {
 	if !mousePresent {
 		return false
 	}
-	setClickRegion(0, 0, 0, 39, 24)
-	setClickRegion(1, 255, 0, 0, 0)
+	setClickRegion(0, 0, 0, drv.Cols-1, drv.Rows-1)
+	setClickRegion(1, clickRegionsEnd, 0, 0, 0)
 	checkClickRegions(clickRegions[:])
 	return clickFlag
 }

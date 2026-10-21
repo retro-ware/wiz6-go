@@ -89,7 +89,7 @@ func drawMonsterGroups(win *Window, refresh bool) {
 
 // drawAllyGroup (WPOPS 478f) shows group 6, the party's allies, under the view.
 func drawAllyGroup() {
-	w := g4fae
+	w := allyStripWin
 	deferWindowDraw(w)
 	fillWindow(w, 28, 3)
 	setCursor(w, 4, 0)
@@ -342,7 +342,7 @@ func selectMonsterGroup(win *Window, msg, rng, sel int) int {
 	if monsterGroupCount == 1 {
 		return 1
 	}
-	list := combatWinB
+	list := monsterListWin
 	fillWindow(win, 32, 3)
 	refreshAllWindows()
 	title := replaceCharWithString(getMessage(3600), getMessage(msg), '$')
@@ -678,7 +678,7 @@ func choosePartyActions(win *Window) {
 			var action, choice, target int
 			back := false
 			for {
-				drawMonsterGroups(combatWinB, false)
+				drawMonsterGroups(monsterListWin, false)
 				prompt(3500)
 				refreshAllWindows()
 				n := 0
@@ -821,7 +821,7 @@ func choosePartyActions(win *Window) {
 		}
 		member++
 		if member == partyCount {
-			drawMonsterGroups(combatWinB, false)
+			drawMonsterGroups(monsterListWin, false)
 			fillWindow(win, 32, 3)
 			printCombatPrompt(getMessage(3506), 0)
 			refreshAllWindows()
@@ -1058,21 +1058,21 @@ func startCombatRound() {
 	pvBlinkState = -1
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
-	drawMonsterGroups(combatWinB, false)
-	resumeWindowDraw(combatWinA)
-	resumeWindowDraw(combatWinB)
+	drawMonsterGroups(monsterListWin, false)
+	resumeWindowDraw(combatActionWin)
+	resumeWindowDraw(monsterListWin)
 	eraseCursorMark(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
 	if monsterGroups[6].Count > 0 {
 		destroyWindow(pictureWin, false)
 		pictureWin = createWindow(9, 4, 22, 12, 2, -1, 2, false)
-		g4fae = createWindow(9, 16, 22, 2, 16, -1, 0, false)
+		allyStripWin = createWindow(9, 16, 22, 2, 16, -1, 0, false)
 		drawAllyGroup()
 	}
-	choosePartyActions(combatWinA)
-	if g4fae != nil {
-		destroyWindow(g4fae, false)
-		g4fae = nil
+	choosePartyActions(combatActionWin)
+	if allyStripWin != nil {
+		destroyWindow(allyStripWin, false)
+		allyStripWin = nil
 		destroyWindow(pictureWin, false)
 		pictureWin = createWindow(9, 4, 22, 14, 2, -1, 2, false)
 		viewAnimState = -2
@@ -1083,8 +1083,8 @@ func startCombatRound() {
 			}
 		}
 	}
-	deferWindowDraw(combatWinA)
-	deferWindowDraw(combatWinB)
+	deferWindowDraw(combatActionWin)
+	deferWindowDraw(monsterListWin)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
 	clearWindow(partyPictureWin, false)

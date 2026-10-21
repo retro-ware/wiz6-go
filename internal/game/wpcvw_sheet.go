@@ -423,7 +423,7 @@ func isMemberAbleQuiet(m int) bool {
 // viewCharacter (view_character, WPCVW ad5a) runs member m's character sheet until
 // Exit; returnCmd says where from (4 the start menu, 13 combat, else the maze).
 func viewCharacter(m int) {
-	gameState = int(returnCmd)
+	gameState = gameStateID(returnCmd)
 	menuKeys = getMessage(300)
 	pvCardWin = createWindow(20, 4, 20, 16, 26, -1, 0, false)
 	fillWindow(pvCardWin, ' ', 3)

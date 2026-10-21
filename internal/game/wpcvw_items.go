@@ -512,9 +512,9 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 		case 4: // on map Damage.Base, clear event flag Damage.Count and set Damage.Sides
 			if mp := int(rec.Damage.Base); gameStateArg == mp {
 				setBit(levelFlags[mp][:], int(rec.Damage.Count), false)
-				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
+				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
-				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
+				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
 				useItemChargeShown(m, i)
 			}
 		case 5:

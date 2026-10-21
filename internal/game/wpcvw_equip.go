@@ -249,9 +249,9 @@ func doEquipItems(sheet, menu *Window, m int) {
 	}
 	p.Regen, p.Drain = 0, 0
 	p.Resist = [14]uint8{}
-	side := g4fb8
+	side := rightPanelWin
 	if m%2 == 0 {
-		side = g4fba
+		side = leftPanelWin
 	}
 	setCursor(side, 3, m/2<<2+1)
 	putCharHi(side, 37, 4)

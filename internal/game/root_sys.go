@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"runtime"
 	"time"
@@ -10,15 +11,20 @@ import (
 	"github.com/retro-ware/wiz6-go/internal/host"
 )
 
-// Random numbers: three linear congruential generators summed (ROOT 25b9, 2556; seeds
-// cs:1d3b, 1d3d, 1d3f).
-var seeds = [3]int{3000, 1, 0x752f}
+// Random numbers: three linear congruential generators summed, Wichmann-Hill style (ROOT
+// 25b9, 2556; seeds cs:1d3b, 1d3d, 1d3f).
+var seeds = [3]int{3000, 1, 29999}
 
-var lcg = [3]struct{ a, q, r, m int }{
-	{171, 177, 2, 0x763d},
-	{172, 176, 35, 0x7663},
-	{170, 178, 63, 0x7673},
+// randomGenerators are the generators: s = multiplier*s mod modulus, computed without overflow as
+// multiplier*(s%quotient) - remainder*(s/quotient) (Schrage's method).
+var randomGenerators = [3]struct{ multiplier, quotient, remainder, modulus int }{
+	{171, 177, 2, 30269},
+	{172, 176, 35, 30307},
+	{170, 178, 63, 30323},
 }
+
+// randomMax is the largest number randomWord gives.
+const randomMax = math.MaxInt16
 
 // seedRandom (ROOT, asm) seeds the second generator from the BIOS tick count.
 func seedRandom() {
@@ -26,7 +32,7 @@ func seedRandom() {
 		seeds[1] = 2 // a BIOS tick count of 0
 		return
 	}
-	seeds[1] = int(host.Now()/(54925*time.Microsecond)+2) & 0x7fff
+	seeds[1] = int(host.Now()/biosTick+2) & randomMax
 }
 
 // DetRNG (testing, -detrng) makes the random numbers independent of timing: a fixed seed and
@@ -35,23 +41,23 @@ var DetRNG bool
 
 // stepRandom (ROOT 25b9, asm) moves each generator on one step.
 func stepRandom() {
-	for i, g := range lcg {
+	for i, g := range randomGenerators {
 		s := int(int16(seeds[i]))
-		s = g.a*(s%g.q) - g.r*(s/g.q)
+		s = g.multiplier*(s%g.quotient) - g.remainder*(s/g.quotient)
 		if s < 0 {
-			s += g.m
+			s += g.modulus
 		}
 		seeds[i] = int(int16(s))
 	}
 }
 
-// randomWord (ROOT 2556, asm) is a number 0..0x7fff.
+// randomWord (ROOT 2556, asm) is a number 0..randomMax.
 func randomWord() int {
 	stepRandom()
 	sum := 0
-	for i, g := range lcg {
-		s := seeds[i] & 0xffff
-		sum = (sum + (s%g.m)*10000/g.m&0x7fff) & 0x7fff
+	for i, g := range randomGenerators {
+		s := int(uint16(seeds[i]))
+		sum = (sum + (s%g.modulus)*10000/g.modulus&randomMax) & randomMax
 	}
 	return sum
 }
@@ -76,14 +82,14 @@ func random(n int) int {
 // setBit (ROOT 2881) sets (v true) or clears bit n of a.
 func setBit(a []byte, n int, v bool) {
 	if v {
-		a[n>>3] |= 1 << (n & 7)
+		a[n/8] |= 1 << (n % 8)
 	} else {
-		a[n>>3] &^= 1 << (n & 7)
+		a[n/8] &^= 1 << (n % 8)
 	}
 }
 
 // testBit (ROOT 28af) is bit n of a.
-func testBit(a []byte, n int) bool { return a[n>>3]&(1<<(n&7)) != 0 }
+func testBit(a []byte, n int) bool { return a[n/8]&(1<<(n%8)) != 0 }
 
 // setBitfield (ROOT 28da) stores the width-bit value val at index idx of a packed array.
 func setBitfield(a []byte, idx, width, val int) {
@@ -149,7 +155,9 @@ func delayTick() { delay(tickDelay) }
 func delayLong() { delay(longDelay) }
 
 // The keyboard: keys come in as PC scan codes and are kept, as the BIOS would give them
-// (ASCII or 0 for an extended key, scan code), in a 20-key buffer (cs:262b).
+// (ASCII or 0 for an extended key, scan code), in a keyBufSize-key buffer (cs:262b).
+const keyBufSize = 20
+
 var (
 	keyBuf []key
 	shift  bool
@@ -157,10 +165,42 @@ var (
 
 type key struct{ ascii, scan byte }
 
+// PC set-1 scan codes the keyboard code looks at (hardware values).
+const (
+	scanExtendedPrefix = 0xe0 // comes before the code of a grey (extended) key
+	scanBreakBit       = 0x80 // set in the code of a key release
+	scanLeftShift      = 0x2a
+	scanRightShift     = 0x36
+	scanEnter          = 0x1c // with the prefix: keypad Enter
+	scanKeypadFirst    = 0x47 // keypad 7 (Home) ..
+	scanKeypadLast     = 0x53 // .. keypad . (Del)
+	scanLeft           = 0x4b
+	scanUp             = 0x48
+	scanRight          = 0x4d
+	scanDown           = 0x50
+)
+
+// The keys get_key returns that are not plain characters.
+const (
+	keyLeft   = 8 // also Backspace
+	keyUp     = 9
+	keyRight  = 10
+	keyDown   = 11
+	keyEnter  = '\r'
+	keyEscape = 27 // ASCII ESC
+)
+
+// Key classes: which keys keyAvailable and getKey take.
+const (
+	keyClassAny    = 0 // any key
+	keyClassMenu   = 1 // the arrows, Escape, Enter and ' '..'_'
+	keyClassDigits = 2 // digits, keyLeft, Escape and Enter
+)
+
 // set-1 scan code to unshifted and shifted ASCII.
 const (
-	plain   = "\x00\x1b1234567890-=\x08\tqwertyuiop[]\r\x00asdfghjkl;'`\x00\\zxcvbnm,./\x00*\x00 "
-	shifted = "\x00\x1b!@#$%^&*()_+\x08\tQWERTYUIOP{}\r\x00ASDFGHJKL:\"~\x00|ZXCVBNM<>?\x00*\x00 "
+	scanToASCII        = "\x00\x1b1234567890-=\x08\tqwertyuiop[]\r\x00asdfghjkl;'`\x00\\zxcvbnm,./\x00*\x00 "
+	scanToShiftedASCII = "\x00\x1b!@#$%^&*()_+\x08\tQWERTYUIOP{}\r\x00ASDFGHJKL:\"~\x00|ZXCVBNM<>?\x00*\x00 "
 )
 
 // pumpKeys turns the host's scan codes into BIOS keys.
@@ -171,14 +211,14 @@ func pumpKeys() {
 		if !ok {
 			return
 		}
-		if sc == 0xe0 {
+		if sc == scanExtendedPrefix {
 			ext = true
 			continue
 		}
-		up, code := sc&0x80 != 0, sc&0x7f
+		up, code := sc&scanBreakBit != 0, sc&^scanBreakBit
 		e := ext
 		ext = false
-		if code == 0x2a || code == 0x36 {
+		if code == scanLeftShift || code == scanRightShift {
 			shift = !up
 			continue
 		}
@@ -186,61 +226,60 @@ func pumpKeys() {
 			continue
 		}
 		k := key{scan: code}
-		if !e && int(code) < len(plain) {
-			k.ascii = plain[code]
+		if !e && int(code) < len(scanToASCII) {
+			k.ascii = scanToASCII[code]
 			if shift {
-				k.ascii = shifted[code]
+				k.ascii = scanToShiftedASCII[code]
 			}
 		}
-		if e && code == 0x1c {
-			k.ascii = '\r'
+		if e && code == scanEnter {
+			k.ascii = keyEnter
 		}
-		if k.ascii == 0 && (code < 0x47 || code > 0x53) && !e {
+		if k.ascii == 0 && (code < scanKeypadFirst || code > scanKeypadLast) && !e {
 			continue // no BIOS key for it here (shift, ctrl, alt, function keys)
 		}
-		if len(keyBuf) < 20 {
+		if len(keyBuf) < keyBufSize {
 			keyBuf = append(keyBuf, k)
 		}
 	}
 }
 
-// mapKey is what get_key makes of a BIOS key: lower case to upper, the arrows to 8..11,
-// and -1 for other extended keys.
+// mapKey is what get_key makes of a BIOS key: lower case to upper, the arrows to
+// keyLeft..keyDown, and -1 for other extended keys.
 func mapKey(k key) int {
 	if k.ascii == 0 {
 		switch k.scan {
-		case 0x4b:
-			return 8
-		case 0x48:
-			return 9
-		case 0x4d:
-			return 10
-		case 0x50:
-			return 11
+		case scanLeft:
+			return keyLeft
+		case scanUp:
+			return keyUp
+		case scanRight:
+			return keyRight
+		case scanDown:
+			return keyDown
 		}
 		return -1
 	}
 	c := int(k.ascii)
 	if c >= 'a' && c <= 'z' {
-		c &= 0xdf
+		c -= 'a' - 'A'
 	}
 	return c
 }
 
-// accepts is whether key class class takes c: 0 any key, 2 digits, the left arrow (and
-// backspace), Escape and Enter, otherwise the arrows, Escape, Enter and 0x20..0x5f.
-func accepts(class, c int) bool {
+// classTakesKey is whether key class class takes c (see keyClassAny..keyClassDigits).
+func classTakesKey(class, c int) bool {
 	switch {
 	case c < 0:
 		return false
-	case class == 0:
+	case class == keyClassAny:
 		return true
-	case c == 0x1b || c == 0x0d:
+	case c == keyEscape || c == keyEnter:
 		return true
-	case class == 2:
-		return c == 8 || c >= '0' && c <= '9'
+	case class == keyClassDigits:
+		return c == keyLeft || c >= '0' && c <= '9'
 	}
-	return c >= 8 && c <= 11 || c >= 0x20 && c <= 0x5f
+	return c >= keyLeft && c <= keyDown || c >= ' ' && c <= '_'
 }
 
 // keyAvailable (ROOT 2643, asm) is whether a key of class is waiting; keys the class does
@@ -259,7 +298,7 @@ func keyAvailable(class int) bool {
 		stepRandom()
 	}
 	pumpKeys()
-	for len(keyBuf) > 0 && !accepts(class, mapKey(keyBuf[0])) {
+	for len(keyBuf) > 0 && !classTakesKey(class, mapKey(keyBuf[0])) {
 		keyBuf = keyBuf[1:]
 	}
 	if len(keyBuf) == 0 {

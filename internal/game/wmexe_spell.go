@@ -144,7 +144,7 @@ func doCastAction(c *Combatant) int {
 			mexeRaiseSkill(actMember, 13, 2)
 		}
 		if random(100) > chance {
-			if hdr.Level == 1 || random(36) <= int(p.Stats[7])+18 {
+			if scenarioHdr.Level == 1 || random(36) <= int(p.Stats[7])+18 {
 				mexeFizzle = 1
 			} else {
 				mexeFizzle, mexeBackfire = 0, 1
@@ -153,7 +153,7 @@ func doCastAction(c *Combatant) int {
 	} else {
 		chance := int(c.Level)*3 + 88 - int(sp.Level)*power
 		if random(100) > chance {
-			if hdr.Level == 2 || random(7) != 0 {
+			if scenarioHdr.Level == 2 || random(7) != 0 {
 				mexeFizzle = 1
 			} else {
 				mexeFizzle, mexeBackfire = 0, 1
@@ -173,11 +173,11 @@ func doCastAction(c *Combatant) int {
 	case silenceable && c.Status[0] > 0:
 		combatDelay(2)
 		printMsgCentered(3200, 3, 2)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 	case mexeFizzle == 1:
 		combatDelay(2)
 		printMsgCentered(3201, 5, 2)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 	default:
 		backfire(c)
 		doCastSpell(c, spell, power)
@@ -204,7 +204,7 @@ func backfire(c *Combatant) {
 	if mexeBackfire == 1 {
 		combatDelay(2)
 		printMsgCentered(3202, 4, 2)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		c.B31, c.B32 = int8(actGroup), int8(actMember)
 	}
 }
@@ -263,7 +263,7 @@ func doUseItemAction(c *Combatant) {
 		printCombatLine(mexeName, mexeVerb, mexeText, 1, 14, 11)
 	}
 	if power == 0 {
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		return
 	}
 	mexeBackfire, mexeFizzle = 0, 0
@@ -272,7 +272,7 @@ func doUseItemAction(c *Combatant) {
 		if skill != -1 {
 			mexeRaiseSkill(actMember, skill, 3)
 			if int(party[actMember].Skills[skill]) < roll {
-				if hdr.Level == 1 || random(36) <= int(party[actMember].Stats[7])+18 {
+				if scenarioHdr.Level == 1 || random(36) <= int(party[actMember].Stats[7])+18 {
 					mexeFizzle = 1
 				} else {
 					mexeBackfire = 1
@@ -280,7 +280,7 @@ func doUseItemAction(c *Combatant) {
 			}
 		}
 	} else if int(c.Level)*5-2 < roll {
-		if hdr.Level == 2 || random(7) != 0 {
+		if scenarioHdr.Level == 2 || random(7) != 0 {
 			mexeFizzle = 1
 		} else {
 			mexeBackfire = 1
@@ -290,7 +290,7 @@ func doUseItemAction(c *Combatant) {
 	if mexeFizzle == 1 {
 		combatDelay(2)
 		printMsgCentered(3201, 5, 2)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		return
 	}
 	backfire(c)
@@ -383,7 +383,7 @@ func doBreath(c *Combatant) int {
 		cost = random(3) + smax/8
 	}
 	if mexeDelayed == 0 {
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 	}
 	return cost
 }
@@ -404,7 +404,7 @@ func weakenGroup(g, who, mod, power int, weak bool) {
 		n := resistReduce(g, power, 3, mod)
 		if n <= 0 || random(100) <= int(groupMonsterRec[g].Resist[3])-mod {
 			printMsgCentered(3471, 14, 3)
-			combatDelay(int(g4fc8) / 2)
+			combatDelay(int(delaySetting) / 2)
 			return
 		}
 		msg := 3494
@@ -428,7 +428,7 @@ func weakenGroup(g, who, mod, power int, weak bool) {
 		if g == 0 {
 			drawCardX(i, false)
 		}
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 	})
 }
 
@@ -454,7 +454,7 @@ func chaosStrike(g, who, power, mod int) {
 			mexeName = combatantName(g, i)
 			printCombatCentered(mexeName, nameColor(g), 2)
 			printMsgCentered(3471, 14, 3)
-			combatDelay(int(g4fc8) / 2)
+			combatDelay(int(delaySetting) / 2)
 			return
 		}
 		switch random(10) {
@@ -485,7 +485,7 @@ func chaosStrike(g, who, power, mod int) {
 // summonGroup (f8fa8, WMEXE) calls up a group of one of the six monsters (more power,
 // more of them): an ally group for the party, a new group for the monsters.
 func summonGroup(mons [6]int, power int) {
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 	mexeDelayed = 0
 	var g int
 	switch {
@@ -652,7 +652,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 	case 28:
 		clearMsgLine(3)
 		printMsgCentered(3224, 3, 3)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		for k := range own.B402 {
 			own.B402[k] = uint8(max(int(own.B402[k])-power, 0))
 		}
@@ -915,7 +915,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 	}
 	if mexeDelayed == 0 {
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 	}
 }
 

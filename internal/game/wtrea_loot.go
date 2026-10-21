@@ -195,12 +195,12 @@ func markChestOpened() {
 	bit := extractBits(bits, 0, 8)
 	setBit(levelFlags[gameStateArg][:], bit, false)
 	if extractBits(bits, 11, 1) == 1 {
-		setBit(hdr.LevelFlags[gameStateArg][:], bit, false)
+		setBit(scenarioHdr.LevelFlags[gameStateArg][:], bit, false)
 	}
 	if n := extractBits(bits, 9, 2); n > 0 {
 		setBit(levelFlags[gameStateArg][:], int(mazeB.FlagBit[ev]), true)
 		if n > 1 {
-			setBit(hdr.LevelFlags[gameStateArg][:], int(mazeB.FlagBit[ev]), true)
+			setBit(scenarioHdr.LevelFlags[gameStateArg][:], int(mazeB.FlagBit[ev]), true)
 		}
 	}
 }

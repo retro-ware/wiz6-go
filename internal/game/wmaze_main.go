@@ -133,7 +133,7 @@ func loadMazeLevel(m int) {
 	}
 	reloadMapA, reloadMapB = true, true
 	allocMazeBuffers()
-	levelFlags[gameStateArg] = hdr.LevelFlags[gameStateArg]
+	levelFlags[gameStateArg] = scenarioHdr.LevelFlags[gameStateArg]
 	returnCmd = 5
 	g4f8a = -1
 	eventCells = [96]byte{}
@@ -200,9 +200,9 @@ func drawMemberStatus(m int) {
 	if dtLog != nil { // stubbed in the difftest
 		return
 	}
-	win := g4fb8
+	win := rightPanelWin
 	if m%2 == 0 {
-		win = g4fba
+		win = leftPanelWin
 	}
 	x, y := 0, (m/2)<<2
 	pc := &party[m]

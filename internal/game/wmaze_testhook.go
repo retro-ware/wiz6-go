@@ -69,7 +69,7 @@ func startTestMaze() {
 	if err != nil {
 		exitGame(9)
 	}
-	hdr.LevelFlags = g.Hdr.LevelFlags
+	scenarioHdr.LevelFlags = g.Hdr.LevelFlags
 	for i := range 14 {
 		mapCacheA[i], mapCacheB[i] = g.MapA[i], g.MapB[i]
 	}
@@ -93,9 +93,9 @@ func startTestMaze() {
 	for i := 0; i < partyCount; i++ {
 		loadPortrait(int(party[i].Portrait), int(memberPortrait[i]))
 	}
-	g4fc8 = int16(hdr.Delay) // as load_game does
-	if g4fc8 == 0 {
-		g4fc8 = 5
+	delaySetting = int16(scenarioHdr.Delay) // as load_game does
+	if delaySetting == 0 {
+		delaySetting = 5
 	}
 	g4f88 = 0
 	eraseWindow(mainWindow, false)

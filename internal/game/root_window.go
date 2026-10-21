@@ -37,8 +37,26 @@ type Cell struct{ Ch, Attr uint8 }
 var cellOwner [drv.Cols * drv.Rows]uint8
 
 const (
-	cellDirty   = 0x80
-	cellPointer = 0x40
+	cellIDMask  = 1<<6 - 1 // the window index bits
+	cellPointer = 1 << 6
+	cellDirty   = 1 << 7
+)
+
+// A Cell's Attr: the font 0 colour is the high nibble, a colour font the low one.
+const (
+	attrFontMask    = 1<<4 - 1
+	attrColorShift  = 4
+	colorFontCount  = 4 // colour fonts 1..colorFontCount
+	borderColorFont = 1 // the font of border glyphs
+)
+
+// Border styles for createWindow; any other value is the first of eight border glyphs.
+const (
+	borderNone       = -1
+	borderLeftPanel  = -2 // the left-hand side panel's
+	borderRightPanel = -3 // the right-hand side panel's
+	borderRightEdge  = -4 // the right edge only
+	borderTopEdge    = -5 // the top edge only
 )
 
 // windows is the window list (root cs:1bd2), highest priority first.
@@ -91,7 +109,7 @@ func eachCell(x, y, width, height int, f func(i int)) {
 func claim(w *Window, id uint8) {
 	x, y, width, height := outerRect(w)
 	eachCell(x, y, width, height, func(i int) {
-		if o := cellOwner[i] & 0x7f; o == 0 || o >= id {
+		if o := cellOwner[i] &^ cellDirty; o == 0 || o >= id {
 			cellOwner[i] = id | cellDirty
 		}
 	})
@@ -107,7 +125,7 @@ func fillUnowned(id uint8) {
 		}
 		x, y, width, height := outerRect(w)
 		eachCell(x, y, width, height, func(i int) {
-			if cellOwner[i]&0x7f == 0 {
+			if cellOwner[i]&^cellDirty == 0 {
 				cellOwner[i] = id | cellDirty
 			}
 		})
@@ -131,7 +149,7 @@ func linkWindow(w *Window) {
 	windows[i] = w
 	id := uint8(i + 1)
 	for j, o := range cellOwner {
-		if o&0x7f >= id {
+		if o&^cellDirty >= id {
 			cellOwner[j]++
 		}
 	}
@@ -150,7 +168,7 @@ func unlinkWindow(w *Window) {
 	}
 	windows = append(windows[:id-1], windows[id:]...)
 	for j, o := range cellOwner {
-		switch o := o & 0x7f; {
+		switch o := o &^ cellDirty; {
 		case o == id:
 			cellOwner[j] = cellDirty
 		case o > id:
@@ -175,7 +193,7 @@ func deferWindowDraw(w *Window) {
 		return
 	}
 	for j, o := range cellOwner {
-		if o&0x7f == id {
+		if o&^cellDirty == id {
 			cellOwner[j] = cellDirty
 		}
 	}
@@ -200,7 +218,7 @@ func fillWindow(w *Window, ch, attr int) {
 	}
 	w.CurX, w.CurY = 0, 0
 	for j, o := range cellOwner {
-		if o&0x7f == id {
+		if o&^cellDirty == id {
 			cellOwner[j] |= cellDirty
 		}
 	}
@@ -220,10 +238,10 @@ func refreshWindow(w *Window) {
 	}
 	mine := id | cellDirty
 	take := func(i int) bool {
-		if cellOwner[i]&0xbf != mine {
+		if cellOwner[i]&^cellPointer != mine {
 			return false
 		}
-		cellOwner[i] &= 0x3f
+		cellOwner[i] &= cellIDMask
 		return true
 	}
 	at := func(i int) (int, int) { return i % drv.Cols, i / drv.Cols }
@@ -241,10 +259,10 @@ func refreshWindow(w *Window) {
 		switch {
 		case w.Flags&WinPicture != 0:
 			drv.CopyCell(col, row)
-		case c.Attr&0x0f == 0:
-			drv.Glyph(col, row, c.Ch, c.Attr>>4, false)
-		case c.Attr&0x0f <= 4:
-			drv.ColorGlyph(col, row, c.Ch, int(c.Attr&0x0f))
+		case c.Attr&attrFontMask == 0:
+			drv.Glyph(col, row, c.Ch, c.Attr>>attrColorShift, false)
+		case c.Attr&attrFontMask <= colorFontCount:
+			drv.ColorGlyph(col, row, c.Ch, int(c.Attr&attrFontMask))
 		default:
 			fmt.Fprintln(os.Stderr, "\aInvalid font in refreshwindow")
 			os.Exit(255)
@@ -258,7 +276,7 @@ func refreshWindow(w *Window) {
 	border := func(i int, g uint8) {
 		if take(i) {
 			col, row := at(i)
-			drv.ColorGlyph(col, row, g, 1)
+			drv.ColorGlyph(col, row, g, borderColorFont)
 		}
 	}
 	x, y, width, rows := outerRect(w)
@@ -350,31 +368,31 @@ func refreshAllWindows() {
 		refreshWindow(w)
 	}
 	for i, o := range cellOwner {
-		if o&0xbf == cellDirty {
+		if o&^cellPointer == cellDirty {
 			drv.FillCell(i%drv.Cols, i/drv.Cols)
-			cellOwner[i] &= 0x3f
+			cellOwner[i] &= cellIDMask
 		}
 	}
 	drv.Present()
 }
 
-// createWindow (ROOT 011a) makes a window of width x height cells at (x, y), links it and
-// clears it. border -1 is none, -2..-5 are the game's border styles, any other value is
-// the first of eight consecutive border glyphs of font 1.
-func createWindow(x, y, width, height, color, border, flags int, refresh bool) *Window {
-	w := &Window{W: uint8(width), H: uint8(height), X: uint8(x), Y: uint8(y), Priority: uint8(color), Flags: uint8(flags)}
+// createWindow (ROOT 011a) makes a window of width x height cells at (x, y) with z-order
+// priority, links it and clears it. border is borderNone, a border style or the first of
+// eight consecutive border glyphs of font 1.
+func createWindow(x, y, width, height, priority, border, flags int, refresh bool) *Window {
+	w := &Window{W: uint8(width), H: uint8(height), X: uint8(x), Y: uint8(y), Priority: uint8(priority), Flags: uint8(flags)}
 	if flags&WinPicture == 0 {
 		w.Cells = make([]Cell, width*height)
 	}
 	switch border {
-	case -1:
-	case -2:
+	case borderNone:
+	case borderLeftPanel:
 		w.Border = [8]uint8{27, 27, 28, 27, 28, 27, 27, 28}
-	case -3:
+	case borderRightPanel:
 		w.Border = [8]uint8{26, 27, 27, 26, 27, 26, 27, 27}
-	case -4:
+	case borderRightEdge:
 		w.Border = [8]uint8{0, 0, 28, 0, 28, 0, 0, 28}
-	case -5:
+	case borderTopEdge:
 		w.Border = [8]uint8{35, 35, 35, 0, 0, 0, 0, 0}
 	default:
 		for i := range w.Border {

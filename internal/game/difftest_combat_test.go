@@ -59,12 +59,12 @@ var combatFuncs = map[string]func(a []int) int{
 
 // combatRoots: the globals their cases name.
 var combatRoots = map[string]any{
-	"party": &party, "combatGold": &combatGold, "partyCount": &partyCount, "g4fc8": &g4fc8,
+	"party": &party, "combatGold": &combatGold, "partyCount": &partyCount, "delaySetting": &delaySetting,
 	"actMember": &actMember, "actGroup": &actGroup, "monsterGroupCount": &monsterGroupCount,
-	"mexeMsgMode": &mexeMsgMode, "hdr": &hdr, "viewPosGroup": &viewPosGroup,
+	"mexeMsgMode": &mexeMsgMode, "scenarioHdr": &scenarioHdr, "viewPosGroup": &viewPosGroup,
 	"monsterJitterX": &monsterJitterX, "monsterJitterY": &monsterJitterY,
 	"animCycle": &animCycle, "mexeEffect": &mexeEffect, "mexeBackfire": &mexeBackfire, "mexeDelayed": &mexeDelayed,
-	"partyCounters": &partyCounters, "g4352": &g4352, "initiative": &initiative, "g4fcc": &g4fcc,
+	"partyCounters": &partyCounters, "g4352": &g4352, "initiative": &initiative, "alwaysHit": &alwaysHit,
 	"combatOver": &combatOver, "viewRowsOpen": &viewRowsOpen,
 	"g4354": &g4354, "gameStateArg": &gameStateArg, "memberPortrait": &memberPortrait,
 	"memberPcfileIndex": &memberPcfileIndex, "mexeSpellSound": &mexeSpellSound, "mexeFizzle": &mexeFizzle,

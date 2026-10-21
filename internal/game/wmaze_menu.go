@@ -149,7 +149,7 @@ func restParty() bool {
 		full--
 		party[random(partyCount)].Status[2] = 0
 		safe := 975
-		if hdr.Level == 1 {
+		if scenarioHdr.Level == 1 {
 			safe = 990
 		}
 		if random(1000) >= safe {
@@ -207,8 +207,8 @@ func saveGame() int {
 	showMazeText(done)
 	mapCacheA[gameStateArg] = *mazeA
 	mapCacheB[gameStateArg] = *mazeB
-	hdr.LevelFlags[gameStateArg] = levelFlags[gameStateArg]
-	g := dbs.SaveGame{Hdr: hdr, MapA: mapCacheA, MapB: mapCacheB}
+	scenarioHdr.LevelFlags[gameStateArg] = levelFlags[gameStateArg]
+	g := dbs.SaveGame{Hdr: scenarioHdr, MapA: mapCacheA, MapB: mapCacheB}
 	for i := 14; i < 16; i++ { // the C writes zeros past the 14 maps
 		g.MapA[i], g.MapB[i] = MapA{}, MapB{}
 	}

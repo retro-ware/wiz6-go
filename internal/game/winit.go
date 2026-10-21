@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/retro-ware/wiz6-go/internal/dbs"
 	"github.com/retro-ware/wiz6-go/internal/drv"
@@ -10,17 +11,23 @@ import (
 
 // WINIT: start-up, the title sequence, the graveyard and the main screen's windows.
 
-// winitMain (WINIT ovmain) does what gameState asks: 0 load the data, 1 the title, 8 the
-// graveyard, 2 the main screen.
+const (
+	fontCount    = 5   // WFONT0..4: font 0 and the colour fonts
+	gmodeInvalid = 255 // a scenario_hdr Gmode the game refuses to start with (exit code 2)
+	inputMouse   = 1   // scenario_hdr's Input: use the mouse
+)
+
+// winitMain (WINIT ovmain) does what gameState asks: load the data, the title, the
+// graveyard or the main screen.
 func winitMain() {
 	switch gameState {
-	case 0:
+	case stateLoadData:
 		initGameData()
-	case 1:
+	case stateTitle:
 		showTitleSequence()
-	case 8:
+	case stateGraveyard:
 		showGraveyard()
-	case 2:
+	case stateMainScreen:
 		initMainScreen()
 	}
 }
@@ -81,23 +88,23 @@ func loadSounds(count int) {
 	}
 }
 
-// loadSound (WINIT 48ee) loads sound n into slot 14; a sound without data of its own takes
-// its fallback's samples.
+// loadSound (WINIT 48ee) loads sound n into slot loadedSound; a sound without data of its
+// own takes its fallback's samples.
 func loadSound(n int) {
 	curSound = n
 	stopSound()
-	sounds[14] = readSoundRec(n)
-	if sounds[14].Size == 0 {
-		n = sounds[14].Fallback
-		sounds[14].Size = readSoundRec(n).Size
+	sounds[loadedSound] = readSoundRec(n)
+	if sounds[loadedSound].Size == 0 {
+		n = sounds[loadedSound].Fallback
+		sounds[loadedSound].Size = readSoundRec(n).Size
 	}
-	loadSoundSlot(n, 14, 15)
+	loadSoundSlot(n, loadedSound, 15)
 }
 
 // showCredits (WINIT 49ca) shows the Sir-Tech logo of CREDITS.PIC.
 func showCredits() {
 	drv.LoadPic(0, openData("CREDITS.PIC", 3))
-	win := createWindow(0, 0, 40, 25, 1, -1, WinPicture, false)
+	win := createWindow(0, 0, drv.Cols, drv.Rows, 1, borderNone, WinPicture, false)
 	drv.FillWorkBuffer(winRect(win), 0)
 	drawBigChar(10, 84, 52)
 	drawBigChar(11, 84, 84)
@@ -111,47 +118,47 @@ func winRect(w *Window) drv.Rect { return drv.Rect{X: int(w.X), Y: int(w.Y), W: 
 // shows the credits, opens the data files and loads the sounds.
 func initGameData() {
 	fullscreenWin, mainWindow = nil, nil
-	hdr, _ = dbs.Decode[dbs.ScenarioHeader](openData("SCENARIO.HDR", 1)[:dbs.Size[dbs.ScenarioHeader]()])
+	scenarioHdr, _ = dbs.Decode[dbs.ScenarioHeader](openData("SCENARIO.HDR", 1)[:dbs.Size[dbs.ScenarioHeader]()])
 	messageDelay = 16
-	if hdr.Gmode == 255 {
+	if scenarioHdr.Gmode == gmodeInvalid {
 		exitGame(2)
 	}
 	stopSound()
 	audioOK = host.AudioInit()
-	videoFlags = 0x1001 // init_video: EGA, and a mouse, which the host always has
-	if videoFlags&0x1000 != 0 && hdr.Input == 1 {
+	videoFlags = videoEGA | videoMouse // init_video: EGA, and a mouse, which the host always has
+	if videoFlags&videoMouse != 0 && scenarioHdr.Input == inputMouse {
 		drv.MouseInit()
 		mousePresent = true
 	} else {
 		mousePresent = false
 	}
 	clickFlag = false
-	for n := range 5 {
+	for n := range fontCount {
 		loadFontFile(fmt.Sprintf("WFONT%d.EGA", n), n)
 	}
 	loadMazeData("MAZEDATA.EGA")
 	showCredits()
 
 	var err error
-	if scen, err = dbs.OpenScenario(dataDir); err != nil {
+	if scenarioDBS, err = dbs.OpenScenario(dataDir); err != nil {
 		exitGame(8)
 	}
-	pcfileHdr, _ = dbs.Decode[dbs.PCFileHeader](openData("PCFILE.DBS", 6)[:24])
+	pcfileHdr, _ = dbs.Decode[dbs.PCFileHeader](openData("PCFILE.DBS", 6)[:dbs.Size[dbs.PCFileHeader]()])
 	rosterSlotUsed = pcfileHdr.Used
-	if misc, err = dbs.ReadMiscTable(dataDir); err != nil {
+	if textTree, err = dbs.ReadMiscTable(dataDir); err != nil {
 		exitGame(6)
 	}
-	if msgs, err = dbs.OpenMessages(dataDir); err != nil {
+	if messageDBS, err = dbs.OpenMessages(dataDir); err != nil {
 		exitGame(7)
 	}
-	loadSounds(14)
-	gameState = 1
+	loadSounds(loadedSound)
+	gameState = stateTitle
 }
 
 // loadFullscreenPic (WINIT 4e5b) makes the full-screen picture window and loads picture
 // name into it; show puts it on the screen.
 func loadFullscreenPic(name string, show bool) {
-	fullscreenWin = createWindow(0, 0, 40, 25, 1, -1, WinPicture, false)
+	fullscreenWin = createWindow(0, 0, drv.Cols, drv.Rows, 1, borderNone, WinPicture, false)
 	stopSound()
 	b := openData(name, 12)
 	drv.FillWorkBuffer(winRect(fullscreenWin), 0)
@@ -170,7 +177,7 @@ func drawBigChar(ch byte, x, y int) {
 // it was.
 func waitEnterKey(secs int) bool {
 	for n := secs * 10; n > 0; n-- {
-		if keyAvailable(1) && getKey(1) == 13 {
+		if keyAvailable(keyClassMenu) && getKey(keyClassMenu) == keyEnter {
 			return true
 		}
 		delayTick()
@@ -180,7 +187,7 @@ func waitEnterKey(secs int) bool {
 
 // titleFrame is how long a step of the title scroll takes. The original runs it as fast as
 // the machine draws (about 0.2 s a step in DOSBox-X at cycles=auto).
-const titleFrame = 200 * 1000 * 1000 // ns
+const titleFrame = 200 * time.Millisecond
 
 // showTitleSequence (WINIT 4f57): the Sir-Tech and D. W. Bradley credits on the title page,
 // then the title and credits scroll up; a key or a click skips to the end.
@@ -254,8 +261,8 @@ func showTitleSequence() {
 		if checkScreenClick() {
 			animating = false
 		}
-		if keyAvailable(1) {
-			getKey(1)
+		if keyAvailable(keyClassMenu) {
+			getKey(keyClassMenu)
 			animating = false
 		}
 		for next += titleFrame; host.Now() < next; {
@@ -268,9 +275,9 @@ func showTitleSequence() {
 	drawBigChar(6, 14, 80)
 	drv.ShowWindow(win)
 	destroyWindow(fullscreenWin, false)
-	gameState = 2
+	gameState = stateMainScreen
 	if animating {
-		for !keyAvailable(1) && !checkScreenClick() {
+		for !keyAvailable(keyClassMenu) && !checkScreenClick() {
 		}
 	} else {
 		waitSecondsOrEnter(28)
@@ -283,7 +290,7 @@ func showTitleSequence() {
 func showGraveyard() {
 	mazeA, mazeB = nil, nil
 	partyCount = 0
-	for _, w := range []*Window{g4fb0, g4fac, pictureWin, fullscreenWin, partyPictureWin, g4fba, g4fb8, mainWindow, bottomLineWin} {
+	for _, w := range []*Window{g4fb0, titleStripWin, pictureWin, fullscreenWin, partyPictureWin, leftPanelWin, rightPanelWin, mainWindow, bottomLineWin} {
 		destroyWindow(w, false)
 	}
 	loadSound(34)
@@ -291,9 +298,9 @@ func showGraveyard() {
 	playSound(14)
 	stopSound()
 	destroyWindow(fullscreenWin, false)
-	gameState = 2
+	gameState = stateMainScreen
 	flushKeys()
-	for !keyAvailable(1) && !checkScreenClick() {
+	for !keyAvailable(keyClassMenu) && !checkScreenClick() {
 	}
 	flushKeys()
 }
@@ -309,18 +316,18 @@ func initMainScreen() {
 		loadMonsterPic(p[0], p[1], 9)
 	}
 	loadFullscreenPic("DRAGONSC.EGA", false)
-	partyPictureWin = createWindow(0, 19, 40, 5, 4, -1, 0, false)
+	partyPictureWin = createWindow(0, 19, 40, 5, 4, borderNone, 0, false)
 	fillWindow(partyPictureWin, 26, 3)
-	g4fba = createWindow(1, 5, 7, 12, 6, -2, 0, false)
-	fillWindow(g4fba, 32, 3)
-	g4fb8 = createWindow(32, 5, 7, 12, 7, -3, 0, false)
-	fillWindow(g4fb8, 32, 3)
-	mainWindow = createWindow(0, 18, 40, 1, 14, -1, 0, false)
+	leftPanelWin = createWindow(1, 5, 7, 12, 6, borderLeftPanel, 0, false)
+	fillWindow(leftPanelWin, 32, 3)
+	rightPanelWin = createWindow(32, 5, 7, 12, 7, borderRightPanel, 0, false)
+	fillWindow(rightPanelWin, 32, 3)
+	mainWindow = createWindow(0, 18, 40, 1, 14, borderNone, 0, false)
 	eraseWindow(mainWindow, false)
-	bottomLineWin = createWindow(0, 24, 40, 1, 3, -1, 0, false)
+	bottomLineWin = createWindow(0, 24, 40, 1, 3, borderNone, 0, false)
 	eraseWindow(bottomLineWin, false)
-	pictureWin = createWindow(9, 4, 22, 14, 2, -1, WinPicture, false)
-	g4fac = createWindow(2, 0, 36, 3, 5, -1, WinPicture, false)
+	pictureWin = createWindow(9, 4, 22, 14, 2, borderNone, WinPicture, false)
+	titleStripWin = createWindow(2, 0, 36, 3, 5, borderNone, WinPicture, false)
 	msgBlockNum = -1
 	partyCount = 0
 	for i := range memberPcfileIndex {
@@ -330,6 +337,6 @@ func initMainScreen() {
 		picSlotMonster[4+j], picSlotLoaded[4+j] = -1, false
 	}
 	g433a = 0
-	gameState = 4
+	gameState = stateMasterOptions
 	drv.ShowWindow(winRect(fullscreenWin))
 }

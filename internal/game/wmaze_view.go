@@ -587,7 +587,7 @@ func drawViewFrame() {
 		}
 		drvMazeTile(tile, 0, -1)
 	}
-	drvShowWindow(g4fac)
+	drvShowWindow(titleStripWin)
 }
 
 // drawMazeView (WMAZE 903b) draws the view from the party's position into the

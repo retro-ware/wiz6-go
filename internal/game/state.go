@@ -112,36 +112,74 @@ var (
 	monsterPics    [10]MonsterPicRec // DS:0x36de, pic slots
 )
 
+// gameStateID is a game_state value: which overlay main runs next, and what it does.
+type gameStateID int
+
+// The game states, by the overlay that runs them (9 is not used).
+const (
+	stateLoadData           gameStateID = 0  // WINIT: read the configuration and open the data files
+	stateTitle              gameStateID = 1  // WINIT: the title sequence
+	stateMainScreen         gameStateID = 2  // WINIT: load the pictures and make the game's windows
+	stateQuit               gameStateID = 3  // main: shut down and leave
+	stateMasterOptions      gameStateID = 4  // WBASE: the master options menu
+	stateExplore            gameStateID = 5  // WMAZE: the maze main loop
+	stateLoadMap            gameStateID = 6  // WMAZE: load map gameStateArg
+	stateResetPartyScreen   gameStateID = 7  // WBASE: reset the party screen
+	stateGraveyard          gameStateID = 8  // WINIT: the graveyard
+	stateBeginCombat        gameStateID = 10 // WMELE: start an encounter
+	stateRedrawCombat       gameStateID = 11 // WMELE: redraw the combat screen
+	stateStartCombatRound   gameStateID = 12 // WPOPS: choose the round's actions
+	stateRunCombatRound     gameStateID = 13 // WMEXE: carry out the round
+	stateEndCombatRound     gameStateID = 14 // WMELE: end a combat round
+	stateTreasureAfterFight gameStateID = 15 // WTREA: the treasure after combat
+	stateCreateCharacter    gameStateID = 16 // WPCMK: make a character
+	stateViewCharacter      gameStateID = 17 // WPCVW: view the current member
+	stateNPC                gameStateID = 18 // WMNPC: an NPC encounter
+	stateCastSpellInMaze    gameStateID = 19 // WDOPT: cast a spell outside combat
+	stateUseItemInMaze      gameStateID = 20 // WDOPT: use an item outside combat
+	stateTreasureFound      gameStateID = 21 // WTREA: a treasure found in the maze
+	stateLevelUp            gameStateID = 22 // WPCVW: the level up after combat
+	stateFlee               gameStateID = 23 // WMAZE: the party flees
+	stateGameConfiguration  gameStateID = 24 // WBASE: the game configuration
+	stateEnterMap           gameStateID = 25 // main: change to map gameStateArg, then stateExplore
+)
+
+// init_video's result bits (driver values).
+const (
+	videoEGA   = 1
+	videoMouse = 1 << 12
+)
+
 // Root globals: the game state machine, the data files, the input and the windows.
 var (
-	gameState    int // which overlay main runs next, and what it does (game_state)
-	gameStateArg int // the map for state 25 (game_state_arg)
+	gameState    gameStateID // which overlay main runs next, and what it does (game_state)
+	gameStateArg int         // the map for stateEnterMap (game_state_arg)
 
-	dataDir   string             // where the data files are (the "C:\BANE\" prefix)
-	hdr       dbs.ScenarioHeader // SCENARIO.HDR (cs:33f8, scenario_hdr)
-	scen      *dbs.Scenario      // SCENARIO.DBS and its headers (scenario_fd)
-	msgs      *dbs.Messages      // MSG.DBS (msg_fd)
-	misc      dbs.Huffman        // MISC.HDR, the text decoding tree
-	pcfileHdr dbs.PCFileHeader   // the first bytes of PCFILE.DBS (cs:4fd0); Used is rosterSlotUsed
+	dataDir     string             // where the data files are (the "C:\BANE\" prefix)
+	scenarioHdr dbs.ScenarioHeader // SCENARIO.HDR (cs:33f8, scenario_hdr)
+	scenarioDBS *dbs.Scenario      // SCENARIO.DBS and its headers (scenario_fd)
+	messageDBS  *dbs.Messages      // MSG.DBS (msg_fd)
+	textTree    dbs.Huffman        // MISC.HDR, the text decoding tree
+	pcfileHdr   dbs.PCFileHeader   // the first bytes of PCFILE.DBS (cs:4fd0); Used is rosterSlotUsed
 
-	videoFlags   int  // init_video's result: 1 EGA, 0x1000 a mouse
+	videoFlags   int  // init_video's result: videoEGA, videoMouse
 	mousePresent bool // the mouse is in use (mouse_present)
 	clickFlag    bool // the last poll saw a click (click_flag)
 	messageDelay int  // (message_delay)
 	msgNotFound  bool // the last getMessage found nothing (msg_not_found)
 
-	g4f84 int16 // 0x4f84: set to 17210 once the magic word is typed
-	g4fc8 int16 // 0x4fc8: the delay setting in use (cfg_delay)
+	magicWordTyped int16 // 0x4f84: set to 17210 once the magic word is typed
+	delaySetting   int16 // 0x4fc8: the delay setting in use (cfg_delay)
 
 	mainWindow      *Window // the one-line message window (main_window)
 	fullscreenWin   *Window // a full-screen picture window (fullscreen_win)
 	bottomLineWin   *Window // (bottom_line_win)
 	partyPictureWin *Window // (party_picture_win)
 	pictureWin      *Window // the maze view (picture_win)
-	g4fac           *Window // the title strip above the view
+	titleStripWin   *Window // g4fac: the title strip above the view
 	g4fb0           *Window
-	g4fb8           *Window // the right-hand side panel
-	g4fba           *Window // the left-hand side panel
+	rightPanelWin   *Window // g4fb8: the right-hand side panel
+	leftPanelWin    *Window // g4fba: the left-hand side panel
 )
 
 // Party state (WINIT/WBASE).
@@ -213,13 +251,20 @@ var spellTable = [82]Spell{
 	{5, 0, 0, 0, 0, 0}, {5, 0, 0, 0, 0, 0},
 }
 
+// view_anim_state values below the sprite indexes.
+const (
+	viewAnimShow  = -3
+	viewAnimMaze  = -2
+	viewAnimQueue = -1
+)
+
 // Root combat state the combat overlays share.
 var (
 	monsterGroupCount int         // 0x4360 monster_group_count
-	viewAnimState     int         // 0x4358 view_anim_state: -3 show, -2 maze, -1 queue, 0..11 sprite
+	viewAnimState     int         // 0x4358 view_anim_state: viewAnimShow, viewAnimMaze, viewAnimQueue or 0..11 a sprite
 	viewPosGroup      [2][5]int16 // 0x4362 view_pos_group: the group shown at view row, col (0 none)
 	combatKeys        string      // 0x4376: message 3900, the combat menu keys
-	g4fae             *Window     // the ally strip under the view
+	allyStripWin      *Window     // g4fae: the ally strip under the view
 )
 
 // Root state WMAZE uses.
@@ -246,16 +291,16 @@ var (
 
 // Combat state in the root data segment that the combat overlays share.
 var (
-	combatOver     int16           // 0x4356 combat_over
-	monsterJitterX [2][5]uint8     // g4348: random x offset of the monster at row, col
-	monsterJitterY [2][5]uint8     // g433e: random y offset
-	combatWinA     *Window         // g438a: the action window (left)
-	combatWinB     *Window         // g438c: the monster list window (right)
-	g4352          int16           // set by an item of kind 7 (do_use_item_action)
-	initiative     int             // g435a: the initiative count of the round, 100 down to 1
-	actMember      int             // g435c: the acting combatant's index
-	actGroup       int             // g435e: the acting combatant's group
-	animCycle      int16           // 0x3644 anim_cycle: 0..2, effect sprites step at 0
-	monsterFrames  [5][10][3]uint8 // 0x3648: per view column and frame: frame, step, ticks left
-	g4fcc          int16           // 0x4fcc: nonzero, every swing hits (a debug switch)
+	combatOver      int16           // 0x4356 combat_over
+	monsterJitterX  [2][5]uint8     // g4348: random x offset of the monster at row, col
+	monsterJitterY  [2][5]uint8     // g433e: random y offset
+	combatActionWin *Window         // g438a: the action window (left)
+	monsterListWin  *Window         // g438c: the monster list window (right)
+	g4352           int16           // set by an item of kind 7 (do_use_item_action)
+	initiative      int             // g435a: the initiative count of the round, 100 down to 1
+	actMember       int             // g435c: the acting combatant's index
+	actGroup        int             // g435e: the acting combatant's group
+	animCycle       int16           // 0x3644 anim_cycle: 0..2, effect sprites step at 0
+	monsterFrames   [5][10][3]uint8 // 0x3648: per view column and frame: frame, step, ticks left
+	alwaysHit       int16           // 0x4fcc: nonzero, every swing hits (a debug switch)
 )

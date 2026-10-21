@@ -111,18 +111,18 @@ func resetDiffState() {
 		monsterGroups[g] = &MonsterGroup{}
 		groupMonsterRec[g] = &MonsterRec{}
 	}
-	if scen == nil {
+	if scenarioDBS == nil {
 		dir := os.Getenv("WIZ6_DATA")
 		if dir == "" {
 			dir = "../../../wiz6-re/gog/x/app"
 		}
-		scen, _ = dbs.OpenScenario(dir) // nil: functions that read records fail
-		msgs, _ = dbs.OpenMessages(dir)
+		scenarioDBS, _ = dbs.OpenScenario(dir) // nil: functions that read records fail
+		messageDBS, _ = dbs.OpenMessages(dir)
 	}
 	if partyPictureWin == nil {
 		partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
 	}
-	for _, w := range []**Window{&mainWindow, &bottomLineWin, &combatWinA, &combatWinB, &g4fb8, &g4fba} {
+	for _, w := range []**Window{&mainWindow, &bottomLineWin, &combatActionWin, &monsterListWin, &rightPanelWin, &leftPanelWin} {
 		if *w == nil {
 			*w = createWindow(0, 0, 40, 5, 8, -1, 0, false)
 		}

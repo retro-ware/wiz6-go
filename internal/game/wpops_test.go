@@ -55,8 +55,8 @@ func TestWpopsScreens(t *testing.T) {
 		monsterGroupCount = 1
 		viewPosGroup[0][1], viewPosGroup[0][2] = 1, 1
 		combatKeys = getMessage(3900)
-		combatWinA = createWindow(0, 19, 19, 5, 8, -1, 0, false)
-		combatWinB = createWindow(20, 19, 20, 5, 8, -1, 0, false)
+		combatActionWin = createWindow(0, 19, 19, 5, 8, -1, 0, false)
+		monsterListWin = createWindow(20, 19, 20, 5, 8, -1, 0, false)
 		close(ready)
 		gameState = 12
 		wpopsOvmain()

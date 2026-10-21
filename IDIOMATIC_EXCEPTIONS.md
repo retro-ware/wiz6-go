@@ -109,3 +109,32 @@ None left. 16-bit colour channel maxima use `math.MaxUint16`, the multisample ma
 - device.go:314 `bytesOf`: `unsafe.Slice` over a vertex slice to upload it to the GPU without copying. The GPU API takes bytes; this is the usual Go way to hand it a typed slice.
 - pipelines.go:142-152: vertex layouts use `unsafe.Sizeof` / `unsafe.Offsetof` of `gpuVertex` and `MeshVertex` (instead of the former literals 48, 8, 12, 16, 20, 32), so the layout follows the structs.
 - device.go `alignUp` and the stream chunk / readback row alignment: byte offsets and sizes for GPU buffers, as WebGPU requires (`uniformOffsetAlignment`, `bytesPerRowAlignment`, `writeBufferAlignment`).
+
+## internal/game: core (root, state, winit, animpace, difftest_hook)
+
+Shared names for the other groups: `gameStateID` and its `state...` constants (state.go), the key codes `keyLeft`/`keyUp`/`keyRight`/`keyDown`/`keyEnter`/`keyEscape` and key classes `keyClassAny`/`keyClassMenu`/`keyClassDigits` (root_sys.go), the border styles `borderNone`..`borderTopEdge` (root_window.go), `viewAnimShow`/`viewAnimMaze`/`viewAnimQueue` (state.go), `videoEGA`/`videoMouse` (state.go), the sound settings `soundQuietSteps`..`soundOff` and `loadedSound` (root_sound.go). Other groups' files still use the literals; only edits forced by renames and the `gameState` type were made there (`gameStateID(returnCmd)` in wbase.go, wmele.go, wpcvw_sheet.go; wdopt_test.go).
+
+### Hex/binary literals in code
+
+- root_sys.go:169-181 `scanExtendedPrefix`, `scanBreakBit`, `scanLeftShift`, ... `scanDown`: PC set-1 scan codes, in hex as in scan code tables (as host's `scanCodes`). Hardware values.
+- root_sys.go `scanToASCII`, `scanToShiftedASCII`: the scan code to ASCII tables as strings with `\x00`/`\x1b`/`\x08` escapes. Keyboard layout data.
+- state.go `videoMouse = 1 << 12`, root_window.go `cellIDMask`, `cellPointer`, `cellDirty`, `attrFontMask`: bit masks of the driver's / root's packed bytes, written as shifts.
+
+### Unclear names kept
+
+- state.go `g4fb0` (a window), `g433a` (read as WMNPC's npcID), `g363e`, `g4338`/`g4354` ("combat entry parameters"), `g4f86`, `g4f88`, `g4f8a`, `g4fa6`, `g4352` (set by an item of kind 7), `msgBlockNum`: meaning not clear from their use. Most are named in the parity goldens too.
+- state.go `Combatant.W10`, `W12`, `B24`..`B41`, `MonsterGroup.B396`..`B414`, `Spell.B3`: offset names of struct fields whose meaning is not known (or not one meaning).
+- state.go `magicWordTyped`: the value it gets, 17210, is the original's; why that number is unknown. It is set in wbase.go as a literal.
+- state.go `conditionGlyph`, `statusGlyph`, `realmColors`, `stackable`, `recipes`, `spellTable`: root data tables, kept as numbers (glyph indexes, colours, item ids, spell fields).
+- winit.go `gmodeInvalid = 255`: the Gmode that makes the game exit with code 2; what the original means by it is not known.
+- root_sound.go `firstStepSound`..`lastStepSound`: "footsteps and the like" (is_sound_10_to_12); which sounds exactly is not checked.
+- Sound numbers (`loadSound(39)`, `playSound(4)`, ...), exit codes (`exitGame(9)`, ...), window positions, priorities, fill glyphs and fonts in winit.go and root*.go stay literals: they are the original's arguments, and most have no name of their own (exit codes are reused for several failures).
+
+### Low-level code kept
+
+- root_sys.go:95-122 `setBitfield`, `getBitfield`, `extractBits`: packed bit fields read as little-endian 16-bit words with shifts and masks, as the original does (the save data and map flag layouts depend on it).
+- root_sys.go `stepRandom`, `randomWord`: 16-bit wrap-around (`int16`/`uint16` conversions) and the `& randomMax` masks of the original's generator; the parity goldens record its numbers.
+- root_sound.go:51 `readSoundRec` and root.go:292 `le16`: a 12-byte record decoded with encoding/binary by offset (not a dbs type).
+- winit.go:46 `loadFontFile`: packs font 0's pixels into bytes MSB first (`<< (7 - x)`) for drv.SetMonoFont, the driver's glyph format.
+- root.go:253 `clickRegions`: a flat byte table of 4-byte entries (x1 `clickRegionsEnd` ends it), passed as `[]byte` to drv.PollClick and the overlays.
+- root_window.go `cellOwner` and `eachCell`: the ownership map is one 1000-byte line as in the C; a rectangle past the right edge wraps to the next row.

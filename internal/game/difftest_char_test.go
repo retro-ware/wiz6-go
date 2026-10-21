@@ -99,7 +99,7 @@ var charRoots = map[string]any{
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
 	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed, "partyCounters": &partyCounters,
 	"memberPcfileIndex": &memberPcfileIndex, "memberPortrait": &memberPortrait, "rosterSlotUsed": &rosterSlotUsed,
-	"levelFlags": &levelFlags, "hdr": &hdr, "gameStateArg": &gameStateArg, "pvSpellTarget": &pvSpellTarget,
+	"levelFlags": &levelFlags, "scenarioHdr": &scenarioHdr, "gameStateArg": &gameStateArg, "pvSpellTarget": &pvSpellTarget,
 }
 
 func init() {

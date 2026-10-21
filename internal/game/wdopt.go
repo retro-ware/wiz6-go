@@ -819,9 +819,9 @@ func useItemInMaze(m int) {
 				// A flag item of this map: clear bit Count, set bit Sides.
 				mp := int(rec.Damage.Base)
 				setBit(levelFlags[mp][:], int(rec.Damage.Count), false)
-				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
+				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
-				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
+				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
 				useItemCharge(m, slot)
 			case rec.Unk69 == 5:
 				if gameStateArg == 8 {

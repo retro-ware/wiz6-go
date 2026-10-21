@@ -130,7 +130,7 @@ func clearMsgLine(row int) {
 func showCombatMsg(n int) {
 	clearMsgLine(2)
 	printMsgCentered(n, 5, 2)
-	combatDelay(int(g4fc8) / 2)
+	combatDelay(int(delaySetting) / 2)
 }
 
 // combatDelay (combat_delay, WMEXE 774b) animates the view for tenths of a second; a
@@ -326,7 +326,7 @@ func groupEffectMsg(n, color int) {
 		mexeEffect[b2i(actGroup >= 3)][0] = 1
 		resetAnimation()
 	}
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 }
 
 // runCombatRound (run_combat_round, WMEXE d109) runs the round: at each initiative count
@@ -347,7 +347,7 @@ func runCombatRound() {
 							clearWindow(partyPictureWin, true)
 							combatDelay(2)
 							actorLine(3518, -1, 6, 0)
-							combatDelay(int(g4fc8) / 2)
+							combatDelay(int(delaySetting) / 2)
 						}
 						c.B35[2] = int8(max(initiative-random(10)-5, 1))
 					} else if c.Toggle == 3 {
@@ -410,7 +410,7 @@ func landCharge(c *Combatant) {
 	clearWindow(partyPictureWin, true)
 	combatDelay(2)
 	actorLine(3519, -1, 6, 0)
-	combatDelay(int(g4fc8) / 2)
+	combatDelay(int(delaySetting) / 2)
 }
 
 // groupB406 is MonsterGroup byte 406+k: the initiative at which cloud k strikes.
@@ -443,7 +443,7 @@ func actorLine(verb, text, color, silenced int) bool {
 	if silenced == 1 {
 		combatDelay(2)
 		printMsgCentered(3200, 3, 2)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		return true
 	}
 	s := groupMonsterRec[1].Sound
@@ -601,10 +601,10 @@ func performAction() {
 			for k := range 4 {
 				c.B24[k] = 0
 			}
-			combatDelay(int(g4fc8))
+			combatDelay(int(delaySetting))
 			return
 		}
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		if !turned {
 			c.Status[2]++
 			return
@@ -622,7 +622,7 @@ func performAction() {
 		mexeText = ""
 		printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, 0)
 		playSound(0)
-		combatDelay(int(g4fc8) / 2)
+		combatDelay(int(delaySetting) / 2)
 		clearWindow(partyPictureWin, true)
 	}
 	if t := targetOf(c); t != nil && (uint8(t.Condition) >= 3 || t.Toggle != 0) {
@@ -729,7 +729,7 @@ func doChangeEquipment() {
 	mexeVerb = getMessage(3311)
 	mexeText = ""
 	printCombatLine(mexeName, mexeVerb, mexeText, 1, 15, 0)
-	combatDelay(int(g4fc8) / 2)
+	combatDelay(int(delaySetting) / 2)
 }
 
 // doHide (do_hide, WMEXE c064): a member hides from the monsters, a monster from the
@@ -748,7 +748,7 @@ func doHide(c *Combatant) {
 		}
 	}
 	actorFlavour(3515)
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
 		c.Toggle = 1
 		mexeRaiseSkill(actMember, 16, 1)
@@ -756,7 +756,7 @@ func doHide(c *Combatant) {
 	} else {
 		printMsgCentered(3521, 6, 2)
 	}
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 }
 
 // actorFlavour prints the acting fighter's name and message n.
@@ -778,14 +778,14 @@ func doRunAway(c *Combatant) {
 		chance = 0
 	}
 	actorFlavour(3517)
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
 		c.Toggle = 2
 		printMsgCentered(3522, 6, 2)
 	} else {
 		printMsgCentered(3523, 6, 2)
 	}
-	combatDelay(int(g4fc8) / 4)
+	combatDelay(int(delaySetting) / 4)
 }
 
 // doAdvanceRetreat (do_advance_retreat, WMEXE c3ee) moves member from to place to,
@@ -819,7 +819,7 @@ func doAdvanceRetreat(from, to int) {
 	if side != 0 {
 		mexeSwapMembers(to+side, to)
 	}
-	combatDelay(int(g4fc8) / 2)
+	combatDelay(int(delaySetting) / 2)
 }
 
 // itoa is int_to_string.

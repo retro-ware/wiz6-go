@@ -80,19 +80,19 @@ func loadGame(resume int) int {
 		showErrorText(diskError, false)
 		return -1
 	}
-	saved := hdr
+	saved := scenarioHdr
 	h := next(dbs.Size[dbs.ScenarioHeader]())
 	if h == nil {
 		return fail()
 	}
-	hdr, _ = dbs.Decode[dbs.ScenarioHeader](h)
-	hdr.Paths = saved.Paths
-	hdr.SoundMode, hdr.Delay, hdr.Disks = saved.SoundMode, saved.Delay, saved.Disks
-	hdr.Level, hdr.Input, hdr.Gmode = saved.Level, saved.Input, saved.Gmode
-	g4fc8 = int16(hdr.Delay)
+	scenarioHdr, _ = dbs.Decode[dbs.ScenarioHeader](h)
+	scenarioHdr.Paths = saved.Paths
+	scenarioHdr.SoundMode, scenarioHdr.Delay, scenarioHdr.Disks = saved.SoundMode, saved.Delay, saved.Disks
+	scenarioHdr.Level, scenarioHdr.Input, scenarioHdr.Gmode = saved.Level, saved.Input, saved.Gmode
+	delaySetting = int16(scenarioHdr.Delay)
 	m := dbs.Size[MapA]()
 	n := dbs.Size[MapB]()
-	for i := 0; i < int(scen.Master.RecordCounts[dbs.RecMapA]); i++ { // record_counts[2]
+	for i := 0; i < int(scenarioDBS.Master.RecordCounts[dbs.RecMapA]); i++ { // record_counts[2]
 		a, c := next(m), next(n)
 		if a == nil || c == nil {
 			return fail()
@@ -298,8 +298,8 @@ func removePartyMember(i int) {
 		memberPcfileIndex[j] = memberPcfileIndex[j+1]
 		memberPortrait[j] = memberPortrait[j+1]
 	}
-	fillWindow(g4fba, 32, 3)
-	fillWindow(g4fb8, 32, 3)
+	fillWindow(leftPanelWin, 32, 3)
+	fillWindow(rightPanelWin, 32, 3)
 	for j := 0; j < partyCount; j++ {
 		drawMemberPanel(j)
 	}
@@ -401,12 +401,12 @@ func removeAllMembers() {
 	}
 }
 
-// pathString is hdr.Paths[i] as a string; setPath stores s there.
-func pathString(i int) string { return cstr(hdr.Paths[i][:]) }
+// pathString is scenarioHdr.Paths[i] as a string; setPath stores s there.
+func pathString(i int) string { return cstr(scenarioHdr.Paths[i][:]) }
 
 func setPath(i int, s string) {
-	hdr.Paths[i] = [20]uint8{}
-	copy(hdr.Paths[i][:19], s)
+	scenarioHdr.Paths[i] = [20]uint8{}
+	copy(scenarioHdr.Paths[i][:19], s)
 }
 
 // drawSettingValue (WBASE 7585) draws the value of setting item at row in color.
@@ -426,15 +426,15 @@ func drawSettingValue(win *Window, item, row, color int) {
 	var text string
 	switch item {
 	case 0:
-		text = getMessage(int(hdr.SoundMode) + 2350)
+		text = getMessage(int(scenarioHdr.SoundMode) + 2350)
 	case 1:
-		text = strconv.Itoa(int(hdr.Delay))
+		text = strconv.Itoa(int(scenarioHdr.Delay))
 	case 2:
-		text = getMessage(int(hdr.Level) + 2357)
+		text = getMessage(int(scenarioHdr.Level) + 2357)
 	case 3:
-		text = getMessage(int(hdr.Input) + 2360)
+		text = getMessage(int(scenarioHdr.Input) + 2360)
 	case 4:
-		text = getMessage(int(hdr.Gmode) + 2363)
+		text = getMessage(int(scenarioHdr.Gmode) + 2363)
 	case 5:
 		text = pathString(3)
 	case 6:
@@ -586,18 +586,18 @@ func doGameConfiguration() {
 			}
 			switch sel {
 			case 0:
-				hdr.SoundMode = uint8((int(hdr.SoundMode) + d + 6) % 6)
+				scenarioHdr.SoundMode = uint8((int(scenarioHdr.SoundMode) + d + 6) % 6)
 			case 1:
-				if v := int(hdr.Delay) + d; v >= 0 && v <= 255 {
-					hdr.Delay = uint8(v)
+				if v := int(scenarioHdr.Delay) + d; v >= 0 && v <= 255 {
+					scenarioHdr.Delay = uint8(v)
 				} else {
 					playSound(0)
 				}
-				g4fc8 = int16(hdr.Delay)
+				delaySetting = int16(scenarioHdr.Delay)
 			case 2:
-				hdr.Level = uint8((int(hdr.Level) + d + 3) % 3)
+				scenarioHdr.Level = uint8((int(scenarioHdr.Level) + d + 3) % 3)
 			case 3:
-				hdr.Input = uint8((int(hdr.Input) + d + 2) % 2)
+				scenarioHdr.Input = uint8((int(scenarioHdr.Input) + d + 2) % 2)
 			case 4, 6, 7:
 				playSound(0)
 			case 5:
@@ -620,13 +620,13 @@ func doGameConfiguration() {
 		if err != nil {
 			exitGame(19)
 		}
-		if _, err := f.WriteAt(dbs.Encode(&hdr), 0); err != nil {
+		if _, err := f.WriteAt(dbs.Encode(&scenarioHdr), 0); err != nil {
 			showErrorText(diskError, false)
 		}
 		f.Close()
 	}
-	g4fc8 = int16(hdr.Delay)
-	if videoFlags&0x1000 != 0 && hdr.Input == 1 {
+	delaySetting = int16(scenarioHdr.Delay)
+	if videoFlags&0x1000 != 0 && scenarioHdr.Input == 1 {
 		if !mousePresent {
 			drv.MouseInit()
 		}

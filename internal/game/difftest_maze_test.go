@@ -37,23 +37,23 @@ var mazeFuncs = map[string]func(a []int) int{
 func mzWins() {
 	windows, cellOwner = nil, [len(cellOwner)]uint8{}
 	partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
-	for _, w := range []**Window{&mainWindow, &bottomLineWin, &pictureWin, &g4fac, &g4fb0, &g4fb8, &g4fba, &textWin} {
+	for _, w := range []**Window{&mainWindow, &bottomLineWin, &pictureWin, &titleStripWin, &g4fb0, &rightPanelWin, &leftPanelWin, &textWin} {
 		*w = createWindow(0, 0, 40, 25, 8, -1, 0, false)
 	}
 }
 
 // mzPrompts sets init_maze_screen's key sets (the cases set the C's).
 func mzPrompts() {
-	mzMsg2000, mzMsg2001 = string(msgs.Get(2000)), string(msgs.Get(2001))
+	mzMsg2000, mzMsg2001 = string(messageDBS.Get(2000)), string(messageDBS.Get(2001))
 }
 
 // mazeRoots: the globals their cases name.
 var mazeRoots = map[string]any{
 	"party": &party, "partyCount": &partyCount, "gameState": &gameState, "gameStateArg": &gameStateArg,
-	"hdr": &hdr, "messageDelay": &messageDelay, "curSound": &curSound, "curMember": &curMember,
+	"scenarioHdr": &scenarioHdr, "messageDelay": &messageDelay, "curSound": &curSound, "curMember": &curMember,
 	"cellEventIndex": &cellEventIndex, "curEvent": &curEvent, "reloadMapA": &reloadMapA, "reloadMapB": &reloadMapB,
 	"levelFlags": &levelFlags, "saveState": &saveState, "partyCounters": &partyCounters,
-	"g4f84": &g4f84, "g4f86": &g4f86, "g4f88": &g4f88, "g4f8a": &g4f8a, "g4fa6": &g4fa6,
+	"magicWordTyped": &magicWordTyped, "g4f86": &g4f86, "g4f88": &g4f88, "g4f8a": &g4f8a, "g4fa6": &g4fa6,
 	"partyFacing": &partyFacing, "partyBlock": &partyBlock, "cellX": &cellX, "cellY": &cellY,
 	"partyX": &partyX, "partyY": &partyY, "mazeA": &mazeA, "mazeB": &mazeB,
 	"mzRedrawView": &mzRedrawView, "mzG5034": &mzG5034, "mzG5038": &mzG5038, "mzG503a": &mzG503a,

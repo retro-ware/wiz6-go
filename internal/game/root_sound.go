@@ -14,20 +14,43 @@ type soundRec struct {
 	Size     int32 // +4: SOUNDnn.SND's size, 0 for none
 	Rate     int   // +8: PIT divisor of the sample rate
 	Level    int   // +10: loudness; 0 waits for the sound playing to end
-	Flags    int   // +11: bit 1 leaves a sound that is playing alone
+	Flags    int   // +11: soundFlagNoInterrupt
 }
 
+// soundFlagNoInterrupt in a soundRec's Flags leaves a sound that is playing alone.
+const soundFlagNoInterrupt = 2
+
+const (
+	soundRecSize = 12      // bytes of a SCENARIO type-9 record
+	pitClockHz   = 1193182 // the PC timer's input clock, which Rate divides
+	soundVolume  = 127     // host.Voice's full volume
+	soundPanMid  = 1 << 15 // host.Voice's centre pan
+	loadedSound  = 14      // the slot load_sound fills (cur_sound)
+)
+
+// The sound settings (scenario_hdr's SoundMode): which sounds play, and how loud.
+const (
+	soundAll          = 0
+	soundQuietSteps   = 1 // footsteps at half level
+	soundNoSteps      = 2 // no footsteps
+	soundAllQuiet     = 3 // everything at half level
+	soundQuietNoSteps = 4 // no footsteps, the rest at half level
+	soundOff          = 5
+	firstStepSound    = 10 // sounds 10..12: footsteps and the like (is_sound_10_to_12)
+	lastStepSound     = 12
+)
+
 var (
-	sounds     [15]soundRec // records of sounds 0..13 and, in 14, of load_sound's sound
-	soundSlots [15][]byte   // their samples (load_sound_slot)
-	curSound   int          // the sound in slot 14 (cur_sound)
-	voice      = -1         // the host voice playing
+	sounds     [loadedSound + 1]soundRec // records of sounds 0..13 and, in loadedSound, of load_sound's sound
+	soundSlots [loadedSound + 1][]byte   // their samples (load_sound_slot)
+	curSound   int                       // the sound in slot loadedSound (cur_sound)
+	voice      = -1                      // the host voice playing
 	audioOK    bool
 )
 
 func readSoundRec(n int) soundRec {
-	b := make([]byte, 12)
-	accessScenarioRecord(9, n, b, false)
+	b := make([]byte, soundRecSize)
+	accessScenarioRecord(dbs.RecSound, n, b, false)
 	return soundRec{
 		Fallback: int(int16(binary.LittleEndian.Uint16(b))),
 		Size:     int32(binary.LittleEndian.Uint32(b[4:])),
@@ -57,8 +80,8 @@ func soundPlaying() bool {
 	return voice >= 0
 }
 
-// startSound (ROOT 35fd) plays slot at 1193182/rate Hz. Level 0 first waits for the sound
-// playing to end; flags bit 1 leaves a playing sound alone.
+// startSound (ROOT 35fd) plays slot at pitClockHz/rate Hz. Level 0 first waits for the
+// sound playing to end; soundFlagNoInterrupt in flags leaves a playing sound alone.
 //
 // ponytail: the samples go out as 8-bit PCM; the PC-speaker driver (ROOT 1462) maps them
 // through a level table to pulse widths, port it when the sound must match.
@@ -71,11 +94,11 @@ func startSound(slot, rate, level, flags int) {
 			host.Sleep()
 		}
 	}
-	if flags&2 != 0 && soundPlaying() {
+	if flags&soundFlagNoInterrupt != 0 && soundPlaying() {
 		return
 	}
 	stopSound()
-	voice = host.AudioStart(host.Voice{Data: soundSlots[slot], Rate: 1193182 / rate, Volume: 0x7f, Pan: 0x8000})
+	voice = host.AudioStart(host.Voice{Data: soundSlots[slot], Rate: pitClockHz / rate, Volume: soundVolume, Pan: soundPanMid})
 }
 
 // stopSound (ROOT 3640) stops the sound playing.
@@ -97,24 +120,24 @@ func playSound(n int) {
 	}
 	r := sounds[n]
 	level := r.Level
-	step := n >= 10 && n <= 12 // is_sound_10_to_12: footsteps and the like
-	switch hdr.SoundMode {
-	case 1:
+	step := n >= firstStepSound && n <= lastStepSound
+	switch scenarioHdr.SoundMode {
+	case soundQuietSteps:
 		if step {
 			level /= 2
 		}
-	case 2:
+	case soundNoSteps:
 		if step {
 			return
 		}
-	case 3:
+	case soundAllQuiet:
 		level /= 2
-	case 4:
+	case soundQuietNoSteps:
 		if step {
 			return
 		}
 		level /= 2
-	case 5:
+	case soundOff:
 		return
 	}
 	slot := n
