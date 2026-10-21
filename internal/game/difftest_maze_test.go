@@ -24,15 +24,20 @@ var mazeFuncs = map[string]func(a []int) int{
 	"fd8a9": func(a []int) int { mzWins(); mzPrompts(); lockedDoorMenu(a[0]); return 0 },
 	"fbc93": func(a []int) int { mzWins(); mzPrompts(); puzzleEvent(); return 0 },
 	"fc182": func(a []int) int { mzWins(); mzPrompts(); riddleEvent(); return 0 },
+	"f7f30": func(a []int) int { mzWins(); castSpellInMaze(a[0]); return 0 },
+	"f7860": func(a []int) int { mzWins(); useItemInMaze(a[0]); return 0 },
+	"f467b": func(a []int) int { mzWins(); return randomEncounterMonster(a[0]) },
+	"f46e8": func(a []int) int { mzWins(); return encounterTable(a[0]) },
 	"fccd2": func(a []int) int { mzWins(); searchCell(); return 0 },
 }
 
-// mzWins makes the windows the maze code draws in; the C's are stubbed.
+// mzWins makes fresh windows for the maze code to draw in (the C's are stubbed); the
+// windows of earlier cases go.
 func mzWins() {
+	windows, cellOwner = nil, [len(cellOwner)]uint8{}
+	partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
 	for _, w := range []**Window{&mainWindow, &bottomLineWin, &pictureWin, &g4fac, &g4fb0, &g4fb8, &g4fba, &textWin} {
-		if *w == nil {
-			*w = createWindow(0, 0, 40, 25, 8, -1, 0, false)
-		}
+		*w = createWindow(0, 0, 40, 25, 8, -1, 0, false)
 	}
 }
 
@@ -54,7 +59,7 @@ var mazeRoots = map[string]any{
 	"mzG503c": &mzG503c, "mzG503e": &mzG503e, "eventScreenDirty": &eventScreenDirty, "mzG5232": &mzG5232,
 	"returnCmd": &returnCmd, "g363e": &g363e, "reachableCells": &reachableCells, "eventCells": &eventCells,
 	"g4338": &g4338, "g433a": &g433a, "treasureID": &treasureID,
-	"lockTumblers": &lockTumblers, "msgNotFound": &msgNotFound, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,
+	"lockTumblers": &lockTumblers, "msgNotFound": &msgNotFound, "dpTarget": &dpTarget, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,
 }
 
 func init() {

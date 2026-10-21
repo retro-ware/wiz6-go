@@ -257,6 +257,10 @@ func diskOptionsMenu() {
 
 // maze_party_menu (WMAZE 6cf8): search, the member actions, locks, reorder, rest, disk.
 func mazePartyMenu() {
+	if dtLog != nil { // the difftest's stub ends the main loop
+		gameState = 0
+		return
+	}
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
 	fillWindow(win, ' ', 3)
