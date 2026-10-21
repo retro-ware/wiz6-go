@@ -94,7 +94,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 		viewAnimState = -2
 		mexeAnimateStep()
 		at := kind*24 + side*12 + mirror*6 + s*2
-		wpopsInsertSprite(42, pic, int(spellAnimXY[at]), int(spellAnimXY[at+1]), 72, 248, flip, []byte{f})
+		insertSprite(42, pic, int(spellAnimXY[at]), int(spellAnimXY[at+1]), 72, 248, flip, []byte{f})
 		for {
 			mexeAnimateStep()
 			if viewAnimState == -2 {

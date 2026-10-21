@@ -199,7 +199,7 @@ func npcQueueSprite(row, col, dx int) {
 		return
 	}
 	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
-	wpopsInsertSprite(depth, slot, x, y, 72, 248, mirror, frames)
+	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
 // npcAnimStep (WMNPC 55dc) is one tick of the view: -3 shows it, -2 draws the maze, -1
@@ -222,7 +222,7 @@ func npcAnimStep() {
 			}
 		}
 	default:
-		wpopsDrawSprite(viewAnimState)
+		drawSprite(viewAnimState)
 	}
 	viewAnimState++
 	if viewAnimState == 12 {

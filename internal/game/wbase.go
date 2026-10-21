@@ -53,9 +53,9 @@ func campAnimStep() {
 	campAnimTick = (campAnimTick + 1) % 10
 }
 
-// waitAnimated (WBASE 4617) waits ticks*5 steps with the camp scene running; a click or
+// waitAnimatedCamp (WBASE 4617) waits ticks*5 steps with the camp scene running; a click or
 // Enter ends it early.
-func waitAnimated(ticks int) {
+func waitAnimatedCamp(ticks int) {
 	flushKeys()
 	for ticks *= 5; ticks > 0; ticks-- {
 		if checkScreenClick() {
@@ -278,7 +278,7 @@ func animateAndShowTwoLines(line1, line2 string) {
 		drvShowWindow(pictureWin)
 		playSound(3)
 	}
-	waitAnimated(5)
+	waitAnimatedCamp(5)
 	eraseWindow(mainWindow, false)
 	win := createWindow(0, 19, 40, 5, 30, -1, 0, false)
 	deferWindowDraw(win)
@@ -345,7 +345,7 @@ func showErrorText(text string, animated bool) {
 	showStatusText(text)
 	playSound(0)
 	if animated {
-		waitAnimated(12)
+		waitAnimatedCamp(12)
 	} else {
 		waitSecondsOrEnter(12)
 	}

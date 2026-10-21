@@ -119,10 +119,10 @@ func animRunLength(p *MonsterPicRec, seq int) int {
 	return int(p.Quads[0][0])
 }
 
-// wpopsBuildMonsterAnimFrames (build_monster_anim_frames, WPOPS 48e4; WMEXE 5fa0, WMELE
+// buildMonsterAnimFrames (build_monster_anim_frames, WPOPS 48e4; WMEXE 5fa0, WMELE
 // 6326) steps the animation of the group's monster shown in view column col and returns
 // its frames, one per picture layer. A dead, asleep or paralysed monster stays still.
-func wpopsBuildMonsterAnimFrames(g, col int) []byte {
+func buildMonsterAnimFrames(g, col int) []byte {
 	grp := monsterGroups[g]
 	slot := int(grp.PicSlot)
 	p := &monsterPics[slot]
@@ -166,9 +166,9 @@ func wpopsBuildMonsterAnimFrames(g, col int) []byte {
 	return frames
 }
 
-// wpopsInsertSprite (insert_sprite, WPOPS 4b7d; WMEXE 6239, WMELE 65bf) adds a sprite,
+// insertSprite (insert_sprite, WPOPS 4b7d; WMEXE 6239, WMELE 65bf) adds a sprite,
 // keeping the list sorted by depth.
-func wpopsInsertSprite(depth, pic, x, y, clipL, clipR, mirror int, frames []byte) {
+func insertSprite(depth, pic, x, y, clipL, clipR, mirror int, frames []byte) {
 	pos := 0
 	for pos < int(spriteCount) && int(spriteList[pos].Depth) <= depth {
 		pos++
@@ -192,10 +192,9 @@ func wpopsInsertSprite(depth, pic, x, y, clipL, clipR, mirror int, frames []byte
 	spriteCount++
 }
 
-// wpopsQueueMonsterSprite (queue_monster_sprite, WPOPS 4c7d) queues the sprite of the
-// group at view row, column: animated in the front row, the far frame behind, with a
-// random jitter now and then.
-func wpopsQueueMonsterSprite(row, col int) {
+// queueMonsterSpriteNoShift (queue_monster_sprite, WPOPS 4c7d) is WMELE's queueMonsterSprite
+// without the dx shift, and it takes any nonzero group, not only 1..3.
+func queueMonsterSpriteNoShift(row, col int) {
 	g := int(viewPosGroup[row][col])
 	if g == 0 || row > int(viewRowsOpen) {
 		return
@@ -204,7 +203,7 @@ func wpopsQueueMonsterSprite(row, col int) {
 	p := &monsterPics[slot]
 	var frames []byte
 	if row == 0 {
-		frames = wpopsBuildMonsterAnimFrames(g, col)
+		frames = buildMonsterAnimFrames(g, col)
 	} else if p.Unk306[0] != 0 {
 		frames = []byte{p.Unk306[0]}
 	}
@@ -228,12 +227,12 @@ func wpopsQueueMonsterSprite(row, col int) {
 		return
 	}
 	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
-	wpopsInsertSprite(depth, slot, x, y, 72, 248, mirror, frames)
+	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
-// wpopsDrawSprite (draw_sprite, WPOPS 4ebc) draws sprite i into the working buffer. The
+// drawSprite (draw_sprite, WPOPS 4ebc) draws sprite i into the working buffer. The
 // pictures in slots of monsters 20, 35, 54 and 57 place each layer by its own offsets.
-func wpopsDrawSprite(i int) {
+func drawSprite(i int) {
 	s := &spriteList[i]
 	if s.Depth == 255 {
 		delayTick()
@@ -284,11 +283,11 @@ func animateCombatStep() {
 	case -1:
 		for r := range 2 {
 			for c := range 5 {
-				wpopsQueueMonsterSprite(r, c)
+				queueMonsterSpriteNoShift(r, c)
 			}
 		}
 	default:
-		wpopsDrawSprite(viewAnimState)
+		drawSprite(viewAnimState)
 	}
 	viewAnimState++
 	if viewAnimState == 12 {
@@ -296,9 +295,9 @@ func animateCombatStep() {
 	}
 }
 
-// wpopsAnimateUntilReset (animate_until_reset, WPOPS 51c8; WMEXE 773a, WMELE 6e01) runs a
+// animateUntilReset (animate_until_reset, WPOPS 51c8; WMEXE 773a, WMELE 6e01) runs a
 // whole animation cycle.
-func wpopsAnimateUntilReset() {
+func animateUntilReset() {
 	viewAnimState = -2
 	for {
 		animateCombatStep()
@@ -649,17 +648,6 @@ func printOptionAt(win *Window, i int, s string, color int) {
 	printString(win, s, color)
 }
 
-// wpopsCopyName (copy_name, WPOPS 6fea) is s in lower case.
-func wpopsCopyName(s string) string {
-	b := []byte(s)
-	for i, c := range b {
-		if c >= 'A' && c <= 'Z' {
-			b[i] = c + 32
-		}
-	}
-	return string(b)
-}
-
 // pickRandomSetBit (WPOPS 7696) counts 1..8 set bits of the byte round from bit 0 and
 // returns where it stops (after 100 clear bits at the latest).
 func pickRandomSetBit(bits uint8) int {
@@ -750,7 +738,7 @@ func choosePartyActions(win *Window) {
 				enabled[0] = 0
 			}
 			enabled[11] = -1
-			name := wpopsCopyName(memberName(member))
+			name := copyName(memberName(member))
 			prompt := func(msg int) {
 				fillWindow(win, 32, 3)
 				printCombatPrompt(replaceCharWithString(getMessage(msg), name, '$'), 0)

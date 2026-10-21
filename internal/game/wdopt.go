@@ -49,9 +49,9 @@ func wdoptOvmain() {
 	gameState = 5
 }
 
-// wdoptAnimStep is the idle step of WDOPT's waits: every 10th call flips the animation
+// viewAnimStep is the idle step of WDOPT's waits: every 10th call flips the animation
 // phase and redraws the view.
-func wdoptAnimStep() {
+func viewAnimStep() {
 	if dpAnimCount == 0 {
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
@@ -95,7 +95,7 @@ func wdoptGetMenuChoice(keys string) int {
 }
 
 // wait_animated_dopt (WDOPT 47ce) animates the view for ticks; a click or Enter ends it.
-func wdoptWaitAnimated(ticks int) {
+func waitAnimatedView(ticks int) {
 	flushKeys()
 	for ticks *= 5; ticks > 0; ticks-- {
 		if checkScreenClick() {
@@ -104,7 +104,7 @@ func wdoptWaitAnimated(ticks int) {
 		if keyAvailable(1) && int8(getKey(1)) == 13 {
 			return
 		}
-		wdoptAnimStep()
+		viewAnimStep()
 	}
 }
 
@@ -192,8 +192,8 @@ func wdoptChooseTarget(msg int) int {
 	return sel
 }
 
-// copy_name (WDOPT 4ca5) is name in lower case.
-func wdoptLowerName(name string) string {
+// copy_name (WDOPT 4ca5, WPOPS 6fea) is name in lower case.
+func copyName(name string) string {
 	b := []byte(name)
 	for i, c := range b {
 		if c >= 'A' && c <= 'Z' {
@@ -263,7 +263,7 @@ func wdoptShowResult(msg int) {
 	if dpResultBeep != 0 {
 		playSound(0)
 	}
-	wdoptWaitAnimated(messageDelay / 2)
+	waitAnimatedView(messageDelay / 2)
 	eraseWindow(mainWindow, false)
 }
 
@@ -710,7 +710,7 @@ func wdoptDoUseItem(m int) {
 	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
 	fillWindow(list, ' ', 3)
-	title := replaceCharWithString(getMessage(2033), wdoptLowerName(memberName(m)), '$')
+	title := replaceCharWithString(getMessage(2033), copyName(memberName(m)), '$')
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
 	deferWindowDraw(win)

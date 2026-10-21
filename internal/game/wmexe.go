@@ -175,7 +175,7 @@ func mexeAnimateStep() {
 			}
 		}
 	default:
-		wpopsDrawSprite(viewAnimState) // draw_sprite (655c) is the same
+		drawSprite(viewAnimState) // draw_sprite (655c) is the same
 	}
 	viewAnimState++
 	if viewAnimState == 12 {
@@ -205,7 +205,7 @@ func queueCombatantSprite(row, col int) {
 	p := &monsterPics[slot]
 	var frames []byte
 	if row == 0 {
-		frames = wpopsBuildMonsterAnimFrames(g, col) // build_monster_frames (5fa0)
+		frames = buildMonsterAnimFrames(g, col) // build_monster_frames (5fa0)
 	} else if p.Unk306[0] != 0 {
 		frames = []byte{p.Unk306[0]}
 	}
@@ -224,7 +224,7 @@ func queueCombatantSprite(row, col int) {
 	}
 	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + int(p.Pairs[f][mirror])
 	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
-	wpopsInsertSprite(depth, slot, x, y, 72, 248, mirror, frames)
+	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
 // queueEffectSprite (queue_effect_sprite, WMEXE 6742) queues the hit flash at view row,
@@ -279,7 +279,7 @@ func queueEffectSprite(row, col int) {
 	if row == 1 {
 		y -= 8
 	}
-	wpopsInsertSprite(depth, 0, int(p.Pairs[frame][0])+effectX[row][col], y, 72, 248, mirror, []byte{byte(frame)})
+	insertSprite(depth, 0, int(p.Pairs[frame][0])+effectX[row][col], y, 72, 248, mirror, []byte{byte(frame)})
 	if animCycle == 0 {
 		*e++
 	}

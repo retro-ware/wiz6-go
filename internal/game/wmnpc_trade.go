@@ -190,7 +190,7 @@ func npcChooseMemberItem(win *Window, m, msg, sel int) int {
 	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
 	fillWindow(list, ' ', 3)
-	npcPrompt(replaceCharWithString(getMessage(1508), wdoptLowerName(memberName(m)), '$'), 0)
+	npcPrompt(replaceCharWithString(getMessage(1508), copyName(memberName(m)), '$'), 0)
 	eraseCursorMark(bottomLineWin, false)
 	deferWindowDraw(win)
 	setCursor(win, 2, 1)
@@ -515,7 +515,7 @@ func npcTrade(m int) {
 		enabled[0], enabled[1] = 0, 0
 	}
 	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
-	title := replaceCharWithString(getMessage(1508), wdoptLowerName(memberName(m)), '$')
+	title := replaceCharWithString(getMessage(1508), copyName(memberName(m)), '$')
 	npcShowGold = 1
 	for choice := 0; choice != 3; {
 		npcListWares()

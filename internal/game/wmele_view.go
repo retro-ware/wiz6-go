@@ -3,11 +3,11 @@ package game
 // WMELE's encounter view. The view tick (animate_view_step, 6d4d), its full cycle
 // (redraw_view_background, 6e01), the sprite list (add_view_sprite 65bf,
 // draw_view_sprite 6913) and the monster frames (get_monster_anim_chars 6326) are the
-// same code as WPOPS's: animateCombatStep, wpopsAnimateUntilReset, wpopsInsertSprite,
-// wpopsDrawSprite and wpopsBuildMonsterAnimFrames.
+// same code as WPOPS's: animateCombatStep, animateUntilReset, insertSprite,
+// drawSprite and buildMonsterAnimFrames.
 
 func animateViewStep()      { animateCombatStep() }
-func redrawViewBackground() { wpopsAnimateUntilReset() }
+func redrawViewBackground() { animateUntilReset() }
 
 // queueMonsterSprite (queue_monster_sprite, WMELE 66bf) queues the monster at view row,
 // col shifted dx pixels (the encounter flash); WPOPS's copy has no shift.
@@ -20,7 +20,7 @@ func queueMonsterSprite(row, col, dx int) {
 	p := &monsterPics[slot]
 	var frames []byte
 	if row == 0 {
-		frames = wpopsBuildMonsterAnimFrames(g, col)
+		frames = buildMonsterAnimFrames(g, col)
 	} else if p.Unk306[0] != 0 {
 		frames = []byte{p.Unk306[0]}
 	}
@@ -47,7 +47,7 @@ func queueMonsterSprite(row, col, dx int) {
 		return
 	}
 	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
-	wpopsInsertSprite(depth, slot, x, y, 72, 248, mirror, frames)
+	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
 // placeGroupAt (place_group_at, WMELE 6af9) puts a not yet placed member of group g at
