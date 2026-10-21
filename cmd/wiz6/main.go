@@ -23,6 +23,7 @@ func main() {
 	pcview := flag.Int("pcview", -1, "testing: as -maze, but open the character view of party member N")
 	fight := flag.Int("fight", -1, "testing: as -maze, but start an encounter (with monster N when N > 0)")
 	chest := flag.Int("chest", -1, "testing: as -maze, but open treasure record N as a found chest")
+	npc := flag.Int("npc", -1, "testing: as -maze, but meet NPC record N")
 	flag.Parse()
 	if *imp != "" {
 		if *data == "" {
@@ -69,6 +70,8 @@ func main() {
 			code = game.MainFight(*data, *fight)
 		} else if *chest >= 0 {
 			code = game.MainChest(*data, *chest)
+		} else if *npc >= 0 {
+			code = game.MainNPC(*data, *npc)
 		} else if *pcview >= 0 {
 			code = game.PCView(*data, *pcview)
 		} else if *maze {

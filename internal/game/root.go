@@ -77,6 +77,8 @@ func Main(dir string) (code int) {
 			wmeleOvmain()
 		case 13:
 			wmexeOvmain()
+		case 18:
+			wmnpcOvmain()
 		case 3:
 			shutdownGame(0)
 			return 0
