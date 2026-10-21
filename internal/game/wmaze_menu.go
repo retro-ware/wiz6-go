@@ -84,7 +84,7 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 	}
 	for i := range 10 {
 		if v := int(pc.Status[i]); v > 0 && v != 255 {
-			v -= rate
+			v = int(int16(v - rate)) // C int wraps
 			if v < 0 {
 				v = 0
 			}
