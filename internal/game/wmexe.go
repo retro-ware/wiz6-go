@@ -163,8 +163,8 @@ func mexeAnimateStep() {
 		animCycle = (animCycle + 1) % 3
 	case -2:
 		drawMazeView()
-		for i := range wpopsSprites {
-			wpopsSprites[i].Depth = 255
+		for i := range spriteList {
+			spriteList[i].Depth = 255
 		}
 		spriteCount = 0
 	case -1:

@@ -7,23 +7,6 @@ import "github.com/retro-ware/wiz6-go/internal/dbs"
 // The view behind the monsters is WMAZE's drawMazeView: WMELE's copy (7652..92dc) and
 // WMEXE's (fd4c9..ff2b6) are the same code.
 
-// Combat state in the root data segment that the combat overlays share.
-// TODO(merge): move to state.go.
-var (
-	combatOver     int16           // 0x4356 combat_over
-	monsterJitterX [2][5]uint8     // g4348: random x offset of the monster at row, col
-	monsterJitterY [2][5]uint8     // g433e: random y offset
-	combatWinA     *Window         // g438a: the action window (left)
-	combatWinB     *Window         // g438c: the monster list window (right)
-	g4352          int16           // set by an item of kind 7 (do_use_item_action)
-	initiative     int             // g435a: the initiative count of the round, 100 down to 1
-	actMember      int             // g435c: the acting combatant's index
-	actGroup       int             // g435e: the acting combatant's group
-	animCycle      int16           // 0x3644 anim_cycle: 0..2, effect sprites step at 0
-	monsterFrames  [5][10][3]uint8 // 0x3648: per view column and frame: frame, step, ticks left
-	g4fcc          int16           // 0x4fcc: nonzero, every swing hits (a debug switch)
-)
-
 // ROOT data: where a monster at row*5+col moves when the row ahead opens (g00ba, row*10
 // + col), its sprite depth (g00b0) and the x jitter of the encounter flash (g00c4).
 var (
@@ -716,8 +699,8 @@ func beginCombat() {
 		groupMonsterRec[g] = new(MonsterRec)
 		monsterGroups[g] = new(MonsterGroup)
 	}
-	for s := range wpopsSprites {
-		wpopsSprites[s] = Sprite{Depth: 255}
+	for s := range spriteList {
+		spriteList[s] = Sprite{Depth: 255}
 	}
 	g4326 = [3]byte{}
 	monsterJitterX[0], monsterJitterY[0] = [5]uint8{}, [5]uint8{}

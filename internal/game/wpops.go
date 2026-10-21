@@ -13,16 +13,6 @@ func wpopsOvmain() {
 	}
 }
 
-// Root combat state the combat overlays share (WMELE sets it up; wmele.go has the rest).
-// TODO(merge): move to state.go.
-var (
-	monsterGroupCount int         // 0x4360 monster_group_count
-	viewAnimState     int         // 0x4358 view_anim_state: -3 show, -2 maze, -1 queue, 0..11 sprite
-	viewPosGroup      [2][5]int16 // 0x4362 view_pos_group: the group shown at view row, col (0 none)
-	combatKeys        string      // 0x4376: message 3900, the combat menu keys
-	g4fae             *Window     // the ally strip under the view
-)
-
 // ROOT data g0092: the view columns each party member attacks first, by member.
 var memberColumns = [6][5]int{{1, 0, 3, 2, 4}, {2, 0, 4, 1, 3}, {0, 1, 2, 3, 4}, {4, 0, 2, 3, 1}, {3, 0, 1, 4, 2}, {0, 2, 1, 4, 3}}
 
@@ -31,7 +21,6 @@ var (
 	// g5043..: monster taken as a target, at group*9+index (group 1..5). The back
 	// commands mark at 9 more (the C's g504c), so they flag the next group.
 	wpopsTargetTaken [64]uint8
-	wpopsSprites     [12]Sprite // what sprite_list points at
 )
 
 // clearTargets is setmem(g504c, 45, 0).
@@ -181,18 +170,18 @@ func wpopsBuildMonsterAnimFrames(g, col int) []byte {
 // keeping the list sorted by depth.
 func wpopsInsertSprite(depth, pic, x, y, clipL, clipR, mirror int, frames []byte) {
 	pos := 0
-	for pos < int(spriteCount) && int(wpopsSprites[pos].Depth) <= depth {
+	for pos < int(spriteCount) && int(spriteList[pos].Depth) <= depth {
 		pos++
 	}
 	for i := int(spriteCount); i > pos; i-- {
-		wpopsSprites[i] = wpopsSprites[i-1]
+		spriteList[i] = spriteList[i-1]
 	}
 	if pos >= 12 {
 		for {
 			playSound(0) // the C hangs here
 		}
 	}
-	s := &wpopsSprites[pos]
+	s := &spriteList[pos]
 	s.Depth, s.Pic = uint8(depth), uint8(pic)
 	s.X, s.Y, s.W, s.H = int16(x), int16(y), int16(clipL), int16(clipR)
 	s.Mirror = uint8(mirror)
@@ -245,7 +234,7 @@ func wpopsQueueMonsterSprite(row, col int) {
 // wpopsDrawSprite (draw_sprite, WPOPS 4ebc) draws sprite i into the working buffer. The
 // pictures in slots of monsters 20, 35, 54 and 57 place each layer by its own offsets.
 func wpopsDrawSprite(i int) {
-	s := &wpopsSprites[i]
+	s := &spriteList[i]
 	if s.Depth == 255 {
 		delayTick()
 		delayTick()
@@ -288,8 +277,8 @@ func animateCombatStep() {
 		animPhase = (animPhase + 1) % 2
 	case -2:
 		drawMazeView()
-		for i := range wpopsSprites {
-			wpopsSprites[i].Depth = 255
+		for i := range spriteList {
+			spriteList[i].Depth = 255
 		}
 		spriteCount = 0
 	case -1:

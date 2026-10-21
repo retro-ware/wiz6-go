@@ -103,7 +103,7 @@ var (
 
 	monsterGroups   [7]*MonsterGroup // 0x43a8; [0] is the party side
 	groupMonsterRec [7]*MonsterRec   // 0x43b6
-	spriteList      [11]*Sprite      // 0x4390
+	spriteList      [12]Sprite       // 0x4390 sprite_list
 	spriteCount     int16            // 0x438e
 
 	treasureID     int16             // treasure_id
@@ -215,3 +215,50 @@ var spellTable = [82]Spell{
 	{5, 6, 8, 1, 2, 12}, {5, 7, 18, 3, 0, 4}, {5, 7, 20, 1, 1, 14}, {5, 7, 20, 3, 0, 4}, {5, 0, 0, 0, 2, 0},
 	{5, 0, 0, 0, 0, 0}, {5, 0, 0, 0, 0, 0},
 }
+
+// Root combat state the combat overlays share.
+var (
+	monsterGroupCount int         // 0x4360 monster_group_count
+	viewAnimState     int         // 0x4358 view_anim_state: -3 show, -2 maze, -1 queue, 0..11 sprite
+	viewPosGroup      [2][5]int16 // 0x4362 view_pos_group: the group shown at view row, col (0 none)
+	combatKeys        string      // 0x4376: message 3900, the combat menu keys
+	g4fae             *Window     // the ally strip under the view
+)
+
+// Root state WMAZE uses.
+var (
+	returnCmd    int16 // 0x4fce return_cmd
+	menuClicked  int16 // 0x4fc4 menu_clicked
+	animPhase    int16 // 0x3646 anim_phase
+	g363e        int16 // 0x363e
+	g4338, g4354 int16 // combat entry parameters
+	viewRowsOpen int16 // 0x433c view_rows_open
+
+	reachableCells [96]byte // 0x4e08: 768-bit cell set (flood_mark_cells)
+	eventCells     [96]byte // 0x4e68: cells with an event record
+
+	// The maps of the current game, 14 used (far_buffers_a/b, g07d4/g080c); WBASE fills
+	// them from NEWGAME/SAVEGAME. mazeA/mazeB are working copies of map gameStateArg.
+	mapCacheA              [16]MapA
+	mapCacheB              [16]MapB
+	reloadMapA, reloadMapB bool // g4eeb, g4eea
+
+	g4f86, g4f88, g4f8a, g4fa6 int16
+	curSoundSize               int32 // 0x33f0 cur_sound_size
+)
+
+// Combat state in the root data segment that the combat overlays share.
+var (
+	combatOver     int16           // 0x4356 combat_over
+	monsterJitterX [2][5]uint8     // g4348: random x offset of the monster at row, col
+	monsterJitterY [2][5]uint8     // g433e: random y offset
+	combatWinA     *Window         // g438a: the action window (left)
+	combatWinB     *Window         // g438c: the monster list window (right)
+	g4352          int16           // set by an item of kind 7 (do_use_item_action)
+	initiative     int             // g435a: the initiative count of the round, 100 down to 1
+	actMember      int             // g435c: the acting combatant's index
+	actGroup       int             // g435e: the acting combatant's group
+	animCycle      int16           // 0x3644 anim_cycle: 0..2, effect sprites step at 0
+	monsterFrames  [5][10][3]uint8 // 0x3648: per view column and frame: frame, step, ticks left
+	g4fcc          int16           // 0x4fcc: nonzero, every swing hits (a debug switch)
+)

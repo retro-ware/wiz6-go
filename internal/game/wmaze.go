@@ -41,29 +41,6 @@ var (
 	lockTumblers     [6]int16 // lock_tumblers (12 bytes)
 )
 
-// Root state WMAZE uses that the root port does not have yet.
-// TODO(merge): move to state.go.
-var (
-	returnCmd    int16 // 0x4fce return_cmd
-	menuClicked  int16 // 0x4fc4 menu_clicked
-	animPhase    int16 // 0x3646 anim_phase
-	g363e        int16 // 0x363e
-	g4338, g4354 int16 // combat entry parameters
-	viewRowsOpen int16 // 0x433c view_rows_open
-
-	reachableCells [96]byte // 0x4e08: 768-bit cell set (flood_mark_cells)
-	eventCells     [96]byte // 0x4e68: cells with an event record
-
-	// The maps of the current game, 14 used (far_buffers_a/b, g07d4/g080c); WBASE fills
-	// them from NEWGAME/SAVEGAME. mazeA/mazeB are working copies of map gameStateArg.
-	mapCacheA              [16]MapA
-	mapCacheB              [16]MapB
-	reloadMapA, reloadMapB bool // g4eeb, g4eea
-
-	g4f86, g4f88, g4f8a, g4fa6 int16
-	curSoundSize               int32 // 0x33f0 cur_sound_size
-)
-
 // drv entry points as the root calls them.
 func drvMazeTile(tile, flag, mirror int) { drv.MazeTile(tile, flag, mirror) }   // drv_op_c6
 func drvShowWindow(w *Window)            { drv.ShowWindow(winRect(w)) }         // drv_op_c2

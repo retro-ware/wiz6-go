@@ -211,8 +211,8 @@ func npcAnimStep() {
 		animPhase = (animPhase + 1) % 2
 	case -2:
 		drawMazeView()
-		for i := range wpopsSprites {
-			wpopsSprites[i].Depth = 255
+		for i := range spriteList {
+			spriteList[i].Depth = 255
 		}
 		spriteCount = 0
 	case -1:
@@ -947,8 +947,8 @@ func runNPCEncounter() {
 func initNPCEncounter() {
 	npcKeys = getMessage(1500)
 	gameState = 5
-	for i := range wpopsSprites {
-		wpopsSprites[i].Depth = 255
+	for i := range spriteList {
+		spriteList[i].Depth = 255
 	}
 	spriteCount = 0
 	viewAnimState = -2
