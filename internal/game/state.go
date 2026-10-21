@@ -5,7 +5,11 @@ package game
 // layout, for translating; see LAYOUTS.md. Declared elsewhere already (not
 // repeated here): Window/Cell (root_window.go), sounds (root_sound.go).
 
-import "github.com/retro-ware/wiz6-go/internal/dbs"
+import (
+	"strings"
+
+	"github.com/retro-ware/wiz6-go/internal/dbs"
+)
 
 type (
 	Dice          = dbs.Dice
@@ -126,6 +130,10 @@ var (
 	messageDelay int  // (message_delay)
 	msgNotFound  bool // the last getMessage found nothing (msg_not_found)
 
+	copyProtectionOK int16 // 0x4fc0 copy_protection_ok: the magic word was given
+	g4f84            int16 // 0x4f84: set to 17210 once the magic word is typed
+	g4fc8            int16 // 0x4fc8: the delay setting in use (cfg_delay)
+
 	mainWindow      *Window // the one-line message window (main_window)
 	fullscreenWin   *Window // a full-screen picture window (fullscreen_win)
 	bottomLineWin   *Window // (bottom_line_win)
@@ -150,3 +158,18 @@ var (
 	picSlotMonster [10]int
 	picSlotLoaded  [10]bool
 )
+
+// Root data g0526 and g0532: the condition glyph by condition, and the status glyph by
+// status (-1 none); 37 is added to get the glyph.
+var (
+	conditionGlyph = [6]int{0, 1, 3, 4, 4, 0}
+	statusGlyph    = [10]int{-1, -1, -1, -1, 6, 7, 8, 8, 7, 5}
+)
+
+// cstr is the NUL-terminated string at the start of b.
+func cstr(b []byte) string {
+	if i := strings.IndexByte(string(b), 0); i >= 0 {
+		return string(b[:i])
+	}
+	return string(b)
+}

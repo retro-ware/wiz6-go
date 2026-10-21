@@ -67,6 +67,8 @@ func Main(dir string) (code int) {
 			wmazeMain()
 		case 5, 6, 23:
 			wmazeMain()
+		case 16:
+			wpcmkMain()
 		case 17, 22:
 			wpcvwMain()
 		case 3:
@@ -81,7 +83,6 @@ func Main(dir string) (code int) {
 
 // The overlays not ported yet.
 var (
-	wbaseMain = overlayMissing
 	wmazeMain = overlayMissing
 	wpcvwMain = overlayMissing
 )
