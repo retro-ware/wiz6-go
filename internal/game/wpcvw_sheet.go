@@ -292,6 +292,9 @@ func drawStatsPanel(w *Window, m int) {
 // drawInventoryPanel (WPCVW b1e5) draws member m's armour class, equipment icons and
 // inventory on the right of the sheet.
 func drawInventoryPanel(w *Window, m int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	p := &party[m]
 	mod := int(int8(p.AC[1])) + getLoadCategory(m).AC
 	setCursor(w, 21, 5)

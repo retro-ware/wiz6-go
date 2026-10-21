@@ -47,6 +47,19 @@ var charFuncs = map[string]func(a []int) int{
 	"pcvw_6aec": func(a []int) int { return clampToward(a[0], a[1], a[2]) },
 	"pcvw_6b3c": func(a []int) int { castSpell(a[0], a[1], a[2], a[3], dtWin(), dtWin()); return 0 },
 	"pcvw_8353": func(a []int) int { learnNewSpell(dtWin(), dtWin(), a[0], a[1]); return 0 },
+	"pcvw_a4b1": func(a []int) int {
+		if a[1] < len(raceMinStats) {
+			limitStats(a[0], raceMinStats[a[1]], true)
+		}
+		return 0
+	},
+	"pcvw_a368": func(a []int) int { limitStats(a[0], classReqs[a[1]], false); return 0 },
+	"pcvw_9c8e": func(a []int) int {
+		if tryCombineRecipe(dtWin(), a[0], a[1], a[2]) {
+			return 1
+		}
+		return 0
+	},
 	"pcvw_a11b": func(a []int) int {
 		t := ""
 		for _, c := range a[2:] {
