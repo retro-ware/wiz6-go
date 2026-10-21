@@ -339,6 +339,17 @@ func targets(g, who int, f func(i int)) {
 	}
 }
 
+// targetRun calls f for |who| fighters of group g (at most all) from a random first;
+// unlike targets, a who >= 0 is a count too (f88b1, f8bdb).
+func targetRun(g, who int, f func(i int)) {
+	count := int(monsterGroups[g].Count)
+	n := min(mexeAbs(who), count)
+	first := random(count - n)
+	for i := first; first+n > i; i++ {
+		f(i)
+	}
+}
+
 // hitDamage (f8149, WMEXE) deals times x count d sides damage of element r to the
 // fighters who of group g.
 func hitDamage(g, who, count, sides, times, r, mod int) {

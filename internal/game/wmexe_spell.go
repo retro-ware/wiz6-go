@@ -391,7 +391,7 @@ func doBreath(c *Combatant) int {
 // weakenGroup (f88b1, WMEXE) weakens (weak) or slows the fighters who of group g by up
 // to power, unless they resist (element 3).
 func weakenGroup(g, who, mod, power int, weak bool) {
-	targets(g, who, func(i int) {
+	targetRun(g, who, func(i int) {
 		c := fighter(g, i)
 		if uint8(c.Condition) >= 3 || c.Toggle != 0 {
 			return
@@ -442,7 +442,7 @@ func mexeAbs(n int) int {
 // chaosStrike (f8bdb, WMEXE) hits each of the fighters who of group g with one of ten
 // random effects, unless it resists (element 2).
 func chaosStrike(g, who, power, mod int) {
-	targets(g, who, func(i int) {
+	targetRun(g, who, func(i int) {
 		if random(100) <= int(groupMonsterRec[g].Resist[2])-mod {
 			c := fighter(g, i)
 			if uint8(c.Condition) >= 3 || c.Toggle != 0 {

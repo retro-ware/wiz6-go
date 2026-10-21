@@ -751,7 +751,7 @@ func doHide(c *Combatant) {
 	combatDelay(int(g4fc8) / 4)
 	if random(100) < chance {
 		c.Toggle = 1
-		trySkillGain(actMember, 16, 1)
+		mexeRaiseSkill(actMember, 16, 1)
 		printMsgCentered(3520, 6, 2)
 	} else {
 		printMsgCentered(3521, 6, 2)

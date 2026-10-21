@@ -12,6 +12,16 @@ var combatFuncs = map[string]func(a []int) int{
 		applyHitEffects(actor(), fx, a[0], a[1])
 		return 0
 	},
+	"f88b1": func(a []int) int { weakenGroup(a[0], a[1], a[2], a[3], a[4] == 1); return 0 },
+	"f8bdb": func(a []int) int { chaosStrike(a[0], a[1], a[2], a[3]); return 0 },
+	"fc064": func(a []int) int { doHide(actor()); return 0 },
+	"fc1e4": func(a []int) int { doRunAway(actor()); return 0 },
+	"fb934": func(a []int) int { return doBreath(actor()) },
+	"fb03c": func(a []int) int { return doCastAction(actor()) },
+	"fb44d": func(a []int) int { doUseItemAction(actor()); return 0 },
+	"f9405": func(a []int) int { doCastSpell(actor(), a[0], a[1]); return 0 },
+	"fc3ee": func(a []int) int { doAdvanceRetreat(a[0], a[1]); return 0 },
+	"f8fa8": func(a []int) int { summonGroup([6]int(a[:6]), a[6]); return 0 },
 	"f4572": func(a []int) int { return fatigueMod(a[0], a[1], a[2]) },
 	"f77d4": func(a []int) int { mexeRaiseSkill(a[0], a[1], a[2]); return 0 },
 	"f7254": func(a []int) int { reduceStamina(fighter(a[0], a[1]), a[2]); return 0 },
@@ -50,6 +60,8 @@ var combatRoots = map[string]any{
 	"animCycle": &animCycle, "mexeEffect": &mexeEffect, "mexeBackfire": &mexeBackfire, "mexeDelayed": &mexeDelayed,
 	"partyCounters": &partyCounters, "g4352": &g4352, "initiative": &initiative, "g4fcc": &g4fcc,
 	"combatOver": &combatOver, "viewRowsOpen": &viewRowsOpen,
+	"g4354": &g4354, "gameStateArg": &gameStateArg, "memberPortrait": &memberPortrait,
+	"memberPcfileIndex": &memberPcfileIndex, "mexeSpellSound": &mexeSpellSound, "mexeFizzle": &mexeFizzle,
 	"monsterGroups": &monsterGroups, "groupMonsterRec": &groupMonsterRec,
 }
 

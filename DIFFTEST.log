@@ -13,3 +13,7 @@
 [widths] 10:30 WMNPC fixes committed; next: unsigned compares, shifts, remaining overlays
 2026-10-21 10:31:10 [char] HARNESS BUG fixed in emu.py: the fake return address (hlt at CS:FFF0) was DS:0270 = spell_table[67].realm -> 244. Moved to CS:FD70. Regenerate cases that read spell_table.
 2026-10-21 10:31:58 [maze] tick_effect_timers, heal_member, rest_party, trap_event 300 each match (harness: single-pointer roots mazeA/mazeB, keyAvailable stub, itoa logging)
+2026-10-21 10:33:40 [npc] WPOPS 8a45 choose_monster_actions, 5dbb pick_target_monster 300 each match
+[widths] 10:33 random (swept into 5e8a6ad), healMember, openTreasure committed; checking WMNPC 1266/555, WPCVW
+[widths] 10:34 WPCVW/WDOPT/WMAZE/WTREA roll-sum fixes committed; scanning WPOPS, WPCMK, root
+2026-10-21 10:35:31 [combat] spell_table[67]=244 was the sentinel harness bug (fixed by char agent); regenerated; fb03c fc064 fb44d f9405 fc3ee fc1e4 fb934 f8fa8 f4c48 f47a3 x300 match. fb44d: specs used garbage item records >482 (harness). fc064: monster members 6-8 excluded (C try_raise_skill corrupts memory past party).
