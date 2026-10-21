@@ -100,10 +100,20 @@ stubbed; their Go ports return at once under `dtLog`, and keyAvailable is false.
 | WDOPT | 6561 check_item_location_event | wdoptItemLocationEvent | 300 | match |
 | WDOPT | 4faf use_item_charge | useItemCharge | 300 | match |
 | WDOPT | 4e09 remove_item | removeItem | 300 | match |
+| WMAZE | ced8 force_lock | forceLock | 300 | match (scripted keys) |
+| WMAZE | d3b3 pick_lock | pickLock | 300 | match (scripted keys) |
+| WMAZE | d8a9 locked_door_menu | lockedDoorMenu | 300 | match (scripted keys, real texts) |
+| WMAZE | 9e51-path puzzle_event / riddle_event | puzzleEvent, riddleEvent | 300 each | match (scripted keys, real texts) |
+| WMAZE | 467b random_encounter_monster | randomEncounterMonster | 300 | match |
+| WMAZE | 46e8 encounter_table | encounterTable | 300 | match |
 
-Open: force_lock (ced8), pick_lock (d3b3), locked_door_menu (d8a9), puzzle_event, riddle_event,
-do_use_item, do_cast_spell: they loop on input, which the harness stubs to nothing (would need
-scripted key/click returns). save_game, load_maze_level/alloc_maze_buffers: disk and far buffers.
+Scripted input: case `keys` feed key_available/get_key (C) and dtKeys (Go); `texts` cases use real MSG.DBS texts.
+
+Open: do_cast_spell (f7f30), do_use_item (f7860): 300/300 differ in the msg log only (Go logs menu/draw texts 3957, 4001-4023 that the C reaches through stubbed draw calls); case files not committed.
+Main loop (f7020): Go hangs on the cases, dropped. save_game (664f) / load_game: no emulator byte
+check yet (needs DOS open/write hooks and far map buffers); the encoder/decoder is only covered by
+dbs TestRoundTrip (NEWGAME.DBS decode+encode byte-equal), which does not check the C's write order,
+the zeroed maps 14-15 or the disk_header offset. Highest-risk open item. load_maze_level/alloc_maze_buffers.
 
 Skipped (UI, drawing, input, disk, dispatch): WMAZE view and panel drawing (4ac7 4ba8 4e89 7d8c
 8175 8332 84f1 8f79 903b 98cb), input/menus (4f2c 5534 5ad8 606f 6bcd 6cf8 7020 9a66 9aae 9c19
