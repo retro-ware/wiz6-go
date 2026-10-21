@@ -505,21 +505,21 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 // unhighlight_realm_slot (WTREA 74f6) redraws realm r's glyph plain (-1: the cancel glyph).
 func unhighlightRealmSlot(w *Window, r int) {
 	if r == -1 {
-		wpcvwPutGlyphAt(w, 13, 3, 34)
+		putGlyphAt(w, 13, 3, 34)
 		return
 	}
-	wpcvwPutGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
+	putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
 }
 
 // draw_chest_list_box (WTREA 7549) clears a list window and draws its scroll bar.
 func drawChestListBox(w *Window, refresh bool) {
 	fillWindow(w, ' ', 3, false)
 	deferWindowDraw(w)
-	wpcvwPutGlyphAt(w, 1, 0, 69)
+	putGlyphAt(w, 1, 0, 69)
 	for y := 1; y < 4; y++ {
-		wpcvwPutGlyphAt(w, 1, y, 71)
+		putGlyphAt(w, 1, y, 71)
 	}
-	wpcvwPutGlyphAt(w, 1, 4, 70)
+	putGlyphAt(w, 1, 4, 70)
 	resumeWindowDraw(w)
 	if refresh {
 		refreshWindow(w)
@@ -565,9 +565,9 @@ func drawChestSpellWindow(w *Window, member int) {
 	fillWindow(w, 0, 1, false)
 	drawChestSpellFrame(w)
 	for r := range 6 {
-		wpcvwPutGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
+		putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
 	}
-	wpcvwPutGlyphAt(w, 13, 3, 34)
+	putGlyphAt(w, 13, 3, 34)
 	for r := range 6 {
 		x := 3
 		if r >= 3 {
@@ -577,7 +577,7 @@ func drawChestSpellWindow(w *Window, member int) {
 		printInt(w, int(party[member].SP[r].Cur), 3, wpcvwRealmColors[r])
 	}
 	for i := range 6 {
-		wpcvwPutCharAt(w, i+15, 3, byte(i+24))
+		putCharAt(w, i+15, 3, byte(i+24))
 	}
 	setCursor(w, 13, 5)
 	printMessage(3957, w, 18)

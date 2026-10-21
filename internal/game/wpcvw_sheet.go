@@ -2,39 +2,6 @@ package game
 
 // WPCVW: the character sheet, its panels and its main menu.
 
-// wpcvwDrawGauge (draw_gauge, WPCVW 48e8) draws a 3-cell vertical gauge of cur/max at
-// (x, y) of w from the glyphs of font 1 from base on.
-func wpcvwDrawGauge(w *Window, x, y, cur, max, base int) {
-	n := 0
-	if max != 0 {
-		n = int(int32(cur)*100/int32(max)/10) + 1
-	}
-	if n > 10 {
-		n = 10
-	}
-	if cur == 0 {
-		n = 0
-	}
-	g := [3]int{base + 9, base + 4, base}
-	if n <= 3 {
-		g[2] = base + n
-	} else {
-		g[2] = base + 3
-		n -= 3
-		if n <= 4 {
-			g[1] = base + n + 4
-		} else {
-			g[1] = base + 8
-			n -= 4
-			g[0] = base + n + 9
-		}
-	}
-	for i := range g {
-		setCursor(w, x, y+i)
-		putCharHi(w, byte(g[i]), 1)
-	}
-}
-
 // drawMemberCard (WPCVW 49c9) draws member m's card in w: name, portrait, state, class,
 // hands and the HP and stamina gauges.
 func drawMemberCard(w *Window, m int) {
@@ -78,8 +45,8 @@ func drawMemberCard(w *Window, m int) {
 			putCharHi(w, byte(i+37), 4)
 		}
 	}
-	wpcvwDrawGauge(w, x+5, y+1, int(p.HP), int(p.HPMax), 86)
-	wpcvwDrawGauge(w, x+6, y+1, int(p.Stamina), int(p.StaminaMax), 99)
+	drawGauge(w, x+5, y+1, int(p.HP), int(p.HPMax), 86)
+	drawGauge(w, x+6, y+1, int(p.Stamina), int(p.StaminaMax), 99)
 }
 
 // refreshMemberCard (WPCVW 6ac3) shows member m's card for a moment.
@@ -256,39 +223,39 @@ func drawStatsPanel(w *Window, m int) {
 	if testBit(p.Flags[:], 0) || testBit(p.Flags[:], 1) || testBit(p.Flags[:], 2) {
 		putChar(w, 10, 5)
 	}
-	wpcvwPrintMsgAt(int(p.Class)+120, w, 13, 2, 1)
+	printMsgAt(int(p.Class)+120, w, 13, 2, 1)
 	setCursor(w, 4, 3)
 	putChar(w, 31, 5)
 	printInt(w, int(p.Unk026), 3, 12)
-	wpcvwPrintMsgAt(200, w, 13, 3, 8)
+	printMsgAt(200, w, 13, 3, 8)
 	w.CurX++
 	printInt(w, int(p.Level), 3, 9)
-	wpcvwPrintMsgAt(201, w, 25, 1, 11)
+	printMsgAt(201, w, 25, 1, 11)
 	rank := getMessage(int(p.Class)*10 + int(p.Rank) + 800)
 	setCursor(w, 39-len(rank), 1)
 	printString(w, rank, 3)
-	wpcvwPrintMsgAt(202, w, 25, 2, 14)
+	printMsgAt(202, w, 25, 2, 14)
 	w.CurX++
 	printLong(w, p.Exp, 10, 6)
-	wpcvwPrintMsgAt(203, w, 25, 3, 14)
+	printMsgAt(203, w, 25, 3, 14)
 	w.CurX++
 	printLong(w, p.Kills, 10, 6)
 	for i := 0; i < 8; i++ {
-		wpcvwPrintMsgAt(i+204, w, 1, i+5, 5)
+		printMsgAt(i+204, w, 1, i+5, 5)
 		w.CurX++
 		printInt(w, int(p.Stats[i]), 2, 1)
 	}
-	wpcvwPrintMsgAt(212, w, 10, 5, 4)
+	printMsgAt(212, w, 10, 5, 4)
 	w.CurX++
 	printInt(w, int(p.HP), 4, 6)
 	putChar(w, '/', 8)
 	setCursor(w, 14, 6)
 	printInt(w, int(p.HPMax), 4, 6)
-	wpcvwPrintMsgAt(213, w, 10, 8, 4)
+	printMsgAt(213, w, 10, 8, 4)
 	w.CurX += 2
 	printInt(w, wpcvwStaminaPct(p), 3, 6)
 	putChar(w, '%', 4)
-	wpcvwPrintMsgAt(214, w, 10, 9, 4)
+	printMsgAt(214, w, 10, 9, 4)
 	w.CurX++
 	x := w.CurX
 	g := conditionGlyph[p.Condition]
@@ -313,7 +280,7 @@ func drawStatsPanel(w *Window, m int) {
 	if w.CurX == x {
 		putCharHi(w, byte(conditionGlyph[0]+47), 1)
 	}
-	wpcvwPrintMsgAt(215, w, 10, 11, 13)
+	printMsgAt(215, w, 10, 11, 13)
 	w.CurX++
 	printLong(w, p.Gold, 7, 5)
 	calcCarriedWeight(m)
@@ -324,12 +291,12 @@ func drawStatsPanel(w *Window, m int) {
 	if c == 9 {
 		c8 = 8
 	}
-	wpcvwPrintMsgAt(216, w, 10, 12, c8)
+	printMsgAt(216, w, 10, 12, c8)
 	printInt(w, int(p.Carried)/10, 3, c)
 	putChar(w, '/', c8)
 	printInt(w, int(p.MaxLoad)/10, 3, c)
 	for r := 0; r < 6; r++ {
-		wpcvwPutGlyphAt(w, r/3*10+1, r%3*2+14, byte(r+35))
+		putGlyphAt(w, r/3*10+1, r%3*2+14, byte(r+35))
 	}
 	wpcvwDrawSpellPoints(w, m)
 }
@@ -384,7 +351,7 @@ func drawInventoryPanel(w *Window, m int) {
 	for i := 0; i < int(p.ItemCount); i++ {
 		if !pvNamesLoaded {
 			rec := wpcvwItemRec(int(p.Items[i].ID))
-			pvItemNames[i] = wpcvwCstr(rec.Name[:])
+			pvItemNames[i] = cstr(rec.Name[:])
 		}
 		mark, color := byte(' '), 9
 		for s := 0; s < 8; s++ {
@@ -452,9 +419,9 @@ func closeSheet(menu, sheet *Window) {
 	}
 }
 
-// wpcvwIsMemberAble (is_member_able, WPCVW a075) is whether member m is fine and neither
+// isMemberAbleQuiet (is_member_able, WPCVW a075) is whether member m is fine and neither
 // asleep nor paralysed.
-func wpcvwIsMemberAble(m int) bool {
+func isMemberAbleQuiet(m int) bool {
 	p := &party[m]
 	return p.Condition == 0 && p.Status[2] == 0 && p.Status[3] == 0
 }
@@ -506,7 +473,7 @@ func wpcvwViewCharacter(m int) {
 		if p.Gold == 0 && p.ItemCount == 0 {
 			enabled[2] = 0
 		}
-		if !wpcvwIsMemberAble(m) {
+		if !isMemberAbleQuiet(m) {
 			enabled[1], enabled[6] = 0, 0
 		}
 		flushKeys()

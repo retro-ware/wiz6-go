@@ -128,11 +128,11 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 func wpcvwDrawSpellListFrame(w *Window, refresh bool) {
 	fillWindow(w, ' ', 3, true)
 	deferWindowDraw(w)
-	wpcvwPutGlyphAt(w, 0, 0, 69)
+	putGlyphAt(w, 0, 0, 69)
 	for y := 1; y < 6; y++ {
-		wpcvwPutGlyphAt(w, 0, y, 71)
+		putGlyphAt(w, 0, y, 71)
 	}
-	wpcvwPutGlyphAt(w, 0, 6, 70)
+	putGlyphAt(w, 0, 6, 70)
 	resumeWindowDraw(w)
 	if refresh {
 		refreshWindow(w)
@@ -186,9 +186,9 @@ func wpcvwDrawSpellWindow(w *Window) {
 	} {
 		f(c[0], c[1], byte(c[2]))
 	}
-	wpcvwPutGlyphAt(w, 1, 12, 34)
+	putGlyphAt(w, 1, 12, 34)
 	for i := 0; i < 6; i++ {
-		wpcvwPutCharAt(w, i+3, 12, byte(i+24))
+		putCharAt(w, i+3, 12, byte(i+24))
 	}
 	setCursor(w, 1, 14)
 	printMessage(3957, w, 18)
@@ -205,10 +205,10 @@ func wpcvwDrawSpellWindow(w *Window) {
 // wpcvwUnhighlightRealm (WPCVW 7148) redraws realm r's glyph plain (r -1: the exit glyph).
 func wpcvwUnhighlightRealm(w, book *Window, r int) {
 	if r == -1 {
-		wpcvwPutGlyphAt(book, 1, 12, 34)
+		putGlyphAt(book, 1, 12, 34)
 		return
 	}
-	wpcvwPutGlyphAt(w, r/3*10+1, r%3<<1+14, byte(r+35))
+	putGlyphAt(w, r/3*10+1, r%3<<1+14, byte(r+35))
 }
 
 // wpcvwCountKnownSpells (WPCVW 76ee) lists in out the spells of realm r member m knows.

@@ -154,16 +154,8 @@ func wpcvwCopyThroughChar(s string, ch byte) string {
 	return s
 }
 
-// wpcvwCstr is the NUL-terminated string at the start of b.
-func wpcvwCstr(b []byte) string {
-	if i := strings.IndexByte(string(b), 0); i >= 0 {
-		return string(b[:i])
-	}
-	return string(b)
-}
-
 // wpcvwName is member m's name.
-func wpcvwName(m int) string { return wpcvwCstr(party[m].Name[:]) }
+func wpcvwName(m int) string { return cstr(party[m].Name[:]) }
 
 // wpcvwItemRec reads item record id (access_scenario_record type 1).
 func wpcvwItemRec(id int) ItemRec {
@@ -502,33 +494,13 @@ func wpcvwPrintAt(w *Window, x, y int, s string, color int) {
 	printString(w, s, color)
 }
 
-// wpcvwPrintMsgAt (print_msg_at, WPCVW 50df; print_msg_at2, b15f) prints message msg at
-// (x, y) of w in font 0.
-func wpcvwPrintMsgAt(msg int, w *Window, x, y, color int) {
-	s := getMessage(msg)
-	setCursor(w, x, y)
-	printString(w, s, color)
-}
-
 // wpcvwPrintMsg (WPCVW 5115, and b195) prints message msg in font 0.
 func wpcvwPrintMsg(msg int, w *Window, color int) { printString(w, getMessage(msg), color) }
-
-// wpcvwPutGlyphAt (put_glyph_at, WPCVW 513c) puts glyph ch of font 2 at (x, y).
-func wpcvwPutGlyphAt(w *Window, x, y int, ch byte) {
-	setCursor(w, x, y)
-	putCharHi(w, ch, 2)
-}
 
 // wpcvwPutIconAt (WPCVW 5165, and b1bc) puts item icon glyph ch of font 4 at (x, y).
 func wpcvwPutIconAt(w *Window, x, y int, ch byte) {
 	setCursor(w, x, y)
 	putCharHi(w, ch, 4)
-}
-
-// wpcvwPutCharAt (put_char_at, WPCVW 711f) puts ch of font 0 colour 5 at (x, y).
-func wpcvwPutCharAt(w *Window, x, y int, ch byte) {
-	setCursor(w, x, y)
-	putChar(w, ch, 5)
 }
 
 // wpcvwPutCharC1 (WPCVW 9f7f) puts glyph ch of font 1 at (x, y).

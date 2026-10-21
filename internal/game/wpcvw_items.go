@@ -215,7 +215,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 			it := wpcvwGetItem(p, i+10)
 			if !loaded {
 				rec := wpcvwItemRec(int(it.ID))
-				pvSwagNames[i] = wpcvwCstr(rec.Name[:])
+				pvSwagNames[i] = cstr(rec.Name[:])
 			}
 			setCursor(w, 2, i+3)
 			printString(w, pvSwagNames[i], 9)
@@ -396,7 +396,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 func replaceItem(sheet *Window, m, id, i, other int) {
 	p := &party[m]
 	rec := wpcvwItemRec(id)
-	pvItemNames[i] = wpcvwCstr(rec.Name[:])
+	pvItemNames[i] = cstr(rec.Name[:])
 	it := &p.Items[i]
 	it.ID = int16(id)
 	it.Icon = rec.Icon
@@ -584,7 +584,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 	}
 	wpcvwPutIconAt(w, 1, 1, rec.Icon+1)
 	wpcvwPutIconAt(w, 18, 1, rec.Icon+1)
-	name := wpcvwCstr(rec.Name[:])
+	name := cstr(rec.Name[:])
 	setCursor(w, 10-(len(name)+1)/2, 1)
 	printStringHi(w, name, 3)
 	centered := func(s string, row, color int) {

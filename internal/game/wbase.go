@@ -523,7 +523,10 @@ func startGame(resume int) {
 // drawGauge (WBASE 5fb0, WPCVW 48e8) draws a 3-glyph vertical gauge of cur/max at (x, y),
 // glyphs of font 1 from glyph on.
 func drawGauge(win *Window, x, y, cur, max, glyph int) {
-	level := int(int32(cur)*100/int32(max)/10) + 1
+	level := 0 // max 0 would fault in the C
+	if max != 0 {
+		level = int(int32(cur)*100/int32(max)/10) + 1
+	}
 	if level > 10 {
 		level = 10
 	}

@@ -306,11 +306,11 @@ func levelUpStats(sheet, menu *Window, m int) {
 			done[s] = true
 			p.Stats[s]++
 			msg := replaceCharWithString(getMessage(5014), getMessage(s+5050), '$')
-			wpcvwPrintMsgAt(s+204, sheet, 1, s+5, -5)
+			printMsgAt(s+204, sheet, 1, s+5, -5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, -1)
 			wpcvwShowCenteredMsg(menu, msg, true)
-			wpcvwPrintMsgAt(s+204, sheet, 1, s+5, 5)
+			printMsgAt(s+204, sheet, 1, s+5, 5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, 1)
 		}
