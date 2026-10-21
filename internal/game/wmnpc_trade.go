@@ -251,7 +251,7 @@ func npcPriceWares() {
 		rec := itemRec(w.ID)
 		w.Name = cstr(rec.Name[:])
 		w.Type = rec.Type
-		w.Qty = int(rec.Charges.Count)*int(rec.Charges.Sides) + int(rec.Charges.Base)
+		w.Qty = int(int16(int(rec.Charges.Count)*int(rec.Charges.Sides) + int(rec.Charges.Base))) // C int wraps
 		price := rec.Price
 		if stackable[w.Type] == 1 {
 			price *= int32(w.Qty)
@@ -390,7 +390,7 @@ func npcSellItem(win *Window, m, slot int) int {
 	it := p.Items[slot]
 	id := int(it.ID)
 	rec := itemRec(id)
-	full := max(int(rec.Charges.Count)*int(rec.Charges.Sides)+int(rec.Charges.Base), 1)
+	full := max(int(int16(int(rec.Charges.Count)*int(rec.Charges.Sides)+int(rec.Charges.Base))), 1) // C int wraps
 	qty := max(int(it.Qty), 1)
 	price := rec.Price
 	if stackable[rec.Type] == 1 {
@@ -465,13 +465,13 @@ func npcGiveGold(win *Window, m int) int {
 		if n = int32(v); n >= 0 && n <= p.Gold {
 			p.Gold -= n
 			npcRec.Gold += n
-			*a = int8(min(int32(*a)+n/10/level, 100))
+			*a = int8(min(int16(int32(*a)+n/10/level), 100)) // (int) cast before the clamp
 			break
 		}
 		playSound(0)
 	}
 	npcDrawMemberStatus(m, npcShowGold)
-	npcReact(m, 2, int(n/256), uint8(n%256), 0)
+	npcReact(m, 2, int(int16(n/256)), uint8(n%256), 0)
 	slot := npcChooseMemberItem(win, m, 1580, 0)
 	if slot == -1 {
 		return 0
@@ -487,7 +487,7 @@ func npcGiveGold(win *Window, m int) int {
 		npcRefuse(1529)
 		return 0
 	}
-	*a = int8(min(int32(*a)+rec.Price/20/level, 100))
+	*a = int8(min(int16(int32(*a)+rec.Price/20/level), 100)) // (int) cast before the clamp
 	removeItem(m, slot)
 	npcDrawMemberStatus(m, npcShowGold)
 	npcRefuse(1504)
