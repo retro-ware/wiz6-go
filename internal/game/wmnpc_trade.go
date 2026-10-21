@@ -12,11 +12,11 @@ func npcApplySpell(caster, s, power, target int) {
 	switch s {
 	case 39, 60: // the lock and map spells do nothing here
 	case 50:
-		if npcRec.Unk8D&4 != 0 || random(100) > power*10+(int(c.Level)-npcLevel())*5+25 {
+		if npcRec.Unk8D&4 != 0 || random(100) > int(int16(power*10+(int(c.Level)-npcLevel())*5+25)) { // C int wraps
 			npcNoticeName(1544, false)
 		} else {
 			npcNoticeName(1543, false)
-			npcCharm += rollDice(formatDice(power<<1, 6, power<<1))
+			npcCharm += int16(rollDice(formatDice(power<<1, 6, power<<1)))
 		}
 		return
 	case 56:
@@ -86,6 +86,9 @@ func npcUseItem(win *Window, m int) {
 // npcDrawItemList (WMNPC 9827) shows five rows of member m's listed items around sel, the
 // one at sel highlighted when hi.
 func npcDrawItemList(win *Window, m, sel int, hi bool) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	drawListFrame(win, false)
 	deferWindowDraw(win)
 	p := &party[m]
@@ -187,6 +190,9 @@ func npcScrollList(list, lw *Window, ex, ey int, exitHi, exitLo string, n, sel i
 // npcChooseMemberItem (WMNPC 9a42) lists member m's items and swag under prompt msg with
 // the cursor on slot sel; the chosen slot or -1.
 func npcChooseMemberItem(win *Window, m, msg, sel int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
 	fillWindow(list, ' ', 3)
@@ -288,6 +294,9 @@ func npcStockWares() {
 // npcDrawWareList (WMNPC 9fcf) shows five rows of the wares around sel with what they are
 // (or that member m cannot use them) and their price.
 func npcDrawWareList(win *Window, m, sel int, hi bool) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	drawListFrame(win, false)
 	deferWindowDraw(win)
 	p := &party[m]
@@ -331,6 +340,9 @@ func npcDrawWareList(win *Window, m, sel int, hi bool) {
 // npcChooseWare (WMNPC a378) lists the wares for member m with the cursor on sel; the
 // chosen index into npcWareList, or -1.
 func npcChooseWare(win *Window, m, sel int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	deferWindowDraw(mainWindow)
 	eraseWindow(mainWindow, false)
 	setCursor(mainWindow, 2, 0)
@@ -411,7 +423,7 @@ func npcSellItem(win *Window, m, slot int) int {
 		npcRefuse(1528)
 		return 0
 	}
-	s := replaceCharWithString(getMessage(1525), strconv.Itoa(int(price)), '$')
+	s := replaceCharWithString(getMessage(1525), itoa(int(price)), '$')
 	fillWindow(win, ' ', 3)
 	refreshWindow(win)
 	setCursor(win, 10-(len(s)+1)/2, 1)
@@ -543,7 +555,7 @@ func npcPilfer(m int) {
 	case 4, 6, 13:
 		chance += int(p.Stats[4])
 	}
-	chance = min(max(int(p.Stats[6])+(int(*npcAttitude(m))+npcCharm)/4+chance-10, 0), 95)
+	chance = min(max(int(int16(int(p.Stats[6])+int(int16(int(*npcAttitude(m))+int(npcCharm)))/4+chance-10)), 0), 95) // C int wraps
 	roll := random(100) + npcPilfered
 	npcPilfered += random(10) + 5
 	npcNotice(replaceCharWithString(getMessage(int(p.Sex)+1570), memberName(m), '^'), false)

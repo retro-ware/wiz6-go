@@ -31,7 +31,7 @@ var (
 	npcShowGold  int          // g527a: the member panels show gold, not names
 	npcLeaves    int          // g5276: the NPC turns away at the end
 	npcGoldGiven int32        // g52cc: gold given so far, for the gift scripts
-	npcCharm     int          // g52d0: added to the party's attitude (spell 50)
+	npcCharm     int16        // g52d0: added to the party's attitude (spell 50)
 	npcTarget    int          // g5322: the member a spell or item is cast on
 	npcPilfered  int          // g5892: each try makes the next harder
 	npcSeqForce  [10][5]int16 // g50de: the animation sequence forced by pic slot, column
@@ -89,7 +89,7 @@ func npcAttitude(m int) *int8 { return &party[m].NPCAttitude[npcID] }
 
 // npcMood is member m's attitude plus personality and charm: below 0 the NPC is hostile.
 func npcMood(m int) int {
-	return int(*npcAttitude(m)) + int(party[m].Stats[6]) + npcCharm
+	return int(int16(int(*npcAttitude(m)) + int(party[m].Stats[6]) + int(npcCharm))) // C int wraps
 }
 
 // --- The view
@@ -97,6 +97,9 @@ func npcMood(m int) int {
 // npcChooseFrames (WMNPC 4572) starts the animation of the picture in slot at view column
 // col: the picture's fixed start, or a random sequence and step.
 func npcChooseFrames(slot, col int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	p := &monsterPics[slot]
 	for i := 0; i < int(p.Unk309[3]); i++ {
 		var seq, step int
@@ -165,6 +168,9 @@ func npcBuildFrames(slot, col int) []byte {
 // npcQueueSprite (WMNPC 49db) queues the picture at view row, col (viewPosGroup holds its
 // slot), shifted dx pixels unless the picture has a fixed start.
 func npcQueueSprite(row, col, dx int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	slot := int(viewPosGroup[row][col])
 	if slot == 0 {
 		return
@@ -205,6 +211,9 @@ func npcQueueSprite(row, col, dx int) {
 // npcAnimStep (WMNPC 55dc) is one tick of the view: -3 shows it, -2 draws the maze, -1
 // queues the pictures, 0..11 draw sprite n.
 func npcAnimStep() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	switch viewAnimState {
 	case -3:
 		drvShowWindow(pictureWin)
@@ -232,6 +241,9 @@ func npcAnimStep() {
 
 // npcAnimateCycle (WMNPC 5690) runs a whole animation cycle.
 func npcAnimateCycle() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	viewAnimState = -2
 	for {
 		npcAnimStep()
@@ -244,6 +256,9 @@ func npcAnimateCycle() {
 // npcGesture (WMNPC 56a1) sways the NPC four times with its sound: kind 0 as it comes up
 // (after message 2025), 1 as it goes.
 func npcGesture(kind int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	if kind == 0 {
 		s := getMessage(2025)
 		eraseWindow(mainWindow, true)
@@ -273,12 +288,20 @@ func npcGesture(kind int) {
 }
 
 // npcLoadPic (WMNPC 5508) loads monster picture pic into slot.
-func npcLoadPic(pic, slot int) { loadMonsterPic(pic, slot, 21) }
+func npcLoadPic(pic, slot int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
+	loadMonsterPic(pic, slot, 21)
+}
 
 // --- Input
 
 // npcWaitKey (WMNPC 578c) animates until a key of class comes.
 func npcWaitKey(class int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	for !keyAvailable(class) {
 		paceViewCycle()
 		npcAnimStep()
@@ -289,6 +312,9 @@ func npcWaitKey(class int) int {
 // npc_input_line (WMNPC 57ac) reads up to max characters at the cursor of win, echoed in
 // color; digits 1 takes only digits.
 func npcInputLine(win *Window, max, color, digits int) string {
+	if dtLog != nil { // the difftest stubs it
+		return ""
+	}
 	x, y := int(win.CurX), int(win.CurY)
 	var s []byte
 	putChar(win, 'a', 1) // the cursor glyph
@@ -329,6 +355,9 @@ func npcInputLine(win *Window, max, color, digits int) string {
 // npcMenuInput (WMNPC 5994) animates until a menu key (its index in npcKeys) or a click
 // on a click region (its index, menuClicked set), blinking the cursor.
 func npcMenuInput() int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	phase := animPhase
 	if pvBlinkState != -1 {
 		blinkCursor()
@@ -357,6 +386,9 @@ func npcMenuInput() int {
 
 // npcWait (WMNPC 5a1e) animates for tenths of 10 ticks, less on Enter or a click.
 func npcWait(tenths int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	flushKeys()
 	for n := tenths * 10; n > 0; n-- {
 		if checkScreenClick() {
@@ -372,6 +404,9 @@ func npcWait(tenths int) {
 
 // npcMorePrompt (WMNPC 5a69) blinks the more mark of the text window until Enter or a click.
 func npcMorePrompt() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	blink := 3
 	flushKeys()
 	for {
@@ -402,6 +437,9 @@ func npcMorePrompt() {
 
 // npcEndPage (WMNPC 5af3): a timed pause (timed 1), or the more prompt and a clean page.
 func npcEndPage(timed int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	if timed == 1 {
 		npcWait(messageDelay)
 		return
@@ -414,6 +452,9 @@ func npcEndPage(timed int) {
 // npcPrintTextLine (WMNPC 5b21) is WTREA's print_text_line, where '#' shows the monster
 // picture of the next byte in place of the NPC and '&' takes it away.
 func npcPrintTextLine(s string) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	for len(s) > 0 {
 		k := strings.IndexByte(npcTextControls, s[0])
 		if k < 0 {
@@ -483,6 +524,9 @@ func npcShowMessageText(msg, timed int) {
 
 // npcNotice (WMNPC 5d0c) shows s centred in a text window for the message delay.
 func npcNotice(s string, beep bool) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
 	npcTextWin = createWindow(0, 19, 40, 5, 30, -1, 0, true)
@@ -501,6 +545,9 @@ func npcNoticeName(msg int, beep bool) {
 
 // npcOpenText (WMNPC 6d9d) opens the text window.
 func npcOpenText() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	npcScrollCol, npcTextCol, npcTextRow = 0, 0, 0
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
@@ -509,6 +556,9 @@ func npcOpenText() {
 
 // npcCloseText (WMNPC 6de9) closes it.
 func npcCloseText() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	destroyWindow(npcTextWin, false)
 	npcTextWin = nil
 	resumeWindowDraw(mainWindow)
@@ -517,6 +567,9 @@ func npcCloseText() {
 
 // npcScroll (WMNPC 4ecb) scrolls w up a line.
 func npcScroll(w *Window) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	deferWindowDraw(w)
 	n := int(w.W)
 	copy(w.Cells[:n*(int(w.H)-1)], w.Cells[n:])
@@ -528,6 +581,9 @@ func npcScroll(w *Window) {
 
 // npcNewline (WMNPC 4f73) moves the cursor of w to the next line, scrolling at the bottom.
 func npcNewline(w *Window) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	if int(w.CurY) >= int(w.H)-1 {
 		npcScroll(w)
 		return
@@ -538,6 +594,9 @@ func npcNewline(w *Window) {
 // npcPrintWrapped (WMNPC c7d9) prints s word-wrapped in the text window, after its leading
 // controls: '@' the more prompt and a blank line, '%' a pause, '!' a new line.
 func npcPrintWrapped(s string, color int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	w := npcTextWin
 lead:
 	for len(s) > 0 {
@@ -602,6 +661,9 @@ func npcSayAll(msg int) {
 // npcPrintBigLine (WMNPC 6e0e) is print_text_line for the full-screen text window: '!'
 // skips a row, '^' keeps the last column.
 func npcPrintBigLine(s string) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	for len(s) > 0 && s[0] == '!' {
 		s = s[1:]
 		npcTextRow++
@@ -689,6 +751,9 @@ func npcFullMessage(msg, dest int) int {
 // npcPrompt (WMNPC 541a) shows s on the message line, centred in its left half with room
 // for extra more characters.
 func npcPrompt(s string, extra int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
 	drawCombatTitle()
@@ -700,6 +765,9 @@ func npcPrompt(s string, extra int) {
 
 // npcDrawNameLine (WMNPC 5488) shows the NPC's name between two ornaments in w.
 func npcDrawNameLine(w *Window) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	drawCombatTitle()
 	deferWindowDraw(w)
 	clearWindow(w, true)
@@ -715,6 +783,9 @@ func npcDrawNameLine(w *Window) {
 // npcDrawMemberStatus (WMNPC 5078) is drawMemberStatus, showing member m's gold in place
 // of the name if gold.
 func npcDrawMemberStatus(m, gold int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	drawMemberStatus(m)
 	if gold != 0 {
 		win := g4fb8
@@ -829,6 +900,9 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 // npcChooseMember (WMNPC 62ee) lets the player pick a member under prompt msg; withExit
 // offers exit (-1) first. It is 0 with one member.
 func npcChooseMember(msg int, withExit bool) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	if partyCount < 2 {
 		return 0
 	}
@@ -969,6 +1043,9 @@ func initNPCEncounter() {
 // npcShowNPC (WMNPC 97c6) loads the NPC's picture (slot 4, the front left of the view) and
 // its sound (sounds from 14 on into slot 14) and sways it in.
 func npcShowNPC() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	npcLoadPic(int(npcRec.Unk86[1]), 4)
 	viewPosGroup[0][0] = 4
 	npcChooseFrames(4, 0)
@@ -1077,7 +1154,7 @@ func npcMainMenu() {
 			if a < 0 {
 				a = -a
 			}
-			if random(100)+int(party[m].Stats[6])+npcCharm < a {
+			if int(int16(random(100)+int(party[m].Stats[6])+int(npcCharm))) < a { // C int wraps
 				if random(2) == 1 {
 					npcNoticeName(1541, true)
 					npcStartFight()
