@@ -68,8 +68,3 @@ var (
 func drvMazeTile(tile, flag, mirror int) { drv.MazeTile(tile, flag, mirror) }   // drv_op_c6
 func drvShowWindow(w *Window)            { drv.ShowWindow(winRect(w)) }         // drv_op_c2
 func drvFillBack(w *Window, v int)       { drv.FillBack(winRect(w), uint8(v)) } // drv_op_be
-
-// Stubs until the other WMAZE files land.
-func fleeParty(n int)     {}
-func loadMazeLevel(m int) {}
-func mazeMainLoop()       {}
