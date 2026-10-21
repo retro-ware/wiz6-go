@@ -297,7 +297,7 @@ func tryOpenLock(power int) int {
 	level := extractBits(int(mazeB.Param[ev]), 0, 5)
 	jammed := extractBits(int(uint16(mazeB.DirBits[ev])), int(partyFacing)<<1, 2) == 2 && level == 0
 	result := 0
-	if (random(power<<1)+random(power<<1)+random(power<<1)+3)/2 < level {
+	if int(int16(random(power<<1)+random(power<<1)+random(power<<1)+3))/2 < level { // C int sum wraps
 		result = 1
 	}
 	if jammed {
