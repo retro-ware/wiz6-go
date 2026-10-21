@@ -1,7 +1,6 @@
 package game
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/retro-ware/wiz6-go/internal/drv"
@@ -40,7 +39,13 @@ func saveLevelFlags() {
 
 // load_sound_bank (WMAZE 9948) is the root's loadSound: sound n into slot 14.
 // The C fails with 15 for a missing file and 16 for a bad one; loadSoundSlot has one code.
-func loadSoundBank(n int) { loadSound(n) }
+func loadSoundBank(n int) {
+	if dtLog != nil { // the difftest stubs the disk load
+		curSound = n
+		return
+	}
+	loadSound(n)
+}
 
 // try_skill_gain (WMAZE 9a24) may raise member m's skill by one; the higher the level
 // times difficulty, the likelier.
@@ -66,6 +71,9 @@ func mzAnimate() {
 
 // wait_key_animating (WMAZE 9a66) animates the view until a key of class comes.
 func waitKeyAnimating(class int) int {
+	if dtLog != nil { // stubbed in the difftest
+		return 0
+	}
 	for !keyAvailable(class) {
 		mzAnimate()
 	}
@@ -114,6 +122,9 @@ func mzInputText(win *Window, maxLen, color, mode int) string {
 // wait_more_prompt_m (WMAZE 9c19) blinks the more mark in the text window's corner until
 // Enter or a click.
 func waitMorePrompt() {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	blink := 3
 	flushKeys()
 	for {
@@ -146,6 +157,9 @@ func waitMorePrompt() {
 
 // end_text_page_m (WMAZE 9cde): a timed pause (timed 1), or the more prompt and a clean page.
 func endTextPage(timed int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	if timed == 1 {
 		waitAnimating(messageDelay)
 		return
@@ -233,6 +247,9 @@ func mzCloseTextWin() {
 // show_message_text_m (WMAZE 9e51) shows messages msg, msg+1, ... up to the first
 // missing one in the text window; timed 1 ends with a pause instead of the more prompt.
 func showMessageText(msg, timed int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	mzG522e, mzG522c = 0, 0
 	mzOpenTextWin(true)
 	for {
@@ -581,7 +598,7 @@ func trapDamageMember(m, count, sides int) {
 	if n == 0 || p.Condition >= 3 {
 		return
 	}
-	num := strconv.Itoa(n)
+	num := itoa(n)
 	pre, post := getMessage(5231), getMessage(5232)
 	if int(p.HP) < n {
 		n = int(p.HP)
@@ -751,6 +768,9 @@ func setDoorFeature(x, y, dir, closed, force int) {
 // animate_door (WMAZE b3ac) slides the door picture (slot 2) at view depth depth, column
 // col, open (1) or shut, over seven frames.
 func animateDoor(opening, col, depth, sound int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	start, step := doorStart[depth], doorStep[depth]
 	if opening == 1 {
 		start, step = 0, -doorStep[depth]
@@ -774,6 +794,9 @@ func animateDoor(opening, col, depth, sound int) {
 
 // shake_view (WMAZE b500) shakes the view n times with sound.
 func shakeView(n, sound int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	for range n {
 		if sound > 0 {
 			animPhase = (animPhase + 1) % 2

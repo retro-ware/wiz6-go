@@ -164,6 +164,9 @@ func loadMazeLevel(m int) {
 // draw_vital_bar_m (WMAZE 4ac7) draws a three-cell vertical gauge of cur/max at (x, y) of
 // win from glyph base on (font 1).
 func drawVitalBar(win *Window, x, y, cur, max, base int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	n := int(int16(int32(cur)*100/int32(max)/10) + 1) // (int) cast, then a 16-bit +1
 	if n > 10 {
 		n = 10
@@ -194,6 +197,9 @@ func drawVitalBar(win *Window, x, y, cur, max, base int) {
 // draw_member_status_m (WMAZE 4ba8) draws member m's panel: name, portrait, condition and
 // status glyphs, class, the equipped hands and the hit point and stamina gauges.
 func drawMemberStatus(m int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	win := g4fb8
 	if m%2 == 0 {
 		win = g4fba
@@ -399,6 +405,9 @@ func animateStep() {
 // wait_animating_m (WMAZE 533b) waits n*5 animation steps; a click or Enter cuts it short
 // and sets g5038.
 func waitAnimating(n int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	flushKeys()
 	for n *= 5; n > 0; n-- {
 		if checkScreenClick() {

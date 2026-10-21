@@ -59,6 +59,9 @@ func field(t *testing.T, path string) reflect.Value {
 			v = v.Index(n)
 		}
 		if v.Kind() == reflect.Pointer {
+			if v.IsNil() { // a single-pointer root (mazeA, mazeB)
+				v.Set(reflect.New(v.Type().Elem()))
+			}
 			v = v.Elem()
 		}
 		if !v.IsValid() {

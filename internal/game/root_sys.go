@@ -62,6 +62,7 @@ func random(n int) int {
 		pc, _, line, _ := runtime.Caller(1)
 		fmt.Fprintf(os.Stderr, "rng %d %s:%d\n", n, runtime.FuncForPC(pc).Name(), line)
 	}
+	n = int(int16(n)) // the C's int argument
 	r := 0
 	if n > 0 {
 		r = randomWord() % n
@@ -242,6 +243,9 @@ func accepts(class, c int) bool {
 // keyAvailable (ROOT 2643, asm) is whether a key of class is waiting; keys the class does
 // not take are thrown away. It steps the random numbers.
 func keyAvailable(class int) bool {
+	if dtLog != nil { // the difftest stubs it (no step_random, no key)
+		return false
+	}
 	if !DetRNG {
 		stepRandom()
 	}

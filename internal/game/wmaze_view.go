@@ -705,6 +705,9 @@ func drawMazeView() {
 
 // redrawMazeView (WMAZE 98cb) draws the view and shows it.
 func redrawMazeView() {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	drawMazeView()
 	drvShowWindow(pictureWin)
 }
