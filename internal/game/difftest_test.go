@@ -180,7 +180,7 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 	for p, n := range c.State {
 		setInt(field(t, p), n)
 	}
-	dtKeys, dtTexts = append([]int(nil), c.Keys...), c.Texts
+	dtKeys, dtTexts, dtIdle = append([]int(nil), c.Keys...), c.Texts, 0
 	for i, s := range c.Seeds {
 		seeds[i] = s
 	}

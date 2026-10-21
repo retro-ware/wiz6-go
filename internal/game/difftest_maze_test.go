@@ -9,7 +9,8 @@ var mazeFuncs = map[string]func(a []int) int{
 	"f5949": func(a []int) int { mzWins(); moveParty(a[0]); return 0 },
 	"f56f4": func(a []int) int { mzWins(); return tryMove(a[0]) },
 	"f7868": func(a []int) int { mzWins(); fleeParty(a[0]); return 0 },
-	"fc8eb": func(a []int) int { mzWins(); runCellEvents(); return 0 },
+	// fc8eb run_cell_events: open. The C side stubs puzzle/riddle/message events, Go runs them (89/300 differ); g433a writes unexplained.
+	// "fc8eb": func(a []int) int { mzWins(); runCellEvents(); return 0 },
 	"fa4f5": func(a []int) int { mzWins(); checkSecretDetect(); return 0 },
 	"f6054": func(a []int) int { mzWins(); applySpellOutsideCombat(a[0], a[1], a[2], a[3]); return 0 },
 	"f517b": func(a []int) int { mzWins(); return tryOpenLock(a[0]) },

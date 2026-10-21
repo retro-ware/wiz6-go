@@ -129,6 +129,9 @@ var delayUntil time.Duration // when the current run of delays ends
 func calibrateDelay() { delayUntil = host.Now() }
 
 func delay(d time.Duration) {
+	if dtLog != nil { // no wall-clock waits in the difftests
+		return
+	}
 	now := host.Now()
 	if delayUntil < now-10*time.Millisecond {
 		delayUntil = now // a delay after other work starts afresh
@@ -244,7 +247,13 @@ func accepts(class, c int) bool {
 // not take are thrown away. It steps the random numbers.
 func keyAvailable(class int) bool {
 	if dtLog != nil { // the difftest stubs it: no step_random, the scripted keys
-		return len(dtKeys) > 0
+		if len(dtKeys) == 0 {
+			if dtIdle++; dtIdle > 1<<14 {
+				panic("difftest: waits for input that never comes")
+			}
+			return false
+		}
+		return true
 	}
 	if !DetRNG {
 		stepRandom()

@@ -21,6 +21,9 @@ var lastAnimFlip time.Duration
 // A waiting key or click ends the wait at once; the screen keeps being presented meanwhile.
 // It does not step the random numbers.
 func animPace(period time.Duration) {
+	if dtLog != nil { // no wall-clock waits in the difftests
+		return
+	}
 	for host.Now()-lastAnimFlip < period {
 		pumpKeys()
 		if len(keyBuf) > 0 || drv.ClickPending() {

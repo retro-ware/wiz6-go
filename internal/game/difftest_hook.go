@@ -9,5 +9,9 @@ var dtLog func(kind string, v ...int)
 // takes the next (the original's stubs do the same).
 var dtKeys []int
 
+// dtIdle counts keyAvailable polls with no scripted key left, so a case that waits
+// forever fails instead of hanging.
+var dtIdle int
+
 // dtTexts: getMessage gives the real text in the difftest (else an empty one).
 var dtTexts bool
