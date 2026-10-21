@@ -23,3 +23,5 @@
 [widths] 10:37 spell-effect status wraps (WDOPT 6054, WPCVW 6b3c, WTREA 6efd) committed
 2026-10-21 10:37:12 [maze] move_party, try_move, flee_party, run_cell_events (all 25 event kinds), check_secret_detect, search_cell: 300 each match (harness: input ranges, UI guards)
 2026-10-21 10:38:52 [combat] fc66e performAction, fd109 runCombatRound x300 match. PORT BUG fixed: confused fighter's 2nd attack kind -1 -> C reads AC[7] (Go panicked on Unk198[-1]); kindAC helper.
+2026-10-21 10:41:17 [char] WPCVW 6b3c cast_spell, 8353 learn_new_spell, a11b match; next WBASE + root helpers
+2026-10-21 10:41:52 [maze] WDOPT f6054 (spells outside combat), try_open_lock, check_item_location_event, use_item_charge, remove_item: 300 each match; lock mini-games loop on stubbed input, looking

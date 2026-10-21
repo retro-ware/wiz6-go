@@ -477,6 +477,9 @@ func wdoptMapBorder(cols, rows int) {
 // show_overhead_map (WDOPT 5be2) shows the map around the party over the view, 3x3 or
 // (power above 3) 5x5 cells, with more detail at higher power, until Enter or a click.
 func wdoptShowOverheadMap(power int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	cols, center := 3, 1
 	if power > 3 {
 		cols, center = 5, 2
