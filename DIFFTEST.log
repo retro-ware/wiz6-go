@@ -1,1 +1,2 @@
 2026-10-21 09:58:37 harness (wiz6-re/tools/difftest: emu.py, layout.py, gen.py, specs.py) runs f7ddc; 1000 golden cases generated; writing Go side
+2026-10-21 10:07:31 12 WMEXE leaf functions (f7ddc f7af7 7b59 7c5a 7848 7a16 8064 80cc 8149 825f 83f3 86aa) x1000 cases all match after 3 int16-wrap fixes (resistReduce x2, rollDice, damageRoll)

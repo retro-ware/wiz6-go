@@ -22,7 +22,7 @@ type diffCase struct {
 	Args  []int
 	Seeds [3]int
 	State map[string]int64
-	Ret   int
+	Ret   *int // nil: a void function
 	Out   map[string]int64
 	RNG   [][]int
 	Log   [][]any
@@ -31,6 +31,26 @@ type diffCase struct {
 // diffFuncs runs the Go port of each tested original function.
 var diffFuncs = map[string]func(a []int) int{
 	"f7ddc": func(a []int) int { return damageRoll(a[0], a[1], a[2], a[3], a[4], a[5], a[6]) },
+	"f7af7": func(a []int) int { return resistReduce(a[0], a[1], a[2], a[3]) },
+	"f7b59": func(a []int) int { damageEffect(a[0], a[1], a[2], a[3], a[4], a[5], a[9]); return 0 },
+	"f7c5a": func(a []int) int { statusEffect(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[10]); return 0 },
+	"f7848": func(a []int) int { killCombatant(a[0], a[1]); return 0 },
+	"f7a16": func(a []int) int { effectMsg(a[0], a[1], a[2], a[3], a[4]); return 0 },
+	"f8064": func(a []int) int { return groupWard(a[0], a[1], a[2], a[3]) },
+	"f80cc": func(a []int) int { return wardedDice(a[0], a[1], a[2]) },
+	"f8149": func(a []int) int { hitDamage(a[0], a[1], a[2], a[3], a[4], a[5], a[6]); return 0 },
+	"f825f": func(a []int) int {
+		hitEffect(a[0], a[1], a[2], a[3], a[4], a[5], a[6] == 1, a[7], a[8], a[9])
+		return 0
+	},
+	"f83f3": func(a []int) int {
+		hitDamageThen(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9] == 1, a[10], a[11], a[12], a[13], a[14])
+		return 0
+	},
+	"f86aa": func(a []int) int {
+		groupStatus(a[0], a[1], a[2], a[3], a[4], a[5] == 1, a[6], a[7], a[8])
+		return 0
+	},
 }
 
 // diffRoots are the globals the cases name.
@@ -172,8 +192,8 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 	}()
 	ret := run(append([]int(nil), c.Args...))
 	var diffs []string
-	if ret != c.Ret {
-		diffs = append(diffs, fmt.Sprintf("return %d, want %d", ret, c.Ret))
+	if c.Ret != nil && ret != *c.Ret {
+		diffs = append(diffs, fmt.Sprintf("return %d, want %d", ret, *c.Ret))
 	}
 	for p, want := range c.Out {
 		if got := getInt(field(t, p)); got != want {

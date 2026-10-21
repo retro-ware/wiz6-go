@@ -170,9 +170,9 @@ func loadPartyResist(g, i int) {
 // resistReduce (f7af7, WMEXE) lowers n by a random part of up to resistance r less mod
 // percent of group g.
 func resistReduce(g, n, r, mod int) int {
-	cut := int(int32(n) * int32(int(groupMonsterRec[g].Resist[r])-mod) / 100)
+	cut := int(int16(int32(n) * int32(int(groupMonsterRec[g].Resist[r])-mod) / 100)) // C: (int) of a long
 	cut = min(max(cut, 0), n)
-	return n - random(cut+1)
+	return n - random(int(int16(cut+1)))
 }
 
 // damageEffect (do_damage_effect, WMEXE 7b59) puts fighter i of group g into condition
@@ -243,7 +243,7 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 	dmg := 0
 	for range times {
 		for range count {
-			dmg += random(sides) + 1
+			dmg = int(int16(dmg + random(sides) + 1)) // C int wraps
 		}
 	}
 	loadPartyResist(g, i)

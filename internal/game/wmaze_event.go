@@ -253,7 +253,7 @@ func rollDice(d Dice) int {
 	for c := d.Count; c != 0; c-- {
 		n += random(int(d.Sides)) + 1
 	}
-	return n
+	return int(int16(n)) // C int wraps
 }
 
 // format_dice (WMAZE 9f25) makes count dice of sides plus base.
