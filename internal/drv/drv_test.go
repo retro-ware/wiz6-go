@@ -13,11 +13,11 @@ func TestCreditsPic(t *testing.T) {
 		t.Skip("no data:", err)
 	}
 	LoadPic(0, b)
-	FillBack(Rect{0, 0, Cols, Rows}, 0)
+	FillWorkBuffer(Rect{0, 0, Cols, Rows}, 0)
 	DrawFrames(0, 84, 52, 0, 319, 0, false, []byte{10})
 	n := 0
-	for y := range Back {
-		for _, c := range Back[y] {
+	for y := range WorkBuffer {
+		for _, c := range WorkBuffer[y] {
 			if c != 0 {
 				n++
 			}

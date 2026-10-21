@@ -8,8 +8,12 @@ import (
 	"gpu"
 )
 
-// scan is a key's PC set-1 scan code; 0xE0 in the high byte marks a grey (extended) key.
-var scan = map[gpu.Key]uint16{
+// extendedKeyPrefix is the byte a grey (extended) key's scan code is sent after.
+const extendedKeyPrefix = 0xE0
+
+// scanCodes is a key's PC set-1 scan code; extendedKeyPrefix in the high byte marks a grey
+// (extended) key.
+var scanCodes = map[gpu.Key]uint16{
 	gpu.KeyEscape: 0x01, gpu.Key1: 0x02, gpu.Key2: 0x03, gpu.Key3: 0x04, gpu.Key4: 0x05,
 	gpu.Key5: 0x06, gpu.Key6: 0x07, gpu.Key7: 0x08, gpu.Key8: 0x09, gpu.Key9: 0x0A,
 	gpu.Key0: 0x0B, gpu.KeyMinus: 0x0C, gpu.KeyEqual: 0x0D, gpu.KeyBackspace: 0x0E,
@@ -60,13 +64,13 @@ const (
 )
 
 type window struct {
-	done     <-chan struct{}
-	held     map[gpu.Key]bool
-	screen   *gpu.Image
-	dw, dh   int
-	buttons  [3]bool
-	hidden   bool      // the OS pointer is hidden over the window
-	lastDraw time.Time // the last frame shown, for the display's refresh interval
+	done                      <-chan struct{}
+	keysHeld                  map[gpu.Key]bool
+	screen                    *gpu.Image
+	windowWidth, windowHeight int
+	buttons                   [3]bool
+	pointerHidden             bool      // the OS pointer is hidden over the window
+	lastDraw                  time.Time // the last frame shown, for the display's refresh interval
 }
 
 func (g *window) Update() error {
@@ -75,30 +79,30 @@ func (g *window) Update() error {
 		return gpu.ErrTermination
 	default:
 	}
-	st.mu.Lock()
-	quit := st.quit
-	st.mu.Unlock()
+	state.mu.Lock()
+	quit := state.quit
+	state.mu.Unlock()
 	if quit {
 		return gpu.ErrTermination
 	}
 	if Scripted {
 		return nil
 	}
-	if g.held == nil {
-		g.held = map[gpu.Key]bool{}
+	if g.keysHeld == nil {
+		g.keysHeld = map[gpu.Key]bool{}
 	}
-	for k, code := range scan {
+	for k, code := range scanCodes {
 		down := gpu.IsKeyPressed(k)
-		if down == g.held[k] {
+		if down == g.keysHeld[k] {
 			continue
 		}
-		g.held[k] = down
+		g.keysHeld[k] = down
 		var brk byte
 		if !down {
-			brk = 0x80
+			brk = keyBreakBit
 		}
-		if code>>8 == 0xE0 {
-			PushKey(0xE0)
+		if code>>8 == extendedKeyPrefix {
+			PushKey(extendedKeyPrefix)
 		}
 		PushKey(byte(code) | brk)
 	}
@@ -111,37 +115,37 @@ func (g *window) Update() error {
 // weapon swing: RequestPointerLock) the pointer is locked and its raw motion is sent;
 // losing the focus or the game no longer asking releases it.
 func (g *window) mouse() {
-	st.mu.Lock()
-	want := Now() < st.lockUntil
-	warp, wx, wy := st.warp, st.ptrX, st.ptrY
-	st.warp = false
-	w, h := st.w, st.h
-	st.mu.Unlock()
+	state.mu.Lock()
+	want := Now() < state.lockUntil
+	warp, wx, wy := state.pointerWarped, state.pointerX, state.pointerY
+	state.pointerWarped = false
+	w, h := state.frameWidth, state.frameHeight
+	state.mu.Unlock()
 	want = want && gpu.IsFocused()
 	if want != gpu.CursorCaptured() {
 		gpu.SetCursorCaptured(want)
 		gpu.CursorDelta() // the lock's own jump is not motion
-		g.hidden = false
+		g.pointerHidden = false
 	}
 	if gpu.CursorCaptured() {
 		if dx, dy := gpu.CursorDelta(); dx != 0 || dy != 0 {
 			MouseMove(dx, dy)
 		}
-	} else if g.dw > 0 && g.dh > 0 {
-		if !g.hidden {
+	} else if g.windowWidth > 0 && g.windowHeight > 0 {
+		if !g.pointerHidden {
 			gpu.SetCursorHidden(true)
-			g.hidden = true
+			g.pointerHidden = true
 		}
 		if warp {
-			gpu.SetCursorPosition(int(wx*float64(g.dw)/float64(w)), int(wy*float64(g.dh)/float64(h)))
+			gpu.SetCursorPosition(int(wx*float64(g.windowWidth)/float64(w)), int(wy*float64(g.windowHeight)/float64(h)))
 		} else {
 			x, y := gpu.CursorPosition()
-			MouseTo(float64(x)*float64(w)/float64(g.dw), float64(y)*float64(h)/float64(g.dh))
+			MouseTo(float64(x)*float64(w)/float64(g.windowWidth), float64(y)*float64(h)/float64(g.windowHeight))
 		}
 	}
-	st.mu.Lock()
-	st.locked = gpu.CursorCaptured()
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.locked = gpu.CursorCaptured()
+	state.mu.Unlock()
 	for b, mb := range []gpu.MouseButton{gpu.MouseButtonLeft, gpu.MouseButtonRight, gpu.MouseButtonMiddle} {
 		down := gpu.IsMouseButtonPressed(mb)
 		if down != g.buttons[b] {
@@ -152,10 +156,10 @@ func (g *window) mouse() {
 }
 
 func (g *window) Draw(dst *gpu.Image) {
-	st.mu.Lock()
-	px, w, h := rgbaLocked(), st.w, st.h
-	shot := st.shot
-	st.shot = ""
+	state.mu.Lock()
+	px, w, h := rgbaFrameLocked(), state.frameWidth, state.frameHeight
+	shot := state.screenshotPath
+	state.screenshotPath = ""
 	if g.screen == nil || g.screen.Bounds().Dx() != w || g.screen.Bounds().Dy() != h {
 		g.screen = gpu.NewImage(w, h)
 	}
@@ -168,16 +172,16 @@ func (g *window) Draw(dst *gpu.Image) {
 		refreshNote(now.Sub(g.lastDraw))
 	}
 	g.lastDraw = now
-	st.frameSeq++
-	st.mu.Unlock()
+	state.frameSeq++
+	state.mu.Unlock()
 	op := &gpu.DrawImageOptions{}
-	op.GeoM.Scale(float64(g.dw)/float64(w), float64(g.dh)/float64(h))
+	op.GeoM.Scale(float64(g.windowWidth)/float64(w), float64(g.windowHeight)/float64(h))
 	dst.DrawImage(g.screen, op)
 }
 
 // Layout keeps the window's whole area, so the frame scales to it; the cursor maps through
 // the same size.
 func (g *window) Layout(ow, oh int) (int, int) {
-	g.dw, g.dh = ow, oh
+	g.windowWidth, g.windowHeight = ow, oh
 	return ow, oh
 }

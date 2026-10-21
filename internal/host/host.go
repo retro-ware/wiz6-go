@@ -20,31 +20,50 @@ const (
 	MaxHeight = 480
 )
 
+// The frame before the game presents one is mode 13h's.
+const defaultWidth, defaultHeight = 320, 200
+
+// The window opens at three times mode 13h and reads input windowTPS times a second.
+const (
+	windowStartWidth, windowStartHeight = 960, 600
+	windowTPS                           = 240
+)
+
+const (
+	paletteSize = 256
+	dacBits     = 6 // bits of a DAC channel
+	opaque      = 255
+	// keyBreakBit is set in a break (key up) scan code.
+	keyBreakBit = 0x80
+)
+
 // A Color is a VGA DAC entry: 6 bits each of red, green and blue.
 type Color struct{ R, G, B uint8 }
 
-var st struct {
-	mu    sync.Mutex
-	w, h  int                        // the presented frame's size
-	frame [MaxWidth * MaxHeight]byte // the presented frame, palette indices
-	pal   [256]Color
-	rgba  []byte
-	keys  []byte       // scan codes not yet read: make codes, and break codes with bit 7 set
-	mouse []MouseEvent // mouse events not yet read
-	quit  bool
-	start time.Time
-	shot  string // a PNG to write of the next frame shown
+var state struct {
+	mu                      sync.Mutex
+	frameWidth, frameHeight int                        // the presented frame's size
+	frame                   [MaxWidth * MaxHeight]byte // the presented frame, palette indices
+	palette                 [paletteSize]Color
+	rgbaFrame               []byte
+	keys                    []byte       // scan codes not yet read: make codes, and break codes with bit 7 set
+	mouse                   []MouseEvent // mouse events not yet read
+	quit                    bool
+	start                   time.Time
+	screenshotPath          string // a PNG to write of the next frame shown
 
-	ptrX, ptrY float64       // the pointer on the frame, in its pixels
-	ptrSet     bool          // the pointer has a position (the window or a script set it)
-	warp       bool          // the game moved the pointer: the window moves the OS pointer
-	lockUntil  time.Duration // the pointer stays locked until then (RequestPointerLock)
-	locked     bool          // the window has the pointer locked
-	frameSeq   uint64        // frames the window has shown (pace.go)
-	changed    time.Duration // when the frame or palette last changed (Now)
+	pointerX, pointerY float64       // the pointer on the frame, in its pixels
+	pointerSet         bool          // the pointer has a position (the window or a script set it)
+	pointerWarped      bool          // the game moved the pointer: the window moves the OS pointer
+	lockUntil          time.Duration // the pointer stays locked until then (RequestPointerLock)
+	locked             bool          // the window has the pointer locked
+	frameSeq           uint64        // frames the window has shown (pace.go)
+	changed            time.Duration // when the frame or palette last changed (Now)
 }
 
-func init() { st.w, st.h, st.start = 320, 200, time.Now() }
+func init() {
+	state.frameWidth, state.frameHeight, state.start = defaultWidth, defaultHeight, time.Now()
+}
 
 // Scripted makes the window ignore the real keyboard and mouse: only PushKey, MouseMove,
 // MouseTo and MouseButton reach the game, so a scripted run can't pick up the user's
@@ -53,58 +72,58 @@ var Scripted bool
 
 // Present shows a frame of w x h palette indices.
 func Present(px []byte, w, h int) {
-	st.mu.Lock()
-	if w != st.w || h != st.h || string(st.frame[:w*h]) != string(px[:w*h]) {
-		st.changed = Now()
+	state.mu.Lock()
+	if w != state.frameWidth || h != state.frameHeight || string(state.frame[:w*h]) != string(px[:w*h]) {
+		state.changed = Now()
 	}
-	st.w, st.h = w, h
-	copy(st.frame[:w*h], px)
-	st.mu.Unlock()
+	state.frameWidth, state.frameHeight = w, h
+	copy(state.frame[:w*h], px)
+	state.mu.Unlock()
 }
 
 // SetPalette sets DAC entries first.. from cs.
 func SetPalette(first int, cs []Color) {
-	st.mu.Lock()
+	state.mu.Lock()
 	for i, c := range cs {
-		if st.pal[first+i] != c {
-			st.changed = Now()
+		if state.palette[first+i] != c {
+			state.changed = Now()
 		}
 	}
-	copy(st.pal[first:], cs)
-	st.mu.Unlock()
+	copy(state.palette[first:], cs)
+	state.mu.Unlock()
 }
 
 // Unchanged is how long the frame and palette have stayed the same.
 func Unchanged() time.Duration {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return Now() - st.changed
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return Now() - state.changed
 }
 
 // Palette returns the DAC.
-func Palette() [256]Color {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return st.pal
+func Palette() [paletteSize]Color {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return state.palette
 }
 
 // ReadKey returns the next scan code the keyboard sent, or false.
 func ReadKey() (byte, bool) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	if len(st.keys) == 0 {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	if len(state.keys) == 0 {
 		return 0, false
 	}
-	k := st.keys[0]
-	st.keys = st.keys[1:]
+	k := state.keys[0]
+	state.keys = state.keys[1:]
 	return k, true
 }
 
 // PushKey queues a scan code, as a script or the window sends one.
 func PushKey(code byte) {
-	st.mu.Lock()
-	st.keys = append(st.keys, code)
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.keys = append(state.keys, code)
+	state.mu.Unlock()
 }
 
 // A MouseEvent is relative mouse motion (Button < 0: DX, DY in counts, the OS's raw motion
@@ -117,50 +136,50 @@ type MouseEvent struct {
 
 // ReadMouse returns the next mouse event, or false.
 func ReadMouse() (MouseEvent, bool) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	if len(st.mouse) == 0 {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	if len(state.mouse) == 0 {
 		return MouseEvent{}, false
 	}
-	e := st.mouse[0]
-	st.mouse = st.mouse[1:]
+	e := state.mouse[0]
+	state.mouse = state.mouse[1:]
 	return e, true
 }
 
 // MouseTo puts the pointer at (x, y) on the frame, as a script or the window does.
 func MouseTo(x, y float64) {
-	st.mu.Lock()
-	st.ptrX, st.ptrY, st.ptrSet = x, y, true
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.pointerX, state.pointerY, state.pointerSet = x, y, true
+	state.mu.Unlock()
 }
 
 // MouseMove queues relative motion, as a script or the window (with the pointer locked)
 // sends it.
 func MouseMove(dx, dy float64) {
-	st.mu.Lock()
-	st.mouse = append(st.mouse, MouseEvent{DX: dx, DY: dy, Button: -1})
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.mouse = append(state.mouse, MouseEvent{DX: dx, DY: dy, Button: -1})
+	state.mu.Unlock()
 }
 
 // MouseButton queues a button going down or up.
 func MouseButton(b int, down bool) {
-	st.mu.Lock()
-	st.mouse = append(st.mouse, MouseEvent{Button: b, Down: down})
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.mouse = append(state.mouse, MouseEvent{Button: b, Down: down})
+	state.mu.Unlock()
 }
 
 // Pointer is the pointer's position on the frame in its pixels; false before it has one.
 func Pointer() (x, y float64, ok bool) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return st.ptrX, st.ptrY, st.ptrSet
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return state.pointerX, state.pointerY, state.pointerSet
 }
 
 // SetPointer moves the pointer to (x, y) on the frame (the game placing its cursor).
 func SetPointer(x, y float64) {
-	st.mu.Lock()
-	st.ptrX, st.ptrY, st.ptrSet, st.warp = x, y, true, true
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.pointerX, state.pointerY, state.pointerSet, state.pointerWarped = x, y, true, true
+	state.mu.Unlock()
 }
 
 // pointerLockHold is how long a lock request lasts: the game asks each frame it wants
@@ -170,59 +189,62 @@ const pointerLockHold = 150 * time.Millisecond
 // RequestPointerLock asks the window to lock the pointer (hidden, raw relative motion) for a
 // little while.
 func RequestPointerLock() {
-	st.mu.Lock()
-	st.lockUntil = Now() + pointerLockHold
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.lockUntil = Now() + pointerLockHold
+	state.mu.Unlock()
 }
 
 // PointerLocked is whether the window has the pointer locked.
 func PointerLocked() bool {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return st.locked
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return state.locked
 }
 
 // Quit asks the window to close.
 func Quit() {
-	st.mu.Lock()
-	st.quit = true
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.quit = true
+	state.mu.Unlock()
 }
 
 // Now is the time since the program started; a deterministic run replaces it.
-var Now = func() time.Duration { return time.Since(st.start) }
+var Now = func() time.Duration { return time.Since(state.start) }
 
 // Sleep waits a little: the game's busy waits call it so they don't spin.
 var Sleep = func() { time.Sleep(time.Millisecond) }
 
 // Screenshot writes the next frame shown to a PNG.
 func Screenshot(path string) {
-	st.mu.Lock()
-	st.shot = path
-	st.mu.Unlock()
+	state.mu.Lock()
+	state.screenshotPath = path
+	state.mu.Unlock()
 }
 
 // FrameRGBA returns the presented frame as RGBA, with its size.
 func FrameRGBA() ([]byte, int, int) {
-	st.mu.Lock()
-	defer st.mu.Unlock()
-	return append([]byte(nil), rgbaLocked()...), st.w, st.h
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	return append([]byte(nil), rgbaFrameLocked()...), state.frameWidth, state.frameHeight
 }
 
-func rgbaLocked() []byte {
-	n := st.w * st.h
-	if len(st.rgba) != n*4 {
-		st.rgba = make([]byte, n*4)
+func rgbaFrameLocked() []byte {
+	n := state.frameWidth * state.frameHeight
+	if len(state.rgbaFrame) != n*4 {
+		state.rgbaFrame = make([]byte, n*4)
 	}
-	var lut [256][4]byte
-	for i, c := range st.pal {
-		lut[i] = [4]byte{c.R<<2 | c.R>>4, c.G<<2 | c.G>>4, c.B<<2 | c.B>>4, 0xFF}
+	var lut [paletteSize][4]byte
+	for i, c := range state.palette {
+		lut[i] = [4]byte{dacTo8Bits(c.R), dacTo8Bits(c.G), dacTo8Bits(c.B), opaque}
 	}
-	for i, p := range st.frame[:n] {
-		copy(st.rgba[i*4:], lut[p][:])
+	for i, p := range state.frame[:n] {
+		copy(state.rgbaFrame[i*4:], lut[p][:])
 	}
-	return st.rgba
+	return state.rgbaFrame
 }
+
+// dacTo8Bits widens a 6-bit DAC channel to 8 bits, repeating its top bits below.
+func dacTo8Bits(v uint8) uint8 { return v<<(8-dacBits) | v>>(2*dacBits-8) }
 
 // WritePNG writes RGBA pixels to a PNG file.
 func WritePNG(path string, px []byte, w, h int) error {
@@ -245,9 +267,9 @@ func Run(title string, game func()) error {
 		game()
 	}()
 	gpu.SetWindowTitle(title)
-	gpu.SetWindowSize(960, 600)
+	gpu.SetWindowSize(windowStartWidth, windowStartHeight)
 	gpu.SetWindowResizingMode(gpu.WindowResizingModeEnabled)
-	gpu.SetTPS(240)
+	gpu.SetTPS(windowTPS)
 	gpu.SetRunnableOnUnfocused(true)
 	return gpu.RunGame(&window{done: done})
 }

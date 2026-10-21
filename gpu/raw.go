@@ -36,7 +36,7 @@ func Discard() {
 	flushBatch()
 	if dev.pass != nil {
 		_ = dev.pass.End()
-		dev.pass, dev.on = nil, nil
+		dev.pass, dev.passTarget = nil, nil
 	}
 	dev.enc = nil
 	dev.uniforms.reset()

@@ -21,25 +21,35 @@ type Game interface {
 var ErrTermination = errors.New("gpu: termination")
 
 var win struct {
-	app      *gogpu.App
-	ww, wh   int // requested size
-	title    string
-	tps      int
-	resize   bool
-	unfocus  bool // keep updating while unfocused (always on here)
-	full     bool
-	fps      float64
-	frames   int
-	fpsStart time.Time
+	app                             *gogpu.App
+	requestedWidth, requestedHeight int // requested size
+	title                           string
+	tps                             int
+	resizable                       bool
+	runWhenUnfocused                bool // keep updating while unfocused (always on here)
+	fullscreen                      bool
+	fps                             float64
+	frames                          int
+	fpsStart                        time.Time
 
 	// the screen's place in the framebuffer (for the cursor)
-	ox, oy, k float64
+	screenX, screenY, screenScale float64
 }
 
-func init() { win.ww, win.wh, win.tps, win.title = 640, 480, 60, "" }
+// The window's size and ticks a second until the game sets them.
+const (
+	defaultWidth, defaultHeight = 640, 480
+	defaultTPS                  = 60
+	// maxTicksPerFrame caps the Updates one frame runs after a stall.
+	maxTicksPerFrame = 8
+)
+
+func init() {
+	win.requestedWidth, win.requestedHeight, win.tps, win.title = defaultWidth, defaultHeight, defaultTPS, ""
+}
 
 func SetWindowSize(w, h int) {
-	win.ww, win.wh = w, h
+	win.requestedWidth, win.requestedHeight = w, h
 	if win.app != nil {
 		win.app.RequestSize(w, h)
 	}
@@ -60,14 +70,14 @@ const (
 	WindowResizingModeEnabled
 )
 
-func SetWindowResizingMode(m WindowResizingMode) { win.resize = m == WindowResizingModeEnabled }
+func SetWindowResizingMode(m WindowResizingMode) { win.resizable = m == WindowResizingModeEnabled }
 func SetTPS(n int)                               { win.tps = n }
-func SetRunnableOnUnfocused(b bool)              { win.unfocus = b }
+func SetRunnableOnUnfocused(b bool)              { win.runWhenUnfocused = b }
 func ActualFPS() float64                         { return win.fps }
-func IsFullscreen() bool                         { return win.full }
+func IsFullscreen() bool                         { return win.fullscreen }
 
 func SetFullscreen(on bool) {
-	win.full = on
+	win.fullscreen = on
 	if win.app != nil {
 		win.app.SetFullscreen(on)
 	}
@@ -97,9 +107,9 @@ func RunGame(g Game) error { return RunGameWithOptions(g, nil) }
 // RunGameWithOptions opens the window and runs g until the window closes or
 // Update returns an error.
 func RunGameWithOptions(g Game, o *RunGameOptions) error {
-	cfg := gogpu.DefaultConfig().WithTitle(win.title).WithSize(win.ww, win.wh).
-		WithResizable(win.resize).WithContinuousRender(true)
-	if win.full {
+	cfg := gogpu.DefaultConfig().WithTitle(win.title).WithSize(win.requestedWidth, win.requestedHeight).
+		WithResizable(win.resizable).WithContinuousRender(true)
+	if win.fullscreen {
 		cfg = cfg.WithFullscreen()
 	}
 	app := gogpu.NewApp(cfg)
@@ -131,8 +141,8 @@ func RunGameWithOptions(g Game, o *RunGameOptions) error {
 		last = now
 		n := int(acc)
 		acc -= float64(n)
-		if n > 8 { // ponytail: a long stall drops ticks instead of catching up
-			n = 8
+		if n > maxTicksPerFrame { // ponytail: a long stall drops ticks instead of catching up
+			n = maxTicksPerFrame
 		}
 		if screen == nil {
 			n = max(n, 1) // Update comes before the first Draw
@@ -162,8 +172,8 @@ func RunGameWithOptions(g Game, o *RunGameOptions) error {
 		}
 		screen.Clear()
 		g.Draw(screen)
-		win.k = min(float64(fw)/float64(sw), float64(fh)/float64(sh))
-		win.ox, win.oy = (float64(fw)-float64(sw)*win.k)/2, (float64(fh)-float64(sh)*win.k)/2
+		win.screenScale = min(float64(fw)/float64(sw), float64(fh)/float64(sh))
+		win.screenX, win.screenY = (float64(fw)-float64(sw)*win.screenScale)/2, (float64(fh)-float64(sh)*win.screenScale)/2
 		present(screen, view, fw, fh)
 		win.frames++
 		if d := now.Sub(win.fpsStart).Seconds(); d >= 1 {

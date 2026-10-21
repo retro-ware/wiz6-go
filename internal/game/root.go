@@ -170,7 +170,7 @@ func putChar(win *Window, ch byte, color int) {
 
 // putCharHi (ROOT 23e3, asm) puts ch at win's cursor in colour font font (1..4).
 func putCharHi(win *Window, ch byte, font int) {
-	putCell(win, Cell{ch, uint8(font)}, func(col, row int) { drv.GlyphHi(col, row, ch, font) }, false)
+	putCell(win, Cell{ch, uint8(font)}, func(col, row int) { drv.ColorGlyph(col, row, ch, font) }, false)
 }
 
 func putCell(win *Window, c Cell, draw func(col, row int), mark bool) {

@@ -5,6 +5,6 @@ package gpu
 // a game that hides the pointer and draws its own.
 func SetCursorPosition(x, y int) {
 	cx, cy := CursorPosition()
-	in.off[0] += x - cx
-	in.off[1] += y - cy
+	input.cursorOffset[0] += x - cx
+	input.cursorOffset[1] += y - cy
 }

@@ -15,6 +15,15 @@ import (
 const (
 	maxGameRate  = 75
 	fallbackRate = 70
+	// Measured refresh intervals outside these bounds are not a display's.
+	minRefreshInterval = 2 * time.Millisecond
+	maxRefreshInterval = 50 * time.Millisecond
+	// refreshSmoothing: each measurement moves the estimate by 1/refreshSmoothing.
+	refreshSmoothing = 16
+	// rateCapSlack lets a game frame begin this many frames a second above maxGameRate.
+	rateCapSlack = 8
+	// refreshRounding keeps a display slightly above a multiple of maxGameRate at that multiple.
+	refreshRounding = 0.05
 )
 
 var pace struct {
@@ -23,23 +32,23 @@ var pace struct {
 	began    time.Duration // when it began (Now)
 }
 
-// refreshNote folds a measured interval between shown frames into the estimate (st.mu
+// refreshNote folds a measured interval between shown frames into the estimate (state.mu
 // held). Intervals far off a display's (a stall, an occluded window spinning) are ignored.
 func refreshNote(d time.Duration) {
-	if d < 2*time.Millisecond || d > 50*time.Millisecond {
+	if d < minRefreshInterval || d > maxRefreshInterval {
 		return
 	}
 	if pace.interval == 0 {
 		pace.interval = d
 		return
 	}
-	pace.interval += (d - pace.interval) / 16
+	pace.interval += (d - pace.interval) / refreshSmoothing
 }
 
 // RefreshRate is the display's measured refresh rate in Hz (0 before it is known).
 func RefreshRate() float64 {
-	st.mu.Lock()
-	defer st.mu.Unlock()
+	state.mu.Lock()
+	defer state.mu.Unlock()
 	if pace.interval == 0 {
 		return 0
 	}
@@ -48,22 +57,22 @@ func RefreshRate() float64 {
 
 // GameFrameDue is whether the game's next frame should begin, and starts its wait if so.
 func GameFrameDue() bool {
-	st.mu.Lock()
-	defer st.mu.Unlock()
+	state.mu.Lock()
+	defer state.mu.Unlock()
 	n := uint64(1)
 	iv := time.Second / fallbackRate
 	if pace.interval != 0 {
 		iv = pace.interval
 		hz := float64(time.Second) / float64(pace.interval)
-		n = uint64(max(1, math.Ceil(hz/maxGameRate-0.05)))
+		n = uint64(max(1, math.Ceil(hz/maxGameRate-refreshRounding)))
 	}
 	since := Now() - pace.began
-	if since < time.Second/(maxGameRate+8) {
+	if since < time.Second/(maxGameRate+rateCapSlack) {
 		return false // never faster than the cap, however the display behaves
 	}
-	if st.frameSeq < pace.shown+n && since < time.Duration(n)*iv*3/2 {
+	if state.frameSeq < pace.shown+n && since < time.Duration(n)*iv*3/2 {
 		return false
 	}
-	pace.shown, pace.began = st.frameSeq, Now()
+	pace.shown, pace.began = state.frameSeq, Now()
 	return true
 }

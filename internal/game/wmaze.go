@@ -40,6 +40,6 @@ var (
 )
 
 // drv entry points as the root calls them.
-func drvMazeTile(tile, flag, mirror int) { drv.MazeTile(tile, flag, mirror) }   // drv_op_c6
-func drvShowWindow(w *Window)            { drv.ShowWindow(winRect(w)) }         // drv_op_c2
-func drvFillBack(w *Window, v int)       { drv.FillBack(winRect(w), uint8(v)) } // drv_op_be
+func drvMazeTile(tile, flag, mirror int) { drv.MazeTile(tile, flag, mirror) }         // drv_op_c6
+func drvShowWindow(w *Window)            { drv.ShowWindow(winRect(w)) }               // drv_op_c2
+func drvFillBack(w *Window, v int)       { drv.FillWorkBuffer(winRect(w), uint8(v)) } // drv_op_be

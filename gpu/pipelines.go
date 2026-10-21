@@ -2,7 +2,9 @@ package gpu
 
 import (
 	"fmt"
+	"math"
 	"strings"
+	"unsafe"
 
 	"github.com/gogpu/gputypes"
 	"github.com/gogpu/wgpu"
@@ -137,13 +139,17 @@ func attr(loc uint32, f gputypes.VertexFormat, off uint64) gputypes.VertexAttrib
 	return gputypes.VertexAttribute{Format: f, Offset: off, ShaderLocation: loc}
 }
 
-var vertexLayout = []gputypes.VertexBufferLayout{{ArrayStride: 48, StepMode: gputypes.VertexStepModeVertex,
-	Attributes: []gputypes.VertexAttribute{attr(0, gputypes.VertexFormatFloat32x2, 0), attr(1, gputypes.VertexFormatFloat32x2, 8),
-		attr(2, gputypes.VertexFormatFloat32x4, 16), attr(3, gputypes.VertexFormatFloat32x4, 32)}}}
+var vertexLayout = []gputypes.VertexBufferLayout{{ArrayStride: uint64(unsafe.Sizeof(gpuVertex{})), StepMode: gputypes.VertexStepModeVertex,
+	Attributes: []gputypes.VertexAttribute{attr(0, gputypes.VertexFormatFloat32x2, uint64(unsafe.Offsetof(gpuVertex{}.X))),
+		attr(1, gputypes.VertexFormatFloat32x2, uint64(unsafe.Offsetof(gpuVertex{}.SrcX))),
+		attr(2, gputypes.VertexFormatFloat32x4, uint64(unsafe.Offsetof(gpuVertex{}.R))),
+		attr(3, gputypes.VertexFormatFloat32x4, uint64(unsafe.Offsetof(gpuVertex{}.C0)))}}}
 
-var meshLayout = []gputypes.VertexBufferLayout{{ArrayStride: 48, StepMode: gputypes.VertexStepModeVertex,
-	Attributes: []gputypes.VertexAttribute{attr(0, gputypes.VertexFormatFloat32x3, 0), attr(1, gputypes.VertexFormatFloat32x2, 12),
-		attr(2, gputypes.VertexFormatFloat32x3, 20), attr(3, gputypes.VertexFormatFloat32x4, 32)}}}
+var meshLayout = []gputypes.VertexBufferLayout{{ArrayStride: uint64(unsafe.Sizeof(MeshVertex{})), StepMode: gputypes.VertexStepModeVertex,
+	Attributes: []gputypes.VertexAttribute{attr(0, gputypes.VertexFormatFloat32x3, uint64(unsafe.Offsetof(MeshVertex{}.X))),
+		attr(1, gputypes.VertexFormatFloat32x2, uint64(unsafe.Offsetof(MeshVertex{}.U))),
+		attr(2, gputypes.VertexFormatFloat32x3, uint64(unsafe.Offsetof(MeshVertex{}.NX))),
+		attr(3, gputypes.VertexFormatFloat32x4, uint64(unsafe.Offsetof(MeshVertex{}.R)))}}}
 
 // pipeSpec describes one pipeline.
 type pipeSpec struct {
@@ -157,6 +163,9 @@ type pipeSpec struct {
 	fs      string // fragment entry point ("fs" if empty)
 	noWrite bool   // depth tested, not written
 }
+
+// allSamples is a multisample mask that keeps every sample.
+const allSamples = math.MaxUint32
 
 func newPipeline(s pipeSpec) (*wgpu.RenderPipeline, error) {
 	mod, err := dev.device.CreateShaderModule(&wgpu.ShaderModuleDescriptor{Label: s.label, WGSL: s.wgsl})
@@ -181,7 +190,7 @@ func newPipeline(s pipeSpec) (*wgpu.RenderPipeline, error) {
 		Vertex:       wgpu.VertexState{Module: mod, EntryPoint: "vs", Buffers: s.buffers},
 		Primitive:    gputypes.PrimitiveState{Topology: gputypes.PrimitiveTopologyTriangleList, FrontFace: gputypes.FrontFaceCCW, CullMode: gputypes.CullModeNone},
 		DepthStencil: depth,
-		Multisample:  gputypes.MultisampleState{Count: 1, Mask: 0xFFFFFFFF},
+		Multisample:  gputypes.MultisampleState{Count: 1, Mask: allSamples},
 		Fragment: &wgpu.FragmentState{Module: mod, EntryPoint: fs, Targets: []gputypes.ColorTargetState{
 			{Format: s.format, Blend: s.blend, WriteMask: gputypes.ColorWriteMaskAll}}},
 	})
@@ -195,11 +204,11 @@ func initPipelines() error {
 	var err error
 	rgba := gputypes.TextureFormatRGBA8Unorm
 	for b := range pipes.std {
-		if pipes.std[b], err = newPipeline(pipeSpec{"triangles", stdWGSL, []*wgpu.BindGroupLayout{dev.texLayout}, vertexLayout, blends[b], rgba, false, "", false}); err != nil {
+		if pipes.std[b], err = newPipeline(pipeSpec{"triangles", stdWGSL, []*wgpu.BindGroupLayout{dev.textureLayout}, vertexLayout, blends[b], rgba, false, "", false}); err != nil {
 			return err
 		}
 	}
-	groups := []*wgpu.BindGroupLayout{dev.uniLayout, dev.texLayout}
+	groups := []*wgpu.BindGroupLayout{dev.uniformLayout, dev.textureLayout}
 	if pipes.mesh, err = newPipeline(pipeSpec{"mesh", meshWGSL, groups, meshLayout, nil, rgba, true, "", false}); err != nil {
 		return err
 	}

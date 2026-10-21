@@ -24,22 +24,38 @@ var dev struct {
 	queue  *wgpu.Queue
 	format gputypes.TextureFormat // the window's
 
-	enc  *wgpu.CommandEncoder
-	pass *wgpu.RenderPassEncoder
-	on   *texture // the pass's target
-	pdep bool     // the pass has the target's depth buffer
+	enc          *wgpu.CommandEncoder
+	pass         *wgpu.RenderPassEncoder
+	passTarget   *texture // the pass's target
+	passHasDepth bool     // the pass has the target's depth buffer
 
 	uniforms, vertices stream
 
-	uniLayout *wgpu.BindGroupLayout // dynamic uniform block
-	texLayout *wgpu.BindGroupLayout // one texture and a sampler
-	nearest   *wgpu.Sampler
-	linear    *wgpu.Sampler
-	repeat    *wgpu.Sampler // nearest, wrapping (mesh textures)
+	uniformLayout *wgpu.BindGroupLayout // dynamic uniform block
+	textureLayout *wgpu.BindGroupLayout // one texture and a sampler
+	nearest       *wgpu.Sampler
+	linear        *wgpu.Sampler
+	repeat        *wgpu.Sampler // nearest, wrapping (mesh textures)
 }
 
 // uniformSlot is the bound size of a dynamic uniform block.
 const uniformSlot = 1024
+
+const (
+	streamChunkSize = 4 << 20 // 4 MiB per stream buffer
+	// uniformOffsetAlignment is WebGPU's minUniformBufferOffsetAlignment default.
+	uniformOffsetAlignment = 256
+	vertexOffsetAlignment  = 16
+	// writeBufferAlignment: Queue.WriteBuffer takes offsets and sizes in multiples of it.
+	writeBufferAlignment = 4
+	// bytesPerRowAlignment is WebGPU's COPY_BYTES_PER_ROW_ALIGNMENT for texture copies.
+	bytesPerRowAlignment = 256
+	bytesPerPixel        = 4 // RGBA8
+	readbackTimeout      = 10 * time.Second
+	maxSamplerLOD        = 32
+	// fullscreenTriangle: the present blit draws one triangle covering the viewport.
+	fullscreenTriangleVertices = 3
+)
 
 // needDevice creates the device on first use: images may be made and drawn
 // before RunGame opens the window (package init, tests).
@@ -70,7 +86,7 @@ func adoptDevice(d *wgpu.Device, q *wgpu.Queue, format gputypes.TextureFormat) e
 		wgsl = blitSRGBWGSL
 	}
 	var err error
-	pipes.blit, err = newPipeline(pipeSpec{"present", wgsl, []*wgpu.BindGroupLayout{dev.texLayout}, nil, nil, format, false, "", false})
+	pipes.blit, err = newPipeline(pipeSpec{"present", wgsl, []*wgpu.BindGroupLayout{dev.textureLayout}, nil, nil, format, false, "", false})
 	return err
 }
 
@@ -98,15 +114,15 @@ func initDevice() error {
 // initShared makes the buffers, layouts, samplers and pipelines on dev.device.
 func initShared() error {
 	var err error
-	dev.uniforms = stream{usage: wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst, chunk: 4 << 20, align: 256, label: "uniforms"}
-	dev.vertices = stream{usage: wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst, chunk: 4 << 20, align: 16, label: "vertices"}
-	if dev.uniLayout, err = dev.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "uniform block",
+	dev.uniforms = stream{usage: wgpu.BufferUsageUniform | wgpu.BufferUsageCopyDst, chunk: streamChunkSize, align: uniformOffsetAlignment, label: "uniforms"}
+	dev.vertices = stream{usage: wgpu.BufferUsageVertex | wgpu.BufferUsageCopyDst, chunk: streamChunkSize, align: vertexOffsetAlignment, label: "vertices"}
+	if dev.uniformLayout, err = dev.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "uniform block",
 		Entries: []gputypes.BindGroupLayoutEntry{{Binding: 0, Visibility: gputypes.ShaderStageVertex | gputypes.ShaderStageFragment,
 			Buffer: &gputypes.BufferBindingLayout{Type: gputypes.BufferBindingTypeUniform, HasDynamicOffset: true, MinBindingSize: uniformSlot}}},
 	}); err != nil {
 		return err
 	}
-	if dev.texLayout, err = dev.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "texture",
+	if dev.textureLayout, err = dev.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "texture",
 		Entries: []gputypes.BindGroupLayoutEntry{texEntry(0), samplerEntry(1)}}); err != nil {
 		return err
 	}
@@ -117,7 +133,7 @@ func initShared() error {
 		var s *wgpu.Sampler
 		s, err = dev.device.CreateSampler(&wgpu.SamplerDescriptor{Label: "sampler",
 			AddressModeU: addr, AddressModeV: addr, AddressModeW: addr,
-			MagFilter: filter, MinFilter: filter, MipmapFilter: gputypes.FilterModeNearest, LodMaxClamp: 32})
+			MagFilter: filter, MinFilter: filter, MipmapFilter: gputypes.FilterModeNearest, LodMaxClamp: maxSamplerLOD})
 		return s
 	}
 	dev.nearest = sampler(gputypes.FilterModeNearest, gputypes.AddressModeClampToEdge)
@@ -153,7 +169,7 @@ func encoder() *wgpu.CommandEncoder {
 // passOn returns a render pass drawing into t (with its depth buffer if
 // depth), beginning one if the current pass draws elsewhere.
 func passOn(t *texture, depth bool) *wgpu.RenderPassEncoder {
-	if dev.pass != nil && dev.on == t && dev.pdep == depth {
+	if dev.pass != nil && dev.passTarget == t && dev.passHasDepth == depth {
 		return dev.pass
 	}
 	endPass()
@@ -174,7 +190,7 @@ func passOn(t *texture, depth bool) *wgpu.RenderPassEncoder {
 	if err != nil {
 		panic(err)
 	}
-	dev.pass, dev.on, dev.pdep = p, t, depth
+	dev.pass, dev.passTarget, dev.passHasDepth = p, t, depth
 	return p
 }
 
@@ -183,7 +199,7 @@ func endPass() {
 		if err := dev.pass.End(); err != nil {
 			panic(err)
 		}
-		dev.pass, dev.on = nil, nil
+		dev.pass, dev.passTarget = nil, nil
 	}
 }
 
@@ -221,11 +237,11 @@ type stream struct {
 }
 
 type streamChunk struct {
-	buf     *wgpu.Buffer
-	shadow  []byte
-	used    int
-	flushed int
-	bg      *wgpu.BindGroup // uniform chunks: bound at dynamic offsets
+	buf       *wgpu.Buffer
+	shadow    []byte
+	used      int
+	flushed   int
+	bindGroup *wgpu.BindGroup // uniform chunks: bound at dynamic offsets
 }
 
 // alloc copies data into the stream (reserving at least reserve bytes) and
@@ -241,7 +257,7 @@ func (s *stream) alloc(data []byte, reserve int) (*streamChunk, uint32) {
 			}
 			c := &streamChunk{buf: b, shadow: make([]byte, size)}
 			if s.usage&wgpu.BufferUsageUniform != 0 {
-				if c.bg, err = dev.device.CreateBindGroup(&wgpu.BindGroupDescriptor{Label: s.label, Layout: dev.uniLayout,
+				if c.bindGroup, err = dev.device.CreateBindGroup(&wgpu.BindGroupDescriptor{Label: s.label, Layout: dev.uniformLayout,
 					Entries: []wgpu.BindGroupEntry{{Binding: 0, Buffer: b, Size: uniformSlot}}}); err != nil {
 					panic(err)
 				}
@@ -249,7 +265,7 @@ func (s *stream) alloc(data []byte, reserve int) (*streamChunk, uint32) {
 			s.chunks = append(s.chunks, c)
 		}
 		c := s.chunks[s.cur]
-		off := (c.used + s.align - 1) &^ (s.align - 1)
+		off := alignUp(c.used, s.align)
 		if off+need <= len(c.shadow) {
 			copy(c.shadow[off:], data)
 			clear(c.shadow[off+len(data) : off+need])
@@ -263,7 +279,7 @@ func (s *stream) alloc(data []byte, reserve int) (*streamChunk, uint32) {
 func (s *stream) flush() {
 	for _, c := range s.chunks[:min(s.cur+1, len(s.chunks))] {
 		if c.used > c.flushed {
-			lo, hi := c.flushed&^3, (c.used+3)&^3
+			lo, hi := c.flushed/writeBufferAlignment*writeBufferAlignment, alignUp(c.used, writeBufferAlignment)
 			if err := dev.queue.WriteBuffer(c.buf, uint64(lo), c.shadow[lo:hi]); err != nil {
 				panic(err)
 			}
@@ -282,8 +298,11 @@ func (s *stream) reset() {
 // bindUniforms writes a uniform block and binds it as group 0.
 func bindUniforms(p *wgpu.RenderPassEncoder, b []byte) {
 	c, off := dev.uniforms.alloc(b, uniformSlot)
-	p.SetBindGroup(0, c.bg, []uint32{off})
+	p.SetBindGroup(0, c.bindGroup, []uint32{off})
 }
+
+// alignUp rounds n up to a multiple of align.
+func alignUp(n, align int) int { return (n + align - 1) / align * align }
 
 func appendF32(b []byte, vs ...float32) []byte {
 	for _, v := range vs {
@@ -304,7 +323,7 @@ func bytesOf[T any](s []T) []byte {
 func readTexture(t *texture, x, y, w, h int, px []byte) {
 	t.ensure()
 	submit()
-	row := (uint32(w)*4 + 255) &^ 255
+	row := uint32(alignUp(w*bytesPerPixel, bytesPerRowAlignment))
 	size := uint64(row) * uint64(h)
 	buf, err := dev.device.CreateBuffer(&wgpu.BufferDescriptor{Label: "readback", Size: size, Usage: wgpu.BufferUsageCopyDst | wgpu.BufferUsageMapRead})
 	if err != nil {
@@ -317,7 +336,7 @@ func readTexture(t *texture, x, y, w, h int, px []byte) {
 		Size:         wgpu.Extent3D{Width: uint32(w), Height: uint32(h), DepthOrArrayLayers: 1},
 	}})
 	submit()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), readbackTimeout)
 	defer cancel()
 	if err := buf.Map(ctx, wgpu.MapModeRead, 0, size); err != nil {
 		panic(err)
@@ -328,7 +347,7 @@ func readTexture(t *texture, x, y, w, h int, px []byte) {
 	}
 	src := rng.Bytes()
 	for r := 0; r < h; r++ {
-		copy(px[r*w*4:(r+1)*w*4], src[uint32(r)*row:])
+		copy(px[r*w*bytesPerPixel:(r+1)*w*bytesPerPixel], src[uint32(r)*row:])
 	}
 	buf.Unmap()
 }
@@ -358,7 +377,7 @@ func present(screen *Image, view *wgpu.TextureView, w, h int) {
 		sampler = dev.linear
 	}
 	p.SetBindGroup(0, screen.t.group(sampler), nil)
-	p.Draw(gputypes.DrawArgs{VertexCount: 3, InstanceCount: 1})
+	p.Draw(gputypes.DrawArgs{VertexCount: fullscreenTriangleVertices, InstanceCount: 1})
 	if err := p.End(); err != nil {
 		panic(err)
 	}

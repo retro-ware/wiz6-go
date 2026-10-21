@@ -1,6 +1,8 @@
 package host
 
 import (
+	"encoding/binary"
+	"math"
 	"sync"
 	"time"
 
@@ -18,6 +20,25 @@ import (
 
 const (
 	mixRate = 44100
+	// Output frames: 16-bit left and right.
+	channelCount  = 2
+	bytesPerFrame = channelCount * 2
+	// bufferFrames is the player's buffer: a fifteenth of a second.
+	bufferFrames = mixRate / 15
+	// maxVolume is a voice's loudest volume; volume scales samples by 7 bits.
+	maxVolume = 127
+	// Pan runs 0 (left) to maxPan (right); its high byte, 0..panSteps, weights the sides.
+	maxPan      = 65535
+	panShift    = 8
+	panSteps    = 255
+	volumeShift = 7 // sample * volume * side weight, back to 16 bits
+	// A voice's position is fixed point: the sample index in the high 32 bits.
+	positionShift = 32
+	// interpolationBits of the position's fraction weight the next sample.
+	interpolationBits = 16
+	interpolationOne  = 1 << interpolationBits
+	pcmMidpoint       = 128 // the silence of 8-bit unsigned PCM
+
 	// chainWait is how long the mixer waits for the game to chain a buffer; the player's
 	// buffer covers it.
 	chainWait = 25 * time.Millisecond
@@ -27,8 +48,8 @@ const (
 type Voice struct {
 	Data    []byte
 	Rate    int
-	Volume  int  // 0..0x7F
-	Pan     int  // 0 left .. 0x8000 centre .. 0xFFFF right
+	Volume  int  // 0..maxVolume
+	Pan     int  // 0 left .. 0x8000 centre .. maxPan right
 	Loop    bool // play again from the start until stopped
 	Chained bool // the game may requeue the voice at its end: mixing waits for it
 }
@@ -51,14 +72,14 @@ var mix struct {
 
 // AudioInit opens the sound card; false when there is none.
 func AudioInit() bool {
-	ctx, ready, err := oto.NewContext(&oto.NewContextOptions{SampleRate: mixRate, ChannelCount: 2, Format: oto.FormatSignedInt16LE})
+	ctx, ready, err := oto.NewContext(&oto.NewContextOptions{SampleRate: mixRate, ChannelCount: channelCount, Format: oto.FormatSignedInt16LE})
 	if err != nil {
 		return false
 	}
 	<-ready
 	mix.cond = sync.NewCond(&mix.mu)
 	mix.player = ctx.NewPlayer(mixer{})
-	mix.player.SetBufferSize(mixRate / 15 * 4)
+	mix.player.SetBufferSize(bufferFrames * bytesPerFrame)
 	mix.player.Play()
 	return true
 }
@@ -83,7 +104,7 @@ func AudioRequeue(h int, data []byte) {
 	defer mix.mu.Unlock()
 	if h >= 0 && h < len(mix.voices) && mix.voices[h].used {
 		v := &mix.voices[h]
-		end := uint64(len(v.Data)) << 32
+		end := uint64(len(v.Data)) << positionShift
 		if v.pos >= end {
 			v.pos -= end // keep the fraction: the new buffer continues the old
 		} else {
@@ -104,7 +125,7 @@ func AudioStop(h int) {
 	}
 }
 
-// AudioSet changes voice h's volume (0..0x7F) and pan.
+// AudioSet changes voice h's volume (0..maxVolume) and pan.
 func AudioSet(h, volume, pan int) {
 	mix.mu.Lock()
 	defer mix.mu.Unlock()
@@ -165,12 +186,12 @@ func (v *voice) sample(idx int) int32 {
 	} else if v.Loop {
 		s1 = int32(v.Data[0])
 	}
-	f := int32(v.pos >> 16 & 0xFFFF)
-	return (s0*(0x10000-f)+s1*f)>>16 - 128
+	f := int32(v.pos >> (positionShift - interpolationBits) % interpolationOne)
+	return (s0*(interpolationOne-f)+s1*f)>>interpolationBits - pcmMidpoint
 }
 
 func (mixer) Read(b []byte) (int, error) {
-	n := len(b) / 4
+	n := len(b) / bytesPerFrame
 	mix.mu.Lock()
 	defer mix.mu.Unlock()
 	waitChains()
@@ -178,12 +199,12 @@ func (mixer) Read(b []byte) (int, error) {
 		// the ends first, so a chunk cut at a chained end has every voice at the same sample
 		for h := range mix.voices {
 			v := &mix.voices[h]
-			if !v.used || v.ended || v.Rate <= 0 || int(v.pos>>32) < len(v.Data) {
+			if !v.used || v.ended || v.Rate <= 0 || int(v.pos>>positionShift) < len(v.Data) {
 				continue
 			}
 			if v.Loop && len(v.Data) > 0 {
-				for int(v.pos>>32) >= len(v.Data) {
-					v.pos -= uint64(len(v.Data)) << 32
+				for int(v.pos>>positionShift) >= len(v.Data) {
+					v.pos -= uint64(len(v.Data)) << positionShift
 				}
 				continue
 			}
@@ -195,7 +216,7 @@ func (mixer) Read(b []byte) (int, error) {
 		}
 		if anyWaiting() {
 			if i > 0 {
-				return i * 4, nil // the game chains the next buffer before the chunk goes on
+				return i * bytesPerFrame, nil // the game chains the next buffer before the chunk goes on
 			}
 			waitChains()
 			i--
@@ -207,29 +228,33 @@ func (mixer) Read(b []byte) (int, error) {
 			if !v.used || v.ended || v.Rate <= 0 {
 				continue
 			}
-			s := v.sample(int(v.pos>>32)) * int32(v.Volume) // 8+7 bits
-			pan := int32(v.Pan >> 8)                        // 0..255
-			l += s * (255 - pan) >> 7
-			r += s * pan >> 7
-			v.pos += uint64(v.Rate) << 32 / mixRate
+			s := v.sample(int(v.pos>>positionShift)) * int32(v.Volume) // 8+7 bits
+			pan := int32(v.Pan >> panShift)                            // 0..panSteps
+			l += s * (panSteps - pan) >> volumeShift
+			r += s * pan >> volumeShift
+			v.pos += uint64(v.Rate) << positionShift / mixRate
 		}
 		ml, mr := musicSample()
 		l += ml
 		r += mr
 		l, r = clamp16(l), clamp16(r)
-		b[i*4], b[i*4+1] = byte(l), byte(l>>8)
-		b[i*4+2], b[i*4+3] = byte(r), byte(r>>8)
+		frame := b[i*bytesPerFrame:]
+		binary.LittleEndian.PutUint16(frame, uint16(l))
+		binary.LittleEndian.PutUint16(frame[2:], uint16(r))
 	}
-	return n * 4, nil
+	return n * bytesPerFrame, nil
 }
-func clamp16(v int32) int32 { return max(-32768, min(32767, v)) }
+func clamp16(v int32) int32 { return max(math.MinInt16, min(math.MaxInt16, v)) }
 
 // Music renders the music into l and r (float samples at 44.1 kHz, added); nil: none. The
 // mixer pulls it in blocks, so a chunk cut short at a chained voice loses none of it.
 var Music func(l, r []float32)
 
+// musicBlockSize is how many samples the mixer asks Music for at once.
+const musicBlockSize = 512
+
 var musicBuf struct {
-	l, r [512]float32
+	l, r [musicBlockSize]float32
 	pos  int
 }
 
@@ -249,5 +274,5 @@ func musicSample() (int32, int32) {
 	}
 	l, r := m.l[m.pos], m.r[m.pos]
 	m.pos++
-	return int32(max(-1, min(1, l)) * 32767), int32(max(-1, min(1, r)) * 32767)
+	return int32(max(-1, min(1, l)) * math.MaxInt16), int32(max(-1, min(1, r)) * math.MaxInt16)
 }

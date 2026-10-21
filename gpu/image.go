@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 
 	"github.com/gogpu/gputypes"
 	"github.com/gogpu/wgpu"
@@ -12,16 +13,16 @@ import (
 // texture is one GPU texture (RGBA8, premultiplied alpha), drawable and
 // sampleable; Images are rectangles of one.
 type texture struct {
-	tex        *wgpu.Texture
-	view       *wgpu.TextureView
-	w, h       int
-	groups     map[*wgpu.Sampler]*wgpu.BindGroup
-	depth      *wgpu.Texture
-	dview      *wgpu.TextureView
-	clear      bool // the next pass into it clears it first (Clear)
-	clearDepth bool
-	px         []byte // its pixels until there is a device (images made before RunGame)
-	gone       bool   // deallocated
+	tex              *wgpu.Texture
+	view             *wgpu.TextureView
+	w, h             int
+	groups           map[*wgpu.Sampler]*wgpu.BindGroup
+	depthTexture     *wgpu.Texture
+	depthTextureView *wgpu.TextureView
+	clear            bool // the next pass into it clears it first (Clear)
+	clearDepth       bool
+	pendingPixels    []byte // its pixels until there is a device (images made before RunGame)
+	released         bool   // deallocated
 }
 
 func newTexture(w, h int) *texture {
@@ -35,13 +36,13 @@ func newTexture(w, h int) *texture {
 // ensure gives t its GPU texture, uploading the pixels it kept until then. A texture
 // used before RunGame adopts the window's device makes a headless device of its own.
 func (t *texture) ensure() {
-	if t.tex != nil || t.gone {
+	if t.tex != nil || t.released {
 		return
 	}
 	t.make()
-	if t.px != nil {
-		px := t.px
-		t.px = nil
+	if t.pendingPixels != nil {
+		px := t.pendingPixels
+		t.pendingPixels = nil
 		(&Image{t, image.Rect(0, 0, t.w, t.h)}).WritePixels(px)
 	}
 }
@@ -71,7 +72,7 @@ func (t *texture) group(s *wgpu.Sampler) *wgpu.BindGroup {
 		t.groups = map[*wgpu.Sampler]*wgpu.BindGroup{}
 	}
 	t.ensure()
-	g, err := dev.device.CreateBindGroup(&wgpu.BindGroupDescriptor{Label: "image", Layout: dev.texLayout,
+	g, err := dev.device.CreateBindGroup(&wgpu.BindGroupDescriptor{Label: "image", Layout: dev.textureLayout,
 		Entries: []wgpu.BindGroupEntry{{Binding: 0, TextureView: t.view}, {Binding: 1, Sampler: s}}})
 	if err != nil {
 		panic(err)
@@ -82,30 +83,30 @@ func (t *texture) group(s *wgpu.Sampler) *wgpu.BindGroup {
 
 func (t *texture) depthView() *wgpu.TextureView {
 	t.ensure()
-	if t.depth == nil {
+	if t.depthTexture == nil {
 		var err error
-		if t.depth, err = dev.device.CreateTexture(&wgpu.TextureDescriptor{
+		if t.depthTexture, err = dev.device.CreateTexture(&wgpu.TextureDescriptor{
 			Label: "depth", Size: wgpu.Extent3D{Width: uint32(t.w), Height: uint32(t.h), DepthOrArrayLayers: 1},
 			MipLevelCount: 1, SampleCount: 1, Dimension: gputypes.TextureDimension2D,
 			Format: gputypes.TextureFormatDepth32Float, Usage: gputypes.TextureUsageRenderAttachment,
 		}); err != nil {
 			panic(err)
 		}
-		if t.dview, err = dev.device.CreateTextureView(t.depth, nil); err != nil {
+		if t.depthTextureView, err = dev.device.CreateTextureView(t.depthTexture, nil); err != nil {
 			panic(err)
 		}
 		t.clearDepth = true
 	}
-	return t.dview
+	return t.depthTextureView
 }
 
 func (t *texture) release() {
-	t.gone, t.px = true, nil
+	t.released, t.pendingPixels = true, nil
 	if t.tex == nil {
 		return
 	}
 	flushBatch()
-	if dev.on == t {
+	if dev.passTarget == t {
 		endPass()
 	}
 	submit() // draws recorded with it must reach the GPU first
@@ -114,9 +115,9 @@ func (t *texture) release() {
 	}
 	t.view.Release()
 	t.tex.Release()
-	if t.depth != nil {
-		t.dview.Release()
-		t.depth.Release()
+	if t.depthTexture != nil {
+		t.depthTextureView.Release()
+		t.depthTexture.Release()
 	}
 	t.tex = nil
 }
@@ -160,7 +161,7 @@ func (i *Image) At(x, y int) color.Color {
 	if !image.Pt(x, y).In(i.r) {
 		return color.RGBA{}
 	}
-	px := make([]byte, 4)
+	px := make([]byte, bytesPerPixel)
 	readTexture(i.t, x, y, 1, 1, px)
 	return color.RGBA{px[0], px[1], px[2], px[3]}
 }
@@ -178,12 +179,12 @@ func (i *Image) WritePixels(px []byte) {
 	}
 	if i.t.tex == nil && dev.device == nil { // no device yet: kept until there is one
 		t := i.t
-		if t.px == nil {
-			t.px = make([]byte, t.w*t.h*4)
+		if t.pendingPixels == nil {
+			t.pendingPixels = make([]byte, t.w*t.h*bytesPerPixel)
 		}
-		w := i.r.Dx() * 4
+		w := i.r.Dx() * bytesPerPixel
 		for y := range i.r.Dy() {
-			copy(t.px[((i.r.Min.Y+y)*t.w+i.r.Min.X)*4:][:w], px[y*w:][:w])
+			copy(t.pendingPixels[((i.r.Min.Y+y)*t.w+i.r.Min.X)*bytesPerPixel:][:w], px[y*w:][:w])
 		}
 		return
 	}
@@ -194,7 +195,7 @@ func (i *Image) WritePixels(px []byte) {
 	submit() // draws recorded earlier still see the old pixels
 	w, h := i.r.Dx(), i.r.Dy()
 	if err := dev.queue.WriteTexture(&wgpu.ImageCopyTexture{Texture: i.t.tex, Origin: wgpu.Origin3D{X: uint32(i.r.Min.X), Y: uint32(i.r.Min.Y)}},
-		px[:w*h*4], &wgpu.ImageDataLayout{BytesPerRow: uint32(w * 4), RowsPerImage: uint32(h)},
+		px[:w*h*bytesPerPixel], &wgpu.ImageDataLayout{BytesPerRow: uint32(w * bytesPerPixel), RowsPerImage: uint32(h)},
 		&wgpu.Extent3D{Width: uint32(w), Height: uint32(h), DepthOrArrayLayers: 1}); err != nil {
 		panic(err)
 	}
@@ -214,26 +215,29 @@ func (i *Image) Deallocate() { i.t.release() }
 func (i *Image) Fill(c color.Color) {
 	r, g, b, a := c.RGBA()
 	if i.t.tex == nil && dev.device == nil { // no device yet: filled in memory
-		px := make([]byte, i.r.Dx()*i.r.Dy()*4)
-		for k := 0; k < len(px); k += 4 {
-			px[k], px[k+1], px[k+2], px[k+3] = byte(r>>8), byte(g>>8), byte(b>>8), byte(a>>8)
+		px := make([]byte, i.r.Dx()*i.r.Dy()*bytesPerPixel)
+		for k := 0; k < len(px); k += bytesPerPixel {
+			px[k], px[k+1], px[k+2], px[k+3] = to8Bits(r), to8Bits(g), to8Bits(b), to8Bits(a)
 		}
 		i.WritePixels(px)
 		return
 	}
-	if i.r == image.Rect(0, 0, i.t.w, i.t.h) && a == 0 && dev.on != i.t && !pending(i.t) {
+	if i.r == image.Rect(0, 0, i.t.w, i.t.h) && a == 0 && dev.passTarget != i.t && !pending(i.t) {
 		i.t.clear = true // the next pass clears it
 		return
 	}
 	var op DrawTrianglesOptions
 	op.Blend = blendCopy
-	k := float32(1) / 0xffff
+	k := float32(1) / math.MaxUint16 // color.Color channels are 16-bit
 	x0, y0, x1, y1 := float32(i.r.Min.X), float32(i.r.Min.Y), float32(i.r.Max.X), float32(i.r.Max.Y)
 	v := func(x, y float32) Vertex {
 		return Vertex{DstX: x, DstY: y, SrcX: 0.5, SrcY: 0.5, ColorR: float32(r) * k, ColorG: float32(g) * k, ColorB: float32(b) * k, ColorA: float32(a) * k}
 	}
 	i.DrawTriangles([]Vertex{v(x0, y0), v(x1, y0), v(x0, y1), v(x1, y1)}, []uint16{0, 1, 2, 1, 3, 2}, white(), &op)
 }
+
+// to8Bits is the top byte of a 16-bit color.Color channel.
+func to8Bits(v uint32) byte { return byte(v >> 8) }
 
 // Clear makes every pixel transparent.
 func (i *Image) Clear() { i.Fill(color.Transparent) }
@@ -251,43 +255,43 @@ func white() *Image {
 
 // GeoM is a 2D affine transform, like ebiten.GeoM.
 type GeoM struct {
-	a_1, b, c, d_1, tx, ty float64 // a and d stored minus one, so the zero value is the identity
+	aMinusOne, b, c, dMinusOne, tx, ty float64 // a and d stored minus one, so the zero value is the identity
 }
 
 func (g *GeoM) Reset() { *g = GeoM{} }
 
 // Apply transforms x, y.
 func (g *GeoM) Apply(x, y float64) (float64, float64) {
-	return (g.a_1+1)*x + g.b*y + g.tx, g.c*x + (g.d_1+1)*y + g.ty
+	return (g.aMinusOne+1)*x + g.b*y + g.tx, g.c*x + (g.dMinusOne+1)*y + g.ty
 }
 
 // Concat applies o after g.
 func (g *GeoM) Concat(o GeoM) {
-	a, b, c, d := g.a_1+1, g.b, g.c, g.d_1+1
-	oa, ob, oc, od := o.a_1+1, o.b, o.c, o.d_1+1
-	g.a_1 = oa*a + ob*c - 1
+	a, b, c, d := g.aMinusOne+1, g.b, g.c, g.dMinusOne+1
+	oa, ob, oc, od := o.aMinusOne+1, o.b, o.c, o.dMinusOne+1
+	g.aMinusOne = oa*a + ob*c - 1
 	g.b = oa*b + ob*d
 	g.c = oc*a + od*c
-	g.d_1 = oc*b + od*d - 1
+	g.dMinusOne = oc*b + od*d - 1
 	g.tx, g.ty = oa*g.tx+ob*g.ty+o.tx, oc*g.tx+od*g.ty+o.ty
 }
 
-func (g *GeoM) Scale(x, y float64)     { g.Concat(GeoM{a_1: x - 1, d_1: y - 1}) }
+func (g *GeoM) Scale(x, y float64)     { g.Concat(GeoM{aMinusOne: x - 1, dMinusOne: y - 1}) }
 func (g *GeoM) Translate(x, y float64) { g.tx += x; g.ty += y }
 
 // ColorScale multiplies a draw's premultiplied colour, like ebiten.ColorScale.
-type ColorScale struct{ r_1, g_1, b_1, a_1 float32 } // minus one: the zero value is no change
+type ColorScale struct{ rMinusOne, gMinusOne, bMinusOne, aMinusOne float32 } // minus one: the zero value is no change
 
 func (c *ColorScale) Scale(r, g, b, a float32) {
-	c.r_1, c.g_1, c.b_1, c.a_1 = (c.r_1+1)*r-1, (c.g_1+1)*g-1, (c.b_1+1)*b-1, (c.a_1+1)*a-1
+	c.rMinusOne, c.gMinusOne, c.bMinusOne, c.aMinusOne = (c.rMinusOne+1)*r-1, (c.gMinusOne+1)*g-1, (c.bMinusOne+1)*b-1, (c.aMinusOne+1)*a-1
 }
 func (c *ColorScale) ScaleAlpha(a float32) { c.Scale(a, a, a, a) }
 func (c *ColorScale) ScaleWithColor(clr color.Color) {
 	r, g, b, a := clr.RGBA()
-	c.Scale(float32(r)/0xffff, float32(g)/0xffff, float32(b)/0xffff, float32(a)/0xffff)
+	c.Scale(float32(r)/math.MaxUint16, float32(g)/math.MaxUint16, float32(b)/math.MaxUint16, float32(a)/math.MaxUint16)
 }
 func (c *ColorScale) rgba() (float32, float32, float32, float32) {
-	return c.r_1 + 1, c.g_1 + 1, c.b_1 + 1, c.a_1 + 1
+	return c.rMinusOne + 1, c.gMinusOne + 1, c.bMinusOne + 1, c.aMinusOne + 1
 }
 
 // Filter picks how a scaled source is sampled.

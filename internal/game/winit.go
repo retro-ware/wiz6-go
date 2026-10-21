@@ -98,7 +98,7 @@ func loadSound(n int) {
 func showCredits() {
 	drv.LoadPic(0, openData("CREDITS.PIC", 3))
 	win := createWindow(0, 0, 40, 25, 1, -1, WinPicture, false)
-	drv.FillBack(winRect(win), 0)
+	drv.FillWorkBuffer(winRect(win), 0)
 	drawBigChar(10, 84, 52)
 	drawBigChar(11, 84, 84)
 	drv.ShowWindow(winRect(win))
@@ -154,7 +154,7 @@ func loadFullscreenPic(name string, show bool) {
 	fullscreenWin = createWindow(0, 0, 40, 25, 1, -1, WinPicture, false)
 	stopSound()
 	b := openData(name, 12)
-	drv.FillBack(winRect(fullscreenWin), 0)
+	drv.FillWorkBuffer(winRect(fullscreenWin), 0)
 	drv.LoadScreen(b)
 	if show {
 		drv.ShowWindow(winRect(fullscreenWin))
@@ -199,7 +199,7 @@ func showTitleSequence() {
 	playSound(4)
 	wait(2)
 	playSound(13)
-	drv.FillBack(win, 0)
+	drv.FillWorkBuffer(win, 0)
 	drawBigChar(13, 91, 52)
 	drawBigChar(9, 107, 82)
 	drv.ShowWindow(win)

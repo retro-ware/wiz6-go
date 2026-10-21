@@ -7,7 +7,7 @@
 // Entry points, by their far-pointer slot in the root (cs:1b8a + 4*n) and driver address:
 //
 //	1b8a 029a  Glyph       mono glyph of font 0 in a text cell (put_char, refresh_window)
-//	1b8e 053a  GlyphHi     colour glyph of font 1..4 in a text cell (put_char_hi, borders)
+//	1b8e 053a  ColorGlyph  colour glyph of font 1..4 in a text cell (put_char_hi, borders)
 //	1b92 065f  FillCell    a text cell no window owns, in colour 8 (refresh_all_windows)
 //	1b96 0fae  MouseInit   reset the mouse, show the pointer (drv_op_96)
 //	1b9a 100a  MouseShutdown
@@ -18,7 +18,7 @@
 //	1bb2 1d94  DrawFrames  frames of a slot's picture into the working buffer (drv_draw_text)
 //	1bb6 06f0  LoadScreen  full-screen picture into the pristine copy and the working buffer (drv_op_b6)
 //	1bba 0731  LoadMaze    MAZEDATA tiles (drv_load_from_file)
-//	1bbe 0835  FillBack    a window's rectangle of the working buffer (drv_op_be)
+//	1bbe 0835  FillWorkBuffer a window's rectangle of the working buffer (drv_op_be)
 //	1bc2 08b3  ShowWindow  a window's rectangle, working buffer to screen (drv_op_c2)
 //	1bc6 0b93  MazeTile    one maze wall tile into the working buffer (drv_op_c6)
 //	1bca 1a2e  ClearClick  forget a latched click (flush_keys)
@@ -31,8 +31,21 @@ import (
 
 // Screen size in pixels and in 8x8 text cells.
 const (
-	W, H       = 320, 200
-	Cols, Rows = 40, 25
+	ScreenWidth, ScreenHeight = 320, 200
+	Cols, Rows                = 40, 25
+	// CellSize is a text cell's width and height in pixels; a byte of a plane holds one
+	// cell row.
+	CellSize = 8
+)
+
+const (
+	colorCount     = 16  // EGA colours
+	glyphCount     = 128 // glyphs per font; a character code's bit 7 is ignored
+	colorFontCount = 5   // fonts 0..4; colour fonts use 1..4
+	fillCellColor  = 8   // dark grey, the colour FillCell paints
+	planeCount     = 4   // EGA bit planes; plane p is bit p of a colour
+	// dacShift turns an 8-bit colour channel into the VGA DAC's 6 bits.
+	dacShift = 2
 )
 
 // Transparent is the colour a picture pixel with all four planes set has: draw_text and
@@ -44,19 +57,19 @@ type Rect struct{ X, Y, W, H int }
 
 var (
 	// Screen is the EGA screen (segment A000).
-	Screen [H][W]uint8
-	// Back is the working picture buffer (cs:[0x14d]): picture windows show it, draw_text
+	Screen [ScreenHeight][ScreenWidth]uint8
+	// WorkBuffer is the working picture buffer (cs:[0x14d]): picture windows show it, draw_text
 	// and the maze draw into it.
-	Back  [H][W]uint8
-	mono  [128][8]uint8       // font 0: one bit per pixel, bit 7 leftmost
-	fonts [5][128][8][8]uint8 // fonts 1..4: colour indices
-	dirty bool
-	frame [W * H]byte
+	WorkBuffer     [ScreenHeight][ScreenWidth]uint8
+	monoFont       [glyphCount][CellSize]uint8                           // font 0: one bit per pixel, bit 7 leftmost
+	colorFonts     [colorFontCount][glyphCount][CellSize][CellSize]uint8 // fonts 1..4: colour indices
+	screenChanged  bool
+	presentedFrame [ScreenWidth * ScreenHeight]byte
 )
 
 // Palette is the EGA palette the root sets for mode 0Dh (int 10h ax=1002h, root 1e43),
 // as RGB with 8 bits each. Colour 15 is cyan; in pictures it means transparent.
-var Palette = [16][3]uint8{
+var Palette = [colorCount][3]uint8{
 	{0, 0, 0}, {255, 255, 255}, {85, 85, 255}, {255, 85, 255},
 	{255, 85, 85}, {255, 255, 85}, {85, 255, 85}, {85, 255, 255},
 	{85, 85, 85}, {170, 170, 170}, {0, 0, 170}, {170, 0, 170},
@@ -65,93 +78,94 @@ var Palette = [16][3]uint8{
 
 // Init sets the host palette and clears the screen, as the root's mode set does.
 func Init() {
-	cs := make([]host.Color, 16)
+	cs := make([]host.Color, colorCount)
 	for i, c := range Palette {
-		cs[i] = host.Color{R: c[0] >> 2, G: c[1] >> 2, B: c[2] >> 2}
+		cs[i] = host.Color{R: c[0] >> dacShift, G: c[1] >> dacShift, B: c[2] >> dacShift}
 	}
 	host.SetPalette(0, cs)
-	Screen = [H][W]uint8{}
-	dirty = true
+	Screen = [ScreenHeight][ScreenWidth]uint8{}
+	screenChanged = true
 	Present()
 }
 
 // SetMonoFont loads font 0 (WFONT0): row bytes, bit 7 the leftmost pixel.
-func SetMonoFont(g [128][8]uint8) { mono = g }
+func SetMonoFont(g [glyphCount][CellSize]uint8) { monoFont = g }
 
 // SetFont loads colour font n (1..4): 8x8 colour indices per glyph.
-func SetFont(n int, g [128][8][8]uint8) { fonts[n] = g }
+func SetFont(n int, g [glyphCount][CellSize][CellSize]uint8) { colorFonts[n] = g }
 
 // SetGlyphs replaces count glyphs of colour font n from first on (root f2256).
-func SetGlyphs(n, first int, g [][8][8]uint8) { copy(fonts[n][first:], g) }
+func SetGlyphs(n, first int, g [][CellSize][CellSize]uint8) { copy(colorFonts[n][first:], g) }
 
 // Present hands the screen to the host if it changed since the last call.
 func Present() {
-	if !dirty {
+	if !screenChanged {
 		return
 	}
-	dirty = false
+	screenChanged = false
 	for y := range Screen {
-		copy(frame[y*W:], Screen[y][:])
+		copy(presentedFrame[y*ScreenWidth:], Screen[y][:])
 	}
-	drawPointer(frame[:])
-	host.Present(frame[:], W, H)
+	drawPointer(presentedFrame[:])
+	host.Present(presentedFrame[:], ScreenWidth, ScreenHeight)
 }
 
 // Glyph draws glyph ch of font 0 in text cell (col, row) in colour fg (driver 029a). With
 // inverse the glyph's clear pixels take fg and its set pixels colour 0.
 func Glyph(col, row int, ch uint8, fg uint8, inverse bool) {
-	g := mono[ch&0x7f]
-	for y := range 8 {
-		for x := range 8 {
-			on := g[y]&(0x80>>x) != 0
+	g := monoFont[ch%glyphCount]
+	for y := range CellSize {
+		for x := range CellSize {
+			on := g[y]&pixelBit(x) != 0
 			c := uint8(0)
 			if on != inverse {
-				c = fg & 15
+				c = fg % colorCount
 			}
-			Screen[row*8+y][col*8+x] = c
+			Screen[row*CellSize+y][col*CellSize+x] = c
 		}
 	}
-	dirty = true
+	screenChanged = true
 }
 
-// GlyphHi draws glyph ch of colour font n (1..4) in text cell (col, row) (driver 053a).
-func GlyphHi(col, row int, ch uint8, n int) {
-	g := &fonts[n][ch&0x7f]
-	for y := range 8 {
-		copy(Screen[row*8+y][col*8:col*8+8], g[y][:])
+// ColorGlyph draws glyph ch of colour font n (1..4) in text cell (col, row) (driver 053a).
+func ColorGlyph(col, row int, ch uint8, n int) {
+	g := &colorFonts[n][ch%glyphCount]
+	for y := range CellSize {
+		copy(Screen[row*CellSize+y][col*CellSize:(col+1)*CellSize], g[y][:])
 	}
-	dirty = true
+	screenChanged = true
 }
 
 // FillCell paints text cell (col, row) in colour 8 (driver 065f, write mode 2).
 func FillCell(col, row int) {
-	for y := range 8 {
-		for x := range 8 {
-			Screen[row*8+y][col*8+x] = 8
+	for y := range CellSize {
+		for x := range CellSize {
+			Screen[row*CellSize+y][col*CellSize+x] = fillCellColor
 		}
 	}
-	dirty = true
+	screenChanged = true
 }
 
 // CopyCell copies text cell (col, row) from the working buffer to the screen (driver 0e2f).
 func CopyCell(col, row int) {
-	for y := range 8 {
-		copy(Screen[row*8+y][col*8:col*8+8], Back[row*8+y][col*8:col*8+8])
+	for y := range CellSize {
+		x0, x1 := col*CellSize, (col+1)*CellSize
+		copy(Screen[row*CellSize+y][x0:x1], WorkBuffer[row*CellSize+y][x0:x1])
 	}
-	dirty = true
+	screenChanged = true
 }
 
-// FillBack fills rectangle r of the working buffer with the plane byte v (driver 0835):
+// FillWorkBuffer fills rectangle r of the working buffer with the plane byte v (driver 0835):
 // every plane gets v, so pixel x of each byte is colour 15 where bit 7-x of v is set and 0
 // elsewhere.
-func FillBack(r Rect, v uint8) {
-	for y := r.Y * 8; y < (r.Y+r.H)*8 && y < H; y++ {
-		for x := r.X * 8; x < (r.X+r.W)*8 && x < W; x++ {
+func FillWorkBuffer(r Rect, v uint8) {
+	for y := r.Y * CellSize; y < (r.Y+r.H)*CellSize && y < ScreenHeight; y++ {
+		for x := r.X * CellSize; x < (r.X+r.W)*CellSize && x < ScreenWidth; x++ {
 			c := uint8(0)
-			if v&(0x80>>(x&7)) != 0 {
-				c = 15
+			if v&pixelBit(x%CellSize) != 0 {
+				c = Transparent
 			}
-			Back[y][x] = c
+			WorkBuffer[y][x] = c
 		}
 	}
 }
@@ -159,16 +173,20 @@ func FillBack(r Rect, v uint8) {
 // ShowWindow copies rectangle r from the working buffer to the screen (driver 08b3). It
 // ignores which window owns the cells.
 func ShowWindow(r Rect) {
-	for y := r.Y * 8; y < (r.Y+r.H)*8 && y < H; y++ {
-		x0, x1 := r.X*8, min((r.X+r.W)*8, W)
-		copy(Screen[y][x0:x1], Back[y][x0:x1])
+	for y := r.Y * CellSize; y < (r.Y+r.H)*CellSize && y < ScreenHeight; y++ {
+		x0, x1 := r.X*CellSize, min((r.X+r.W)*CellSize, ScreenWidth)
+		copy(Screen[y][x0:x1], WorkBuffer[y][x0:x1])
 	}
-	dirty = true
+	screenChanged = true
 	Present()
 }
 
-// maze is the MAZEDATA tile set (driver 0731).
-var maze *dbs.MazeData
+// mazeData is the MAZEDATA tile set (driver 0731).
+var mazeData *dbs.MazeData
 
 // LoadMaze takes the MAZEDATA tiles (driver 0731, drv_load_from_file).
-func LoadMaze(m *dbs.MazeData) { maze = m }
+func LoadMaze(m *dbs.MazeData) { mazeData = m }
+
+// pixelBit is the bit of a plane byte (or a font 0 row) that holds pixel x (0..7) of its
+// cell row: bit 7 is the leftmost pixel.
+func pixelBit(x int) byte { return 1 << (CellSize - 1 - x) }

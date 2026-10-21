@@ -104,7 +104,7 @@ const (
 	keyAll
 )
 
-var sides = map[Key][2]gpucontext.Key{
+var keySides = map[Key][2]gpucontext.Key{
 	KeyShift:   {gpucontext.KeyLeftShift, gpucontext.KeyRightShift},
 	KeyControl: {gpucontext.KeyLeftControl, gpucontext.KeyRightControl},
 	KeyAlt:     {gpucontext.KeyLeftAlt, gpucontext.KeyRightAlt},
@@ -161,21 +161,21 @@ const (
 // TouchID is a touch; there are none on the desktop.
 type TouchID int
 
-// in is the input as Update sees it: per key and button, the ticks it has
+// input is the input as Update sees it: per key and button, the ticks it has
 // been held (counted at each tick, so a press shorter than a tick still
 // counts once).
-var in struct {
-	down, hit [keyAll]bool
-	dur       [keyAll]int
-	mdown     [mouseCount]bool
-	mhit      [mouseCount]bool
-	mdur      [mouseCount]int
-	chars     []rune // typed since the last tick
-	tickChars []rune
-	wheel     [2]float64
-	tickWheel [2]float64
-	cursor    [2]float64 // window units
-	off       [2]int     // SetCursorPosition's offset, in screen pixels
+var input struct {
+	keyDown, keyPressed [keyAll]bool
+	keyHeldTicks        [keyAll]int
+	buttonDown          [mouseCount]bool
+	buttonPressed       [mouseCount]bool
+	buttonHeldTicks     [mouseCount]int
+	chars               []rune // typed since the last tick
+	tickChars           []rune
+	wheel               [2]float64
+	tickWheel           [2]float64
+	cursor              [2]float64 // window units
+	cursorOffset        [2]int     // SetCursorPosition's offset, in screen pixels
 }
 
 func initInput(app *gogpu.App) {
@@ -184,68 +184,68 @@ func initInput(app *gogpu.App) {
 		if int(k) >= keyCount {
 			return
 		}
-		in.down[k] = down
-		in.hit[k] = in.hit[k] || down
+		input.keyDown[k] = down
+		input.keyPressed[k] = input.keyPressed[k] || down
 	}
 	ev.OnKeyPress(func(k gpucontext.Key, _ gpucontext.Modifiers) { key(k, true) })
 	ev.OnKeyRelease(func(k gpucontext.Key, _ gpucontext.Modifiers) { key(k, false) })
-	ev.OnTextInput(func(t string) { in.chars = append(in.chars, []rune(t)...) })
+	ev.OnTextInput(func(t string) { input.chars = append(input.chars, []rune(t)...) })
 	button := func(b gpucontext.MouseButton, down bool, x, y float64) {
-		in.cursor = [2]float64{x, y}
+		input.cursor = [2]float64{x, y}
 		if int(b) < mouseCount {
-			in.mdown[b] = down
-			in.mhit[b] = in.mhit[b] || down
+			input.buttonDown[b] = down
+			input.buttonPressed[b] = input.buttonPressed[b] || down
 		}
 	}
 	ev.OnMousePress(func(b gpucontext.MouseButton, x, y float64) { button(b, true, x, y) })
 	ev.OnMouseRelease(func(b gpucontext.MouseButton, x, y float64) { button(b, false, x, y) })
-	ev.OnMouseMove(func(x, y float64) { in.cursor = [2]float64{x, y} })
+	ev.OnMouseMove(func(x, y float64) { input.cursor = [2]float64{x, y} })
 	if ps, ok := ev.(gpucontext.PointerEventSource); ok {
-		ps.OnPointer(func(e gpucontext.PointerEvent) { capture.dx += e.DeltaX; capture.dy += e.DeltaY })
+		ps.OnPointer(func(e gpucontext.PointerEvent) { capture.deltaX += e.DeltaX; capture.deltaY += e.DeltaY })
 	}
-	ev.OnScroll(func(dx, dy float64) { in.wheel[0] += dx; in.wheel[1] += dy })
+	ev.OnScroll(func(dx, dy float64) { input.wheel[0] += dx; input.wheel[1] += dy })
 }
 
 // tickInput advances the held counts; called before each Update.
 func tickInput() {
 	for _, k := range []Key{KeyShift, KeyControl, KeyAlt, KeyMeta} {
-		s := sides[k]
-		in.down[k] = in.down[s[0]] || in.down[s[1]]
-		in.hit[k] = in.hit[s[0]] || in.hit[s[1]]
+		s := keySides[k]
+		input.keyDown[k] = input.keyDown[s[0]] || input.keyDown[s[1]]
+		input.keyPressed[k] = input.keyPressed[s[0]] || input.keyPressed[s[1]]
 	}
-	for k := range in.dur {
-		if in.down[k] || in.hit[k] && in.dur[k] == 0 {
-			in.dur[k]++
+	for k := range input.keyHeldTicks {
+		if input.keyDown[k] || input.keyPressed[k] && input.keyHeldTicks[k] == 0 {
+			input.keyHeldTicks[k]++
 		} else {
-			in.dur[k] = 0
+			input.keyHeldTicks[k] = 0
 		}
-		in.hit[k] = false
+		input.keyPressed[k] = false
 	}
-	for b := range in.mdur {
-		if in.mdown[b] || in.mhit[b] && in.mdur[b] == 0 {
-			in.mdur[b]++
+	for b := range input.buttonHeldTicks {
+		if input.buttonDown[b] || input.buttonPressed[b] && input.buttonHeldTicks[b] == 0 {
+			input.buttonHeldTicks[b]++
 		} else {
-			in.mdur[b] = 0
+			input.buttonHeldTicks[b] = 0
 		}
-		in.mhit[b] = false
+		input.buttonPressed[b] = false
 	}
-	in.tickChars, in.chars = append(in.tickChars[:0], in.chars...), in.chars[:0]
-	in.tickWheel, in.wheel = in.wheel, [2]float64{}
+	input.tickChars, input.chars = append(input.tickChars[:0], input.chars...), input.chars[:0]
+	input.tickWheel, input.wheel = input.wheel, [2]float64{}
 }
 
-func IsKeyPressed(k Key) bool     { return k >= 0 && k < keyAll && in.dur[k] > 0 }
+func IsKeyPressed(k Key) bool     { return k >= 0 && k < keyAll && input.keyHeldTicks[k] > 0 }
 func IsKeyJustPressed(k Key) bool { return KeyPressDuration(k) == 1 }
 func KeyPressDuration(k Key) int {
 	if k < 0 || k >= keyAll {
 		return 0
 	}
-	return in.dur[k]
+	return input.keyHeldTicks[k]
 }
 
 // AppendJustPressedKeys appends the keys pressed this tick.
 func AppendJustPressedKeys(ks []Key) []Key {
 	for k := range Key(keyCount) {
-		if in.dur[k] == 1 {
+		if input.keyHeldTicks[k] == 1 {
 			ks = append(ks, k)
 		}
 	}
@@ -253,25 +253,27 @@ func AppendJustPressedKeys(ks []Key) []Key {
 }
 
 // AppendInputChars appends the characters typed since the last tick.
-func AppendInputChars(rs []rune) []rune { return append(rs, in.tickChars...) }
+func AppendInputChars(rs []rune) []rune { return append(rs, input.tickChars...) }
 
-func IsMouseButtonPressed(b MouseButton) bool { return b >= 0 && b < mouseCount && in.mdur[b] > 0 }
+func IsMouseButtonPressed(b MouseButton) bool {
+	return b >= 0 && b < mouseCount && input.buttonHeldTicks[b] > 0
+}
 func IsMouseButtonJustPressed(b MouseButton) bool {
-	return b >= 0 && b < mouseCount && in.mdur[b] == 1
+	return b >= 0 && b < mouseCount && input.buttonHeldTicks[b] == 1
 }
 
 // CursorPosition is the pointer's position on the screen image.
 func CursorPosition() (int, int) {
-	if win.app == nil || win.k == 0 {
+	if win.app == nil || win.screenScale == 0 {
 		return 0, 0
 	}
-	x, y := in.cursor[0], in.cursor[1]
+	x, y := input.cursor[0], input.cursor[1]
 	s := Monitor().DeviceScaleFactor()
-	return int((x*s-win.ox)/win.k) + in.off[0], int((y*s-win.oy)/win.k) + in.off[1]
+	return int((x*s-win.screenX)/win.screenScale) + input.cursorOffset[0], int((y*s-win.screenY)/win.screenScale) + input.cursorOffset[1]
 }
 
 // Wheel is the wheel movement since the last tick.
-func Wheel() (float64, float64) { return in.tickWheel[0], in.tickWheel[1] }
+func Wheel() (float64, float64) { return input.tickWheel[0], input.tickWheel[1] }
 
 // Gamepads: gogpu reads none yet, so there are none.
 // ponytail: wire them up when gogpu gets gamepad input

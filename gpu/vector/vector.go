@@ -11,7 +11,7 @@ import (
 // tris draws triangles of one solid colour (the antialias flags are ignored).
 func tris(dst *gpu.Image, pts [][2]float32, is []uint16, c color.Color) {
 	r, g, b, a := c.RGBA()
-	k := float32(1) / 0xffff
+	k := float32(1) / math.MaxUint16 // color.Color channels are 16-bit
 	vs := make([]gpu.Vertex, len(pts))
 	for i, p := range pts {
 		vs[i] = gpu.Vertex{DstX: p[0], DstY: p[1], SrcX: 0.5, SrcY: 0.5,

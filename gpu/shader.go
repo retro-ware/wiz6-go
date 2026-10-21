@@ -24,7 +24,7 @@ type Shader struct {
 	fields []field
 	pipes  [blendCount]*wgpu.RenderPipeline
 	src    string
-	groups map[[4]*texture]*wgpu.BindGroup
+	groups map[[shaderImageCount]*texture]*wgpu.BindGroup
 }
 
 type field struct {
@@ -41,6 +41,16 @@ var (
 var wgslSize = map[string][2]int{"f32": {4, 4}, "vec2f": {8, 8}, "vec3f": {12, 16}, "vec4f": {16, 16}}
 
 var imagesLayout *wgpu.BindGroupLayout
+
+// A shader samples up to shaderImageCount images (bindings 0..3); the sampler is the next
+// binding.
+const (
+	shaderImageCount  = 4
+	shaderSamplerSlot = shaderImageCount
+	// builtinFloats is the space for the builtin uniform values (four vec2f).
+	builtinFloats = 8
+	float32Size   = 4
+)
 
 // builtins come first in every Uniforms block.
 const builtins = "_dstOrigin: vec2f, _srcOrigin: vec2f, _srcSize: vec2f, _pad: vec2f, "
@@ -72,7 +82,7 @@ func NewShader(src []byte) (*Shader, error) {
 		code = "struct Uniforms {}\n" + code
 		m = structRe.FindStringSubmatchIndex(code)
 	}
-	s := &Shader{groups: map[[4]*texture]*wgpu.BindGroup{}}
+	s := &Shader{groups: map[[shaderImageCount]*texture]*wgpu.BindGroup{}}
 	body := builtins + code[m[2]:m[3]]
 	for _, f := range fieldRe.FindAllStringSubmatch(body, -1) {
 		sa := wgslSize[f[2]]
@@ -93,11 +103,11 @@ func (s *Shader) pipe(b Blend) *wgpu.RenderPipeline {
 	var err error
 	if imagesLayout == nil {
 		if imagesLayout, err = dev.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "shader images",
-			Entries: []gputypes.BindGroupLayoutEntry{texEntry(0), texEntry(1), texEntry(2), texEntry(3), samplerEntry(4)}}); err != nil {
+			Entries: []gputypes.BindGroupLayoutEntry{texEntry(0), texEntry(1), texEntry(2), texEntry(3), samplerEntry(shaderSamplerSlot)}}); err != nil {
 			panic(err)
 		}
 	}
-	if s.pipes[b], err = newPipeline(pipeSpec{"shader", s.src, []*wgpu.BindGroupLayout{dev.uniLayout, imagesLayout},
+	if s.pipes[b], err = newPipeline(pipeSpec{"shader", s.src, []*wgpu.BindGroupLayout{dev.uniformLayout, imagesLayout},
 		vertexLayout, blends[b], gputypes.TextureFormatRGBA8Unorm, false, "", false}); err != nil {
 		panic(err)
 	}
@@ -105,7 +115,7 @@ func (s *Shader) pipe(b Blend) *wgpu.RenderPipeline {
 }
 
 // pack lays the uniform values out as WGSL does.
-func (s *Shader) pack(builtin [8]float32, vals map[string]any) []byte {
+func (s *Shader) pack(builtin [builtinFloats]float32, vals map[string]any) []byte {
 	var b []byte
 	bi := 0
 	for _, f := range s.fields {
@@ -128,7 +138,7 @@ func (s *Shader) pack(builtin [8]float32, vals map[string]any) []byte {
 				fs = v
 			}
 		}
-		n := f.size / 4
+		n := f.size / float32Size
 		for j := range n {
 			x := float32(0)
 			if j < len(fs) {
@@ -140,11 +150,11 @@ func (s *Shader) pack(builtin [8]float32, vals map[string]any) []byte {
 	return b
 }
 
-func (s *Shader) group(ts [4]*texture) *wgpu.BindGroup {
+func (s *Shader) group(ts [shaderImageCount]*texture) *wgpu.BindGroup {
 	if g := s.groups[ts]; g != nil {
 		return g
 	}
-	es := []wgpu.BindGroupEntry{{Binding: 4, Sampler: dev.nearest}}
+	es := []wgpu.BindGroupEntry{{Binding: shaderSamplerSlot, Sampler: dev.nearest}}
 	for j, t := range ts {
 		es = append(es, wgpu.BindGroupEntry{Binding: uint32(j), TextureView: t.view})
 	}
@@ -159,7 +169,7 @@ func (s *Shader) group(ts [4]*texture) *wgpu.BindGroup {
 // DrawTrianglesShaderOptions are DrawTrianglesShader's options.
 type DrawTrianglesShaderOptions struct {
 	Uniforms map[string]any
-	Images   [4]*Image
+	Images   [shaderImageCount]*Image
 	Blend    Blend
 }
 
@@ -168,7 +178,7 @@ func (i *Image) DrawTrianglesShader(vs []Vertex, is []uint16, s *Shader, op *Dra
 	if op == nil {
 		op = &DrawTrianglesShaderOptions{}
 	}
-	var ts [4]*texture
+	var ts [shaderImageCount]*texture
 	src := image.Rectangle{}
 	for j, im := range op.Images {
 		if im == nil {
@@ -179,7 +189,7 @@ func (i *Image) DrawTrianglesShader(vs []Vertex, is []uint16, s *Shader, op *Dra
 			src = im.r
 		}
 	}
-	builtin := [8]float32{float32(i.r.Min.X), float32(i.r.Min.Y), float32(src.Min.X), float32(src.Min.Y), float32(src.Dx()), float32(src.Dy())}
+	builtin := [builtinFloats]float32{float32(i.r.Min.X), float32(i.r.Min.Y), float32(src.Min.X), float32(src.Min.Y), float32(src.Dx()), float32(src.Dy())}
 	k := batchKey{dst: i.t, clip: i.r, pipe: s.pipe(op.Blend), group: s.group(ts), uni: string(s.pack(builtin, op.Uniforms))}
 	queue(k, i, vs, is, ts[0])
 }
@@ -188,7 +198,7 @@ func (i *Image) DrawTrianglesShader(vs []Vertex, is []uint16, s *Shader, op *Dra
 type DrawRectShaderOptions struct {
 	GeoM     GeoM
 	Uniforms map[string]any
-	Images   [4]*Image
+	Images   [shaderImageCount]*Image
 	Blend    Blend
 }
 

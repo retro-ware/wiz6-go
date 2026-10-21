@@ -43,3 +43,69 @@ Fields shown as `[n]` are arrays whose elements mean different things. Splitting
 - pic.go:158 `-int(int8(c))`: an RLE run length is the control byte read as a negative int8.
 - scenario.go:90 `offset`: indexes a flat `remapTables` byte slice (DISK.HDR from MapIndex on), not the typed `DiskHeader` arrays. The original reads past the end of a table into the next one (treasure indexes 256+ land in MonsterIndex), and the parity goldens rely on it. Table starts are derived from the array lengths.
 - Scenario.Hdr stays raw `[]byte` (typed by the game through Decode[ScenarioHeader]). This is unchanged.
+
+## internal/drv
+
+### Hex/binary literals in code
+
+None left. Hex stays only in comments (driver addresses, cs: offsets, and the hex form of the slot table next to its decimal values at pic.go:18-19).
+
+- mouse.go:91 `pointerImage`: the pointer bitmap as strings of hex digits (one colour index per character). It is image data copied from captures; each digit is parsed with `strconv.ParseUint(..., 16, 8)` (mouse.go:121).
+- drv.go:72 `Palette`: the EGA RGB palette as decimal hardware data (85/170/255 levels). Not hex, listed as hardware data.
+
+### Unclear names kept
+
+- maze.go:11 `MazeTile(draw, or, mirror int)`: `or` is a 0/1 flag (OR the tile into the buffer). Kept to keep the exported signature; callers pass ints.
+- pic.go:127 `DrawFrames(n, x, y, clipL, clipR, flags, ...)` and the short locals in DrawFrames, LoadPic and MazeTile (`d`, `t`, `tw`, `th`, `pw`, `ph`, `di`, `si`, `r0`): kept as is. They are local and described by the doc comments; `di`/`si` mirror the original's registers in the RLE loop.
+- pic.go:52 `drawFramesBottom` (144): the first row DrawFrames leaves clear. The value is from the driver; why 144 (presumably the bottom of the picture windows) is not confirmed.
+- pic.go:28 `rleChunkSlack` (256): the size of the zero padding after a chunk. The original reads past the chunk into whatever follows; 256 is this port's choice, not the original's.
+
+### Low-level code kept
+
+- pic.go:17 `slotArea` and pic.go:19 `slotStartParagraph`: the picture slot area is a flat byte array addressed in paragraphs, as in the driver. A picture larger than its slot runs on into the next slots, and LoadScreen's pristine copy lives in slot area 5 onwards, so `LoadScreen(nil)` shows whatever the slots there hold now. Typed per-slot values would lose that, and the parity goldens may depend on it.
+- pic.go:62 `LoadPic`: RLE decoding with the original's chunk quirk (control bytes only below index 0xfff of each 4096-byte chunk).
+- pic.go:99 `LoadScreen`, pic.go:152-156 (frame record offset and tile bitmap), pic.go:216 `tilePixel`, maze.go:62 `putPlanarByte`: EGA bit-plane decoding with bit masks (`pixelBit`, drv.go:192). This is the file format of the pictures and MAZEDATA. Frame records are read straight from `slotArea` bytes (offset as little-endian uint16, tile bitmap LSB first) because they live inside the slot memory above.
+- maze.go:62 `putPlanarByte` takes a byte offset into a 40-bytes-a-row buffer (`o`), as MAZEDATA records address it; offsets outside the screen are dropped, as the original wrote them to memory the screen does not show.
+- `compose` (the unused 0x1400-byte draw_text scratch buffer in pic.go) was deleted, not kept.
+
+## internal/host
+
+### Hex/binary literals in code
+
+- window.go:16-39 `scanCodes`: the PC set-1 scan code of each key, in hex. These are external hardware codes, conventionally written in hex and checked against scan code tables that way.
+- window.go:12 `extendedKeyPrefix = 0xE0`: the scan code prefix byte of grey (extended) keys. Hardware value.
+- host.go:37 `keyBreakBit = 0x80`: the bit set in a key-up scan code. Hardware value.
+
+### Unclear names kept
+
+- audio.go:65 `mix`, pace.go:29 `pace`, host.go `state`: package state structs with short names; their fields are documented.
+- audio.go:59 `voice.pos`: 32.32 fixed-point position (documented by `positionShift`).
+- audio.go:29-31 `maxVolume`, `maxPan`: only named for the doc comments; the code takes volume and pan as given. The game passes `0x7f`/`0x8000` literals (root_sound.go:78), left for the internal/game pass.
+
+### Low-level code kept
+
+- audio.go:59, 189 and the mixer loop: fixed-point sample positions and shifts (`positionShift`, `interpolationBits`, `panShift`, `volumeShift`). This is the mixer's integer arithmetic; switching to float would change the output samples.
+- host.go:247 `dacTo8Bits`: widens a 6-bit VGA DAC value to 8 bits with shifts (`v<<2 | v>>4`), the standard bit-replication.
+
+## gpu
+
+`gpu` is its own module (gpu/go.mod, `replace gpu => ./gpu`), not part of the wiz6-go module. Its exported API copies Ebiten's (`GeoM`, `ColorScale`, `SetTPS`, `KeyKP0`, `Vertex.DstX`, `MeshVertex.NX`, `Mat4`, `Ident`, ...), so exported names were not renamed. Only unexported names changed.
+
+### Hex/binary literals in code
+
+None left. 16-bit colour channel maxima use `math.MaxUint16`, the multisample mask `math.MaxUint32`.
+
+- pipelines.go:45 `blitWGSL`: the WGSL full-screen-triangle trick `(id << 1u) & 2u`, `id & 2u` in shader source. It is the standard way to make the three corners from the vertex index; WGSL constants would not make it clearer.
+
+### Unclear names kept
+
+- image.go:258 `GeoM` fields `b`, `c`, `tx`, `ty` (and `aMinusOne`, `dMinusOne`): the conventional names of affine matrix entries, as in Ebiten.
+- device.go:22 `dev`, run.go:23 `win`, image.go:391 `batch`, input.go:167 `input`: package state structs; their fields are documented.
+- mesh.go:49 `Ident`: Ebiten-style exported name, kept.
+- shader.go `wgslSize`: WGSL's size/alignment table, as numbers from the WGSL spec.
+
+### Low-level code kept
+
+- device.go:314 `bytesOf`: `unsafe.Slice` over a vertex slice to upload it to the GPU without copying. The GPU API takes bytes; this is the usual Go way to hand it a typed slice.
+- pipelines.go:142-152: vertex layouts use `unsafe.Sizeof` / `unsafe.Offsetof` of `gpuVertex` and `MeshVertex` (instead of the former literals 48, 8, 12, 16, 20, 32), so the layout follows the structs.
+- device.go `alignUp` and the stream chunk / readback row alignment: byte offsets and sizes for GPU buffers, as WebGPU requires (`uniformOffsetAlignment`, `bytesPerRowAlignment`, `writeBufferAlignment`).

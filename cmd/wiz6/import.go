@@ -66,7 +66,7 @@ func writeCover(dir string) error {
 	for i, c := range drv.Palette {
 		pal[i] = color.RGBA{c[0], c[1], c[2], 255}
 	}
-	m := image.NewPaletted(image.Rect(0, 0, drv.W, drv.H), pal)
+	m := image.NewPaletted(image.Rect(0, 0, drv.ScreenWidth, drv.ScreenHeight), pal)
 	copy(m.Pix, px[:])
 	f, err := os.Create(filepath.Join(dir, "COVER.PNG"))
 	if err != nil {

@@ -16,20 +16,20 @@ func TestMazeTileMirror(t *testing.T) {
 	LoadMaze(m)
 	for r, d := range m.Draws {
 		tl := m.Tiles[d.Tile]
-		if d.Skip != 0 || int(d.Width) != tl.W || d.X < 0 || int(d.X)+tl.W > Cols || int(d.Y)+tl.H > H {
+		if d.Skip != 0 || int(d.Width) != tl.W || d.X < 0 || int(d.X)+tl.W > Cols || int(d.Y)+tl.H > ScreenHeight {
 			continue
 		}
-		Back = [H][W]uint8{}
+		WorkBuffer = [ScreenHeight][ScreenWidth]uint8{}
 		MazeTile(r, 0, -1)
-		plain := Back
-		Back = [H][W]uint8{}
+		plain := WorkBuffer
+		WorkBuffer = [ScreenHeight][ScreenWidth]uint8{}
 		MazeTile(r, 0, r)
 		n := 0
 		x0, x1 := int(d.X)*8, (int(d.X)+tl.W)*8-1
 		for y := int(d.Y); y < int(d.Y)+tl.H; y++ {
 			for x := x0; x <= x1; x++ {
-				if plain[y][x] != Back[y][x0+x1-x] {
-					t.Fatalf("record %d: (%d,%d) %d, mirrored %d", r, x, y, plain[y][x], Back[y][x0+x1-x])
+				if plain[y][x] != WorkBuffer[y][x0+x1-x] {
+					t.Fatalf("record %d: (%d,%d) %d, mirrored %d", r, x, y, plain[y][x], WorkBuffer[y][x0+x1-x])
 				}
 				if plain[y][x] != 0 {
 					n++

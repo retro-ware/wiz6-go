@@ -244,7 +244,7 @@ func refreshWindow(w *Window) {
 		case c.Attr&0x0f == 0:
 			drv.Glyph(col, row, c.Ch, c.Attr>>4, false)
 		case c.Attr&0x0f <= 4:
-			drv.GlyphHi(col, row, c.Ch, int(c.Attr&0x0f))
+			drv.ColorGlyph(col, row, c.Ch, int(c.Attr&0x0f))
 		default:
 			fmt.Fprintln(os.Stderr, "\aInvalid font in refreshwindow")
 			os.Exit(255)
@@ -258,7 +258,7 @@ func refreshWindow(w *Window) {
 	border := func(i int, g uint8) {
 		if take(i) {
 			col, row := at(i)
-			drv.GlyphHi(col, row, g, 1)
+			drv.ColorGlyph(col, row, g, 1)
 		}
 	}
 	x, y, width, rows := outerRect(w)

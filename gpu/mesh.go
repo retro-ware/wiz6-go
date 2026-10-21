@@ -16,8 +16,8 @@ type MeshVertex struct {
 
 // Mesh is a triangle list on the GPU.
 type Mesh struct {
-	buf *wgpu.Buffer
-	n   int
+	buffer      *wgpu.Buffer
+	vertexCount int
 }
 
 // NewMesh uploads a triangle list.
@@ -39,7 +39,7 @@ func NewMesh(vs []MeshVertex) *Mesh {
 // Dispose frees the mesh.
 func (m *Mesh) Dispose() {
 	submit()
-	m.buf.Release()
+	m.buffer.Release()
 }
 
 // Mat4 is a column-major 4x4 matrix with WebGPU's clip space (z 0..1).
@@ -74,7 +74,7 @@ type MeshOptions struct {
 // ClearDepth starts the image's depth buffer afresh for the next meshes.
 func (i *Image) ClearDepth() {
 	flushBatch()
-	if dev.on == i.t {
+	if dev.passTarget == i.t {
 		endPass()
 	}
 	i.t.depthView()
@@ -84,7 +84,7 @@ func (i *Image) ClearDepth() {
 // DrawMesh draws m textured with tex, depth tested, into the image's
 // rectangle (the viewport).
 func (i *Image) DrawMesh(m *Mesh, tex *Image, viewProj Mat4, op *MeshOptions) {
-	if m.n == 0 || i.r.Empty() {
+	if m.vertexCount == 0 || i.r.Empty() {
 		return
 	}
 	if op == nil {
@@ -117,8 +117,8 @@ func (i *Image) DrawMesh(m *Mesh, tex *Image, viewProj Mat4, op *MeshOptions) {
 	p.SetScissorRect(gputypes.ScissorRect{X: uint32(i.r.Min.X), Y: uint32(i.r.Min.Y), Width: uint32(i.r.Dx()), Height: uint32(i.r.Dy())})
 	bindUniforms(p, b)
 	p.SetBindGroup(1, tex.t.group(dev.nearest), nil)
-	p.SetVertexBuffer(0, m.buf, 0)
-	p.Draw(gputypes.DrawArgs{VertexCount: uint32(m.n), InstanceCount: 1})
+	p.SetVertexBuffer(0, m.buffer, 0)
+	p.Draw(gputypes.DrawArgs{VertexCount: uint32(m.vertexCount), InstanceCount: 1})
 	// later 2D draws in this pass get the full viewport back
 	p.SetViewport(gputypes.Viewport{Width: float32(i.t.w), Height: float32(i.t.h), MaxDepth: 1})
 }
