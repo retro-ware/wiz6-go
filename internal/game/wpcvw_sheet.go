@@ -543,6 +543,9 @@ func drawMemberNameRight(w *Window, m int) {
 // chooseMember (WPCVW 897d) lets the player pick a member by name under title message
 // title, sel first (-1 the cancel entry); -1 for cancel. With one member it is member 0.
 func chooseMember(w *Window, title, sel int) int {
+	if dtLog != nil { // stubbed in the difftest: the first member
+		return 0
+	}
 	if partyCount < 2 {
 		return 0
 	}

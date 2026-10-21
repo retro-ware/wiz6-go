@@ -70,6 +70,7 @@ var charFuncs = map[string]func(a []int) int{
 	"root_28da": func(a []int) int { setBitfield(party[0].Skills[:], a[0], a[1], a[2]); return 0 },
 	"root_2925": func(a []int) int { return getBitfield(party[0].Skills[:], a[0], a[1]) },
 	"root_2962": func(a []int) int { return extractBits(a[0], a[1], a[2]) },
+	"pcvw_8fbf": func(a []int) int { useItemOnSheet(dtWin(), dtWin(), a[0], a[1]); return 0 },
 	"pcvw_a11b": func(a []int) int {
 		t := ""
 		for _, c := range a[2:] {
@@ -96,6 +97,7 @@ var charRoots = map[string]any{
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
 	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed, "partyCounters": &partyCounters,
 	"memberPcfileIndex": &memberPcfileIndex, "memberPortrait": &memberPortrait, "rosterSlotUsed": &rosterSlotUsed,
+	"levelFlags": &levelFlags, "hdr": &hdr, "gameStateArg": &gameStateArg, "pvSpellTarget": &pvSpellTarget,
 }
 
 func init() {

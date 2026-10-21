@@ -237,6 +237,9 @@ func drawTextFrame(w *Window) {
 // each, centred unless it starts with '$' (left) or '^' (under the previous); '!' skips a
 // line and '@' starts a new page. menu shows the page prompt.
 func showTextPages(menu *Window, msg int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	w := createWindow(0, 4, 40, 16, 31, -1, 0, false)
 	drawTextFrame(w)
 	row, prevX := 1, 1

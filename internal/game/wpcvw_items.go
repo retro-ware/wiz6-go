@@ -97,6 +97,9 @@ func unhighlightItemRow(sheet *Window, row, color int, swag bool) {
 // chooseItem (WPCVW 5fac) lets the player pick an inventory (or swag) item of member m
 // on sheet, with title message title in w; -1 for cancel.
 func chooseItem(sheet, w *Window, title, m int, swag bool) int {
+	if dtLog != nil { // stubbed in the difftest: the first item
+		return 0
+	}
 	p := &party[m]
 	count := int(p.SwagCount)
 	if !swag {
