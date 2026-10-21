@@ -24,7 +24,8 @@ func npcApplySpell(caster, s, power, target int) {
 		if npcRec.Unk8D&8 != 0 || random(int(c.Level)/2+power*3) < npcLevel() {
 			s = getMessage(1545)
 		} else {
-			s = replaceCharWithString(getMessage(1546), npcRumor(1), '^')
+			rumor := npcRumor(1) // before message 1546, as the C
+			s = replaceCharWithString(getMessage(1546), rumor, '^')
 		}
 		npcNotice(s, false)
 		npcWait(messageDelay)

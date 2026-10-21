@@ -519,7 +519,10 @@ func npcShowMessageText(msg, timed int) {
 		msg++
 	}
 	npcEndPage(timed)
-	npcCloseText()
+	destroyWindow(npcTextWin, false) // inline, as the C (not npc_close_text)
+	npcTextWin = nil
+	resumeWindowDraw(mainWindow)
+	resumeWindowDraw(bottomLineWin)
 }
 
 // npcNotice (WMNPC 5d0c) shows s centred in a text window for the message delay.
@@ -556,7 +559,8 @@ func npcOpenText() {
 
 // npcCloseText (WMNPC 6de9) closes it.
 func npcCloseText() {
-	if dtLog != nil { // the difftest stubs it
+	if dtLog != nil { // the difftest stubs it (its windows are null there)
+		npcTextWin = nil
 		return
 	}
 	destroyWindow(npcTextWin, false)

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/retro-ware/wiz6-go/internal/dbs"
@@ -77,7 +76,7 @@ func trLiving() int {
 func shareCombatGold() {
 	share := combatGold / int32(trLiving())
 	trLine = getMessage(5001)
-	trNum = strconv.FormatInt(int64(share), 10)
+	trNum = itoa(int(share))
 	trLine = replaceCharWithString(trLine, trNum, '$')
 	showCenteredLine(partyPictureWin, 2, trLine, false, 6)
 	for m := 0; m < partyCount; m++ {
@@ -154,20 +153,22 @@ func openTreasure() {
 				kind = getMessage(5008)
 			}
 		}
-		trNum2 = strconv.Itoa(lootQty[i])
+		trNum2 = itoa(lootQty[i])
 		lootLabel[i] = replaceCharWithString(lootLabel[i], trNum2, '$')
 		trLine = replaceCharWithString(trLine, lootLabel[i], '%')
 		trLine = strings.TrimRight(replaceCharWithString(trLine, kind, '@'), " ")
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 1)
 	}
 	if gold > 0 {
-		trNum = strconv.FormatInt(int64(gold), 10)
-		trLine = replaceCharWithString(getMessage(5002), trNum, '$')
+		msg := getMessage(5002)
+		trNum = itoa(int(gold))
+		trLine = replaceCharWithString(msg, trNum, '$')
 		showCenteredLine(partyPictureWin, trRow, trLine, false, 5)
 	}
 	if exp > 0 {
-		trNum = strconv.FormatInt(int64(exp), 10)
-		trLine = replaceCharWithString(getMessage(5003), trNum, '$')
+		msg := getMessage(5003)
+		trNum = itoa(int(exp))
+		trLine = replaceCharWithString(msg, trNum, '$')
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 4)
 	}
 	for m := 0; m < partyCount; m++ {

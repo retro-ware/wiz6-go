@@ -1,7 +1,6 @@
 package game
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/retro-ware/wiz6-go/internal/drv"
@@ -69,6 +68,9 @@ const trTextControls = "!%#&]@"
 // animate_chest_lid (WTREA 45de) draws lid step n of the chest picture (slot 0) and returns
 // the next step, -1 after the last.
 func animateChestLid(n int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	frame, mirror := 0, 0
 	switch n {
 	case 0:
@@ -106,6 +108,9 @@ func init() {
 // animate_chest_trap (WTREA 4695) draws frame step of trap animation anim (pictures in slots
 // 7..9) aimed at member (-1 the party) and returns the next step, -1 after the last.
 func animateChestTrap(member, anim, step int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	if step == 3 {
 		return -1
 	}
@@ -134,6 +139,9 @@ func animateChestTrap(member, anim, step int) int {
 // animate_treasure_view (WTREA 4811) draws the next frame of the view: the maze, the chest
 // (open or idle), the lid and the trap.
 func animateTreasureView() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	switch trChestKind {
 	case 0:
 		trChestPhase = (trChestPhase + 1) % 3
@@ -173,6 +181,9 @@ func trAnimate() {
 
 // wait_animating (WTREA 48df) animates for seconds, less on Enter or a click.
 func trWaitAnimating(seconds int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	flushKeys()
 	for n := seconds * 5; n > 0; n-- {
 		if checkScreenClick() || keyAvailable(1) && int8(getKey(1)) == 13 {
@@ -184,6 +195,9 @@ func trWaitAnimating(seconds int) {
 
 // wait_more_prompt (WTREA 4950) blinks the more mark until Enter or a click.
 func trWaitMorePrompt() {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	blink := 3
 	flushKeys()
 	for {
@@ -216,6 +230,9 @@ func trWaitMorePrompt() {
 
 // end_text_page (WTREA 4a03): a timed pause (timed 1), or the more prompt and a clean page.
 func trEndTextPage(timed int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	if timed == 1 {
 		trWaitAnimating(messageDelay)
 		return
@@ -227,6 +244,9 @@ func trEndTextPage(timed int) {
 
 // print_text_line (WTREA 4a31) is WMAZE's print_text_line without the sound control '~'.
 func trPrintTextLine(s string) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	for len(s) > 0 {
 		k := strings.IndexByte(trTextControls, s[0])
 		if k < 0 {
@@ -272,6 +292,9 @@ func trPrintTextLine(s string) {
 
 // show_message_text (WTREA 4b36) shows messages msg, msg+1, ... up to the first missing one.
 func trShowMessageText(msg, timed int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	trTextCol, trTextRow = 0, 0
 	trTextWin = createWindow(0, 19, 40, 5, 20, -1, 0, true)
 	for {
@@ -296,6 +319,9 @@ func blinkSelection() {
 // get_chest_input (WTREA 4c2f) animates until a key of keys (its index) or a click in
 // regions (the region index; menuClicked set).
 func getChestInput(keys string, regions []byte) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	phase := animPhase
 	if trBlink != -1 {
 		blinkSelection()
@@ -332,6 +358,9 @@ func trInput() int { return getChestInput(trKeys, clickRegions[:]) }
 
 // print_chest_prompt (WTREA 5097) shows message msg at column x of the message line.
 func printChestPrompt(msg, x int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
 	deferWindowDraw(mainWindow)
@@ -347,6 +376,9 @@ func printChestPrompt(msg, x int) {
 // choose_party_member (WTREA 5649) lets the player pick a member under prompt msg; -1 exit.
 // refreshAll 0 refreshes only the prompt and the picker.
 func trChooseMember(msg, refreshAll int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	if partyCount < 2 {
 		return 0
 	}
@@ -434,6 +466,9 @@ func trChooseMember(msg, refreshAll int) int {
 // show_centered_line (WTREA 59e9) replaces row y of win with s centred, beeps if asked and
 // waits the message delay.
 func showCenteredLine(win *Window, y int, s string, beep bool, color int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	clearWindowArea(win, 0, y, 39, y)
 	trWaitAnimating(1)
 	setCursor(win, 20-(len(s)+1)/2, y)
@@ -490,7 +525,7 @@ func trTrapDamageMember(m, count, sides int) {
 	if n == 0 || p.Condition >= 3 {
 		return
 	}
-	num := strconv.Itoa(n)
+	num := itoa(n)
 	pre, post := getMessage(5231), getMessage(5232)
 	if int(p.HP) < n {
 		n = int(p.HP)

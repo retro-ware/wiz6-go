@@ -613,6 +613,9 @@ func npcReadLine(m int) []byte {
 // it holds one of the choices of message msg ("Nword/Nword/...", N the script byte): that
 // byte. once returns 1 for a line without a choice.
 func npcInputWord(m, msg, once int) int {
+	if dtLog != nil { // the difftest stubs it
+		return 0
+	}
 	choices := getMessage(msg)
 	for {
 		npcSayAll(msg + 2)

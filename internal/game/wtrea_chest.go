@@ -29,9 +29,10 @@ func showTrapEffect(member, anim int) {
 
 // trLoseMessage tells that member m lost what (message 5266 and then what).
 func trLoseMessage(m, what int) {
+	lost := getMessage(5266)
 	trNum = getMessage(what)
 	trNum2 = ""
-	trPrintMemberMessage(m, getMessage(5266), trNum, trNum2, 1, 5, 5, 0)
+	trPrintMemberMessage(m, lost, trNum, trNum2, 1, 5, 5, 0)
 	trWaitAnimating(messageDelay)
 }
 
@@ -285,6 +286,9 @@ func inspectChest(win *Window, member int) {
 // draw_trap_list (WTREA 6a40) shows the trap names of list around at, the one at at
 // highlighted when hi.
 func drawTrapList(win *Window, at int, hi bool, n int, list []int) {
+	if dtLog != nil { // the difftest stubs it
+		return
+	}
 	drawListFrame(win, false)
 	deferWindowDraw(win)
 	for d := -2; d <= 2; d++ {
