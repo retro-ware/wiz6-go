@@ -71,6 +71,8 @@ func Main(dir string) (code int) {
 			wpcmkMain()
 		case 17, 22:
 			wpcvwMain()
+		case 15, 21:
+			wtreaOvmain()
 		case 3:
 			shutdownGame(0)
 			return 0
