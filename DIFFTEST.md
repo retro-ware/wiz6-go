@@ -167,3 +167,27 @@ tested), do_skills_menu, spend_skill_points, do_modify_menu, rename/portrait, ge
 (struct return; covered by its callers' drawing only), draw_*; WBASE load_game, add_party_member
 (disk), start_game, choose_*, menus, camp scene, game configuration, check_magic_word;
 ROOT windows, text, sound, disk, video, keyboard.
+
+## Treasure, NPCs, monster actions (WTREA, WMNPC, WPOPS)
+
+Specs: ../wiz6-re/tools/difftest/specs_npc.py; Go: internal/game/difftest_npc_test.go. Case files are prefixed pops_, trea_, npc_.
+
+| Overlay | Function | Go | Cases | Status |
+|---|---|---|---|---|
+| WPOPS | 8a45 choose_monster_actions (+8480 choose_group_actions, 83ab, 843b, 7696) | chooseMonsterActions | 300 | match |
+| WPOPS | 5dbb pick_target_monster | pickTargetMonster | 300 | match (inputs: a member in view, else the C loops) |
+| WTREA | 5f49 spring_trap (+inflict_status/condition, trap_damage_member, roll_dice) | springTrap | 300 | fixed bug (trLoseMessage fetched message 5266 after the loss text) |
+| WTREA | 66b1 pick_chest_trap | pickChestTrap | 300 | match |
+| WTREA | 8583 give_item_to_member | giveItemToMember | 300 | match |
+| WTREA | 9ab6 share_combat_gold | shareCombatGold | 300 | match (harness: numbers logged through itoa) |
+| WTREA | 9601 open_treasure (chestless treasures; distribute_loot stubbed) | openTreasure | 300 | match (message/number order fixed for the log) |
+| WMNPC | b805 stock wares (+a247 prices, a206 list) | npcStockWares | 300 | match |
+| WMNPC | a69b buy ware (+6a80 give item, reaction script) | npcBuyWare | 300 | match |
+| WMNPC | b047 pilfer | npcPilfer | 300 | match |
+| WMNPC | 7f76 react (+7038 event scripts) | npcReact | 300 | match (harness: the C's text window is null, Go now nils it too) |
+| WMNPC | 817e apply spell (charm 50, rumor 56, others) | npcApplySpell | 100 | fixed bug (rumor fetched before message 1546) |
+| WMNPC | a805 sell item | npcSellItem | - | open: its yes/no menu loops on stubbed input in the C |
+| WMNPC | ab2a give gold, 5382 pool gold | npcGiveGold | - | open (input line for the amount); pool gold trivial |
+
+Overlay BSS globals are in OVL_GLOBALS; npcWares is a struct of the C's parallel arrays; npcWareList goes through dtWareCount/dtWareList.
+Skipped (UI, input, drawing, dispatch): WTREA 45b8-5169, 5604, 5649, 59e9, 6a40, 6919, 74a4-78aa, 796a, 8445, 8848-88d2, 8952, 9105 handle_chest (menu), 9cd3-b1f3 view; WMNPC 4572-5d9b, 62ee, 6d9d-6e7e, 8a3e-9fcf, a378, a76f, aae4, aeb5, b344, b8de, ba7d and the talk parser (bb01-d674); WPOPS drawing, selectors, 76e9 choose_party_actions (input), 8aea start_combat_round. Open: WTREA 6ae6 disarm_chest and 6efd/6d83 chest spells (menu input before the roll; trDisarmRoll is 6 lines).
