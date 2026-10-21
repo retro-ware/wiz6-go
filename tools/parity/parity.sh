@@ -62,7 +62,7 @@ P
 import re, sys
 for p in sys.argv[1:]:
     b = open(p, 'rb').read()
-    n = re.sub(rb'(\xb8\x28\x00\x50)\xe8..(\x59\x3d\x00\x00\x7e\x08)', rb'\1\xb8\x01\x00\2', b, flags=re.S)
+    n = re.sub(rb'(\xb8\x28\x00\x50)\xe8..(\x59\x3d\x00\x00\x7e\x08)', lambda m: m.group(1) + bytes.fromhex('b80100') + m.group(2), b, flags=re.S)
     if n != b:
         open(p, 'wb').write(n)
 P
