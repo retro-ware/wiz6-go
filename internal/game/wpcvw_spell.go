@@ -449,7 +449,7 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	setBit(p.KnownSpells[:], s, true)
 	gain := random(int(p.Skills[skill])/20) + int(spellTable[s].Level)<<1 + 1
 	sp := &p.SP[spellTable[s].Realm]
-	if int(sp.Max)+gain < int(spellTable[s].Cost) {
+	if int(int16(int(sp.Max)+gain)) < int(spellTable[s].Cost) { // C int sum wraps
 		gain = int(spellTable[s].Cost) - int(sp.Max)
 	}
 	sp.Max += int16(gain)

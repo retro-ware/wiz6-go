@@ -520,7 +520,7 @@ func trInflictStatus(m, msg, resist, status, count, sides, base int) {
 	if base == 255 {
 		p.Status[status] = 0xff
 	} else {
-		if int(p.Status[status])+n > 250 {
+		if int16(int(p.Status[status])+n) > 250 { // C int sum wraps
 			n = 250 - int(p.Status[status])
 		}
 		p.Status[status] += uint8(n)
