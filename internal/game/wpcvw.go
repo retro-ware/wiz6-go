@@ -185,6 +185,9 @@ func waitEnterOrClick() {
 
 // showCenteredMsg (WPCVW e8b6) shows s centred on row 1 of w, beeps if beep, and waits.
 func showCenteredMsg(w *Window, s string, beep bool) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	setCursor(w, 20-(len(s)+1)/2, 1)

@@ -27,13 +27,42 @@ var charFuncs = map[string]func(a []int) int{
 		}
 		return 0
 	},
+	"pcvw_f6e6": func(a []int) int { updateRank(a[0]); return 0 },
+	"pcvw_f568": func(a []int) int { levelUpStats(dtWin(), dtWin(), a[0]); return 0 },
+	"pcvw_ed21": func(a []int) int { levelUpHPStamina(dtWin(), dtWin(), a[0]); return 0 },
+	"pcvw_eff8": func(a []int) int { levelUpCombat(a[0]); return 0 },
+	"pcvw_ea8d": func(a []int) int { rollSkillPoints(a[0]); return 0 },
+	"pcvw_ea25": func(a []int) int { return raiseSkill(a[0], a[1], a[2], a[3], a[4]) },
+	"pcvw_f201": func(a []int) int { levelUpSpellPoints(a[0]); return 0 },
+	"pcvw_c8c2": func(a []int) int { var out [10]int; return canEquipItem(a[0], a[1], &out) },
+	"pcvw_cdb3": func(a []int) int { resetCombatValues(a[0]); return 0 },
+	"pcvw_c726": func(a []int) int { sortEquippedFirst(a[0]); return 0 },
+	"pcvw_5370": func(a []int) int { calcCarriedWeight(a[0]); return 0 },
+	"pcvw_a1f9": func(a []int) int { calcAllowedClasses(a[0]); return 0 },
+	"pcvw_76ee": func(a []int) int { return countKnownSpells(a[0], a[1], make([]int, 82)) },
+	"pcvw_5c24": func(a []int) int { clearHandAttack(a[0], a[1]); return 0 },
+	"pcvw_5d5b": func(a []int) int { removeItemShown(a[0], a[1]); return 0 },
+	"pcvw_5ec7": func(a []int) int { removeSwagItem(a[0], a[1]); return 0 },
+	"pcvw_5f53": func(a []int) int { useItemChargeShown(a[0], a[1]); return 0 },
+	"pcvw_6aec": func(a []int) int { return clampToward(a[0], a[1], a[2]) },
+	"pcvw_a11b": func(a []int) int {
+		t := ""
+		for _, c := range a[2:] {
+			t += string(rune('A' + c))
+		}
+		limitStats(a[0], t, a[1] == 1)
+		return 0
+	},
 }
+
+// dtWin is a window for functions that print on the sheet.
+func dtWin() *Window { return createWindow(0, 0, 40, 20, 20, -1, 0, false) }
 
 // charRoots: the globals their cases name.
 var charRoots = map[string]any{
 	"party": &party, "partyCount": &partyCount,
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
-	"pcmkSkillShown": &pcmkSkillShown,
+	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed,
 }
 
 func init() {

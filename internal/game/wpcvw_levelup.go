@@ -1,10 +1,6 @@
 package game
 
-import (
-	"strconv"
-
-	"github.com/retro-ware/wiz6-go/internal/dbs"
-)
+import "github.com/retro-ware/wiz6-go/internal/dbs"
 
 // WPCVW: the skills pages, levelling up and the modify menu (rename, portrait, class).
 
@@ -373,7 +369,7 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 	if hp == 1 {
 		msg = 5011
 	}
-	s := replaceCharWithString(getMessage(msg), strconv.Itoa(hp), '$')
+	s := replaceCharWithString(getMessage(msg), itoa(hp), '$')
 	showHP := func(c int) {
 		setCursor(sheet, 14, 5)
 		printInt(sheet, int(p.HP), 4, c)
