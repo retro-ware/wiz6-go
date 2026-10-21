@@ -1022,7 +1022,7 @@ func runNPCEncounter() {
 	destroyWindow(combatWinB, false)
 	eraseWindow(mainWindow, false)
 	resumeWindowDraw(g4fb0)
-	clear(picSlotLoaded[4:7]) // g4326
+	clear(picSlotLoaded[4:7])    // g4326
 	viewPosGroup = [2][5]int16{} // ba00, which also frees the sprites
 }
 

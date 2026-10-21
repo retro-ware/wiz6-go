@@ -130,8 +130,8 @@ var (
 	messageDelay int  // (message_delay)
 	msgNotFound  bool // the last getMessage found nothing (msg_not_found)
 
-	g4f84            int16 // 0x4f84: set to 17210 once the magic word is typed
-	g4fc8            int16 // 0x4fc8: the delay setting in use (cfg_delay)
+	g4f84 int16 // 0x4f84: set to 17210 once the magic word is typed
+	g4fc8 int16 // 0x4fc8: the delay setting in use (cfg_delay)
 
 	mainWindow      *Window // the one-line message window (main_window)
 	fullscreenWin   *Window // a full-screen picture window (fullscreen_win)

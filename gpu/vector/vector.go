@@ -25,7 +25,9 @@ func quad(dst *gpu.Image, x, y, w, h float32, c color.Color) {
 }
 
 // DrawFilledRect fills a rectangle.
-func DrawFilledRect(dst *gpu.Image, x, y, w, h float32, c color.Color, _ bool) { quad(dst, x, y, w, h, c) }
+func DrawFilledRect(dst *gpu.Image, x, y, w, h float32, c color.Color, _ bool) {
+	quad(dst, x, y, w, h, c)
+}
 
 // StrokeRect outlines a rectangle with a line sw wide, centred on its edges.
 func StrokeRect(dst *gpu.Image, x, y, w, h, sw float32, c color.Color, _ bool) {

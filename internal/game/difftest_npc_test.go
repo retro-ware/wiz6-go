@@ -16,11 +16,11 @@ var npcFuncs = map[string]func(a []int) int{
 	"trea_8583": func(a []int) int { return giveItemToMember(a[0], a[1]) },
 	"trea_9ab6": func(a []int) int { shareCombatGold(); return 0 },
 	"trea_9601": func(a []int) int { openTreasure(); return 0 },
-	"npc_b805": wareCase(func(a []int) int { npcStockWares(); return 0 }),
-	"npc_a69b": wareCase(func(a []int) int { npcBuyWare(a[0], a[1]); return 0 }),
-	"npc_b047": wareCase(func(a []int) int { npcPilfer(a[0]); return 0 }),
-	"npc_7f76": wareCase(func(a []int) int { return npcReact(a[0], a[1], a[2], uint8(a[3]), uint8(a[4])) }),
-	"npc_817e": wareCase(func(a []int) int { npcApplySpell(a[0], a[1], a[2], a[3]); return 0 }),
+	"npc_b805":  wareCase(func(a []int) int { npcStockWares(); return 0 }),
+	"npc_a69b":  wareCase(func(a []int) int { npcBuyWare(a[0], a[1]); return 0 }),
+	"npc_b047":  wareCase(func(a []int) int { npcPilfer(a[0]); return 0 }),
+	"npc_7f76":  wareCase(func(a []int) int { return npcReact(a[0], a[1], a[2], uint8(a[3]), uint8(a[4])) }),
+	"npc_817e":  wareCase(func(a []int) int { npcApplySpell(a[0], a[1], a[2], a[3]); return 0 }),
 }
 
 // npcRoots: the globals their cases name (beyond combat's).
