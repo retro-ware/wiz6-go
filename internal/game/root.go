@@ -73,6 +73,10 @@ func Main(dir string) (code int) {
 			wpcvwMain()
 		case 15, 21:
 			wtreaOvmain()
+		case 10, 11, 14:
+			wmeleOvmain()
+		case 13:
+			wmexeOvmain()
 		case 3:
 			shutdownGame(0)
 			return 0
