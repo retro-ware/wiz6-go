@@ -56,9 +56,10 @@ func handFx(h *Hand) attackFx {
 	return fx
 }
 
-// useItemCharge (use_item_charge_x, WMEXE 7096) uses up one charge of the acting
+// useActorItemCharge (use_item_charge_x, WMEXE 7096) is useItemCharge for the acting
+// member that also recounts the load. It uses up one charge of the acting
 // member's item i; the last one removes the item.
-func useItemCharge(i int) {
+func useActorItemCharge(i int) {
 	p := &party[actMember]
 	it := &p.Items[i]
 	if it.Qty == 0 {
@@ -572,14 +573,14 @@ func doAttack(c *Combatant, slot, kind int) {
 				fx = handFx(&p.Hands[1])
 				toHit += int(p.Hands[1].ToHit)
 				bonus = 0
-				useItemCharge(sh)
+				useActorItemCharge(sh)
 			}
 		} else if kind == 4 && item != 255 {
 			if ty := p.Items[item].Type; ty == 14 || ty < 12 && ty != 2 {
 				p.Items[item].Qty = 1
 			}
 			bonus = 0
-			useItemCharge(item)
+			useActorItemCharge(item)
 		}
 		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.B38)
 		if partyCounters[3].A > 0 {

@@ -30,9 +30,9 @@ func clearHandAttack(m, h int) {
 	}
 }
 
-// wpcvwRemoveItem (remove_item, WPCVW 5d5b) removes inventory item i of member m,
-// unequipping it and moving the rest up.
-func wpcvwRemoveItem(m, i int) {
+// removeItemShown (remove_item, WPCVW 5d5b) is removeItem for an inventory item that
+// also moves the sheet's item names and row colours up with the items.
+func removeItemShown(m, i int) {
 	p := &party[m]
 	for s := 0; s < 8; s++ {
 		if int(p.Equipped[s]) != i {
@@ -72,13 +72,13 @@ func removeSwagItem(m, i int) {
 	}
 }
 
-// wpcvwUseItemCharge (use_item_charge, WPCVW 5f53) uses a charge of item i of member m,
-// removing it when the last is gone.
-func wpcvwUseItemCharge(m, i int) {
+// useItemChargeShown (use_item_charge, WPCVW 5f53) is useItemCharge with
+// removeItemShown.
+func useItemChargeShown(m, i int) {
 	it := &party[m].Items[i]
 	if it.Qty > 0 {
 		if it.Qty--; it.Qty == 0 {
-			wpcvwRemoveItem(m, i)
+			removeItemShown(m, i)
 		}
 	}
 }
@@ -267,7 +267,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 					p.Items[int(p.SwagCount)+10] = p.Items[pvChosenItem]
 					pvSwagNames[p.SwagCount] = pvItemNames[pvChosenItem]
 					p.SwagCount++
-					wpcvwRemoveItem(m, pvChosenItem)
+					removeItemShown(m, pvChosenItem)
 					deferWindowDraw(sheet)
 					drawInventoryPanel(sheet, m)
 					resumeWindowDraw(sheet)
@@ -383,7 +383,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		}
 		q.Items[slot] = o
 		if whole {
-			wpcvwRemoveItem(m, pvChosenItem)
+			removeItemShown(m, pvChosenItem)
 		} else {
 			it.Qty -= uint8(n)
 		}
@@ -403,7 +403,7 @@ func replaceItem(sheet *Window, m, id, i, other int) {
 	it.Type = rec.Type
 	it.Weight = rec.Weight
 	it.Qty = uint8(rollDice(rec.Charges))
-	wpcvwRemoveItem(m, other)
+	removeItemShown(m, other)
 	deferWindowDraw(sheet)
 	drawInventoryPanel(sheet, m)
 	resumeWindowDraw(sheet)
@@ -462,7 +462,7 @@ func doMergeItems(sheet, menu *Window, m int) {
 	if p.Items[a].ID == p.Items[b].ID && stackable[p.Items[a].Type] == 1 {
 		if n := int(p.Items[a].Qty) + int(p.Items[b].Qty); n <= 250 {
 			p.Items[a].Qty = uint8(n)
-			wpcvwRemoveItem(m, b)
+			removeItemShown(m, b)
 		} else {
 			p.Items[a].Qty = 250
 			p.Items[b].Qty = uint8(n - 250)
@@ -501,7 +501,7 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 				} else {
 					setBit(p.KnownSpells[:], s, true)
 					wpcvwShowTextPages(menu, 720)
-					wpcvwRemoveItem(m, i)
+					removeItemShown(m, i)
 				}
 			} else {
 				wpcvwShowTextPages(menu, 730)
@@ -512,7 +512,7 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
 				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
-				wpcvwUseItemCharge(m, i)
+				useItemChargeShown(m, i)
 			}
 		case 5:
 			if gameStateArg == 8 {
@@ -535,7 +535,7 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 		}
 	}
 	castSpell(m, s, power, pvSpellTarget, sheet, menu)
-	wpcvwUseItemCharge(m, i)
+	useItemChargeShown(m, i)
 }
 
 // printCipher (WPCVW b659) prints the 4-letter code of v with the letters of message 479.

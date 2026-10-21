@@ -482,7 +482,7 @@ func wpcvwViewCharacter(m int) {
 				if p.Items[pvChosenItem].Flags&(1|2|64) != 0 {
 					playSound(0)
 				} else {
-					wpcvwRemoveItem(m, pvChosenItem)
+					removeItemShown(m, pvChosenItem)
 				}
 			}
 		case 6:

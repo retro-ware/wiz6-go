@@ -77,7 +77,7 @@ func npcUseItem(win *Window, m int) {
 			return
 		}
 	}
-	wdoptUseItemCharge(m, slot)
+	useItemCharge(m, slot)
 	npcApplySpell(m, s, power, npcTarget)
 }
 
@@ -419,7 +419,7 @@ func npcSellItem(win *Window, m, slot int) int {
 	if npcMenuSelect(win, 1526, []int{1, 1, -1}, 6, 3, 5, 1, 5, 0, 1) != 0 {
 		return 0
 	}
-	wdoptRemoveItem(m, slot)
+	removeItem(m, slot)
 	p.Gold += price
 	npcDrawMemberStatus(m, npcShowGold)
 	return npcReact(m, 3, id, 0, 0)
@@ -488,7 +488,7 @@ func npcGiveGold(win *Window, m int) int {
 		return 0
 	}
 	*a = int8(min(int32(*a)+rec.Price/20/level, 100))
-	wdoptRemoveItem(m, slot)
+	removeItem(m, slot)
 	npcDrawMemberStatus(m, npcShowGold)
 	npcRefuse(1504)
 	return npcReact(m, 1, id, 0, 0)

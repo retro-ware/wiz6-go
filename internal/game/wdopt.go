@@ -203,9 +203,9 @@ func copyName(name string) string {
 	return string(b)
 }
 
-// remove_item (WDOPT 4e09) removes item slot of member m: an inventory item (slot < 10)
+// removeItem (remove_item, WDOPT 4e09, WMNPC) removes item slot of member m: an inventory item (slot < 10)
 // is unequipped first; swag slots are 10 on.
-func wdoptRemoveItem(m, slot int) {
+func removeItem(m, slot int) {
 	p := &party[m]
 	if slot >= 10 {
 		p.SwagCount--
@@ -240,16 +240,16 @@ func wdoptRemoveItem(m, slot int) {
 	}
 }
 
-// use_item_charge (WDOPT 4faf) uses a charge of item slot of member m, removing the item
+// useItemCharge (use_item_charge, WDOPT 4faf, WMNPC) uses a charge of item slot of member m, removing the item
 // with its last.
-func wdoptUseItemCharge(m, slot int) {
+func useItemCharge(m, slot int) {
 	p := &party[m]
 	it := p.Items[slot]
 	if it.Qty > 0 {
 		it.Qty--
 		p.Items[slot] = it
 		if it.Qty == 0 {
-			wdoptRemoveItem(m, slot)
+			removeItem(m, slot)
 		}
 	}
 }
@@ -793,7 +793,7 @@ func wdoptDoUseItem(m int) {
 	}
 	if !onCancel {
 		if wdoptItemLocationEvent(m, slot) {
-			wdoptUseItemCharge(m, slot)
+			useItemCharge(m, slot)
 		} else {
 			rec := itemRec(int(p.Items[slot].ID))
 			switch {
@@ -806,7 +806,7 @@ func wdoptDoUseItem(m int) {
 					}
 				}
 				if spell != -1 {
-					wdoptUseItemCharge(m, slot)
+					useItemCharge(m, slot)
 					wdoptApplySpell(m, spell, level, dpTarget)
 				}
 			case rec.Unk69 == 4 && gameStateArg == int(rec.Damage.Base):
@@ -816,7 +816,7 @@ func wdoptDoUseItem(m int) {
 				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Count), false)
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
 				setBit(hdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
-				wdoptUseItemCharge(m, slot)
+				useItemCharge(m, slot)
 			case rec.Unk69 == 5:
 				if gameStateArg == 8 {
 					partyCounters[0].B = 1

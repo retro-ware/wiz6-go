@@ -408,7 +408,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 			p.HPMax += n
 			p.HP += n
 		}
-		wpcvwUseItemCharge(m, int(p.Equipped[s]))
+		useItemChargeShown(m, int(p.Equipped[s]))
 		drawSheet(sheet, menu, m)
 	}
 }

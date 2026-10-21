@@ -246,7 +246,7 @@ func doUseItemAction(c *Combatant) {
 					}
 				}
 			}
-			useItemCharge(item)
+			useActorItemCharge(item)
 		} else if rec.Type == 2 || rec.Type == 4 {
 			mexeVerb = getMessage(3317)
 		} else {

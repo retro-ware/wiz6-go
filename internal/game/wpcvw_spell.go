@@ -118,7 +118,7 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 		// As in the C, removing shifts the list, so the next item is skipped.
 		for i := 0; i < int(q.ItemCount); i++ {
 			if q.Items[i].Flags&2 != 0 {
-				wpcvwRemoveItem(t, i)
+				removeItemShown(t, i)
 			}
 		}
 	}

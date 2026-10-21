@@ -1252,9 +1252,9 @@ func npcRunScript(m, n int) int {
 		case 10: // take item arg (a charge of a stack)
 			if k := npcFindItem(m, arg); k != -1 {
 				if stackable[party[m].Items[k].Type] == 1 {
-					wdoptUseItemCharge(m, k)
+					useItemCharge(m, k)
 				} else {
-					wdoptRemoveItem(m, k)
+					removeItem(m, k)
 				}
 			}
 		case 11: // pay arg*param gold
@@ -1441,7 +1441,7 @@ func npcRunScript(m, n int) int {
 			r := -1
 			for i := 0; i < partyCount && r == -1; i++ {
 				if r = npcFindItem(i, param); r != -1 {
-					wdoptRemoveItem(i, r)
+					removeItem(i, r)
 					npcGiveItemToMember(i, arg, -1)
 				}
 			}
