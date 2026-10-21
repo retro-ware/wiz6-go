@@ -237,8 +237,8 @@ func chooseMonsterFrames(g, pos int) {
 				frame, step = 0, 0
 			}
 		} else {
-			frame = random(int(p.Unk94[i])) + int(p.Unk84[i])
-			step = random(picFrameSteps(p, frame)) + int(p.Unk104[frame])
+			frame = random(int(p.SeqCount[i])) + int(p.SeqFirst[i])
+			step = random(picFrameSteps(p, frame)) + int(p.SeqStartFrame[frame])
 		}
 		f := &monsterFrames[pos][i]
 		f[0], f[1] = uint8(frame), uint8(step)
@@ -594,7 +594,7 @@ func setUpEncounter() {
 	}
 	clearCombatGroups()
 	generateMonsterGroup(g433a, 1)
-	treasureID = int16(groupMonsterRec[1].Unk162[g4338])
+	treasureID = int16(groupMonsterRec[1].Treasure[g4338])
 	checkGroupSurprise()
 	fillPartyGroup()
 }

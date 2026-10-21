@@ -1,9 +1,6 @@
 package dbs
 
-import (
-	"encoding/binary"
-	"fmt"
-)
+import "fmt"
 
 // Huffman is a decode tree: node i is Huffman[i] = {left, right}. A child >= 0
 // is a leaf (its low byte is the output); a child < 0 points at node -child.
@@ -11,10 +8,16 @@ import (
 // bytes); each SOUNDnn.SND carries its own tree.
 type Huffman [][2]int16
 
+const (
+	huffmanNodeSize = 4    // two int16 children
+	miscTableSize   = 1024 // MISC.HDR: 256 nodes
+	bitsPerByte     = 8
+)
+
 func parseHuffman(b []byte) Huffman {
-	h := make(Huffman, len(b)/4)
+	h := make(Huffman, len(b)/huffmanNodeSize)
 	for i := range h {
-		h[i] = [2]int16{int16(binary.LittleEndian.Uint16(b[4*i:])), int16(binary.LittleEndian.Uint16(b[4*i+2:]))}
+		h[i], _ = Decode[[2]int16](b[huffmanNodeSize*i : huffmanNodeSize*(i+1)])
 	}
 	return h
 }
@@ -25,10 +28,10 @@ func ReadMiscTable(dir string) (Huffman, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) < 1024 {
-		return nil, fmt.Errorf("MISC.HDR: %d bytes, want 1024", len(b))
+	if len(b) < miscTableSize {
+		return nil, fmt.Errorf("MISC.HDR: %d bytes, want %d", len(b), miscTableSize)
 	}
-	return parseHuffman(b[:1024]), nil
+	return parseHuffman(b[:miscTableSize]), nil
 }
 
 // decode emits n leaf bytes from the MSB-first bit stream src (ROOT f2a18 and
@@ -41,8 +44,8 @@ func (h Huffman) decode(src []byte, n int) []byte {
 		if pos < len(src) {
 			v = src[pos]
 		}
-		b := int(v>>(7-bit)) & 1
-		if bit++; bit == 8 {
+		b := int(v>>(bitsPerByte-1-bit)) & 1
+		if bit++; bit == bitsPerByte {
 			bit, pos = 0, pos+1
 		}
 		return b

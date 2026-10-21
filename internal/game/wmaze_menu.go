@@ -117,15 +117,15 @@ func restParty() bool {
 	mzG5038 = 0
 	hours := 8
 	s := &saveState
-	s.G4f78 += s.G4f80 - s.G4f7c
-	n := int(int16(s.G4f78 / 60))
+	s.RestBankMinutes += s.Minutes - s.LastRestMinutes
+	n := int(int16(s.RestBankMinutes / 60))
 	full := 0 // hours of full rest banked
 	for n >= 4 {
 		full++
 		n -= 4
-		s.G4f78 -= 240
+		s.RestBankMinutes -= 240
 	}
-	s.G4f7c = s.G4f80
+	s.LastRestMinutes = s.Minutes
 	for hours > 0 && mzG5038 == 0 && gameState == 5 {
 		for m := 0; m < partyCount; m++ {
 			party[m].Status[2] = 10
@@ -133,14 +133,14 @@ func restParty() bool {
 		}
 		waitAnimating(10)
 		hours--
-		s.G4f80 += 60
+		s.Minutes += 60
 		tickEffectTimers(60)
 		for m := 0; m < partyCount; m++ {
 			roll := 0
 			if full > 0 {
-				roll = int(party[m].Unk1A6) + 1
+				roll = int(party[m].RestHPRoll) + 1
 			}
-			healMember(m, roll, int(party[m].Unk1A7), 6, 1)
+			healMember(m, roll, int(party[m].RestStaminaPct), 6, 1)
 			party[m].Status[2] = uint8(random(5))
 			if party[m].PoisonStr > 0 {
 				party[m].PoisonStr--
@@ -367,15 +367,15 @@ func mazeMainLoop() {
 			}
 		}
 		s := &saveState
-		s.G4f80++
-		if s.G4f80%10 == 5 {
+		s.Minutes++
+		if s.Minutes%10 == 5 {
 			for m := 0; m < partyCount; m++ {
 				pc := &party[m]
 				if pc.Condition >= 3 {
 					continue
 				}
 				spells := 0
-				if int(s.G4f80%60/10) == m {
+				if int(s.Minutes%60/10) == m {
 					spells = 1
 					pc.Stamina -= int16(pc.LoadCat) + 1
 					if pc.Stamina < 0 {
@@ -413,7 +413,7 @@ func mazeMainLoop() {
 			mzG503c = 0
 		}
 		switch {
-		case (gameStateArg == 5 || gameStateArg == 12 && partyBlock > 8) && testBit(mazeA.Bits1082[:], partyCell()):
+		case (gameStateArg == 5 || gameStateArg == 12 && partyBlock > 8) && testBit(mazeA.SpecialCells[:], partyCell()):
 			eraseWindow(mainWindow, true)
 			delayLong()
 			showMazeMessage(2023)
@@ -503,7 +503,7 @@ func canEnterCell(dir int, visited []byte) bool {
 		setMapOffset(x, y)
 		return true
 	}
-	if testBit(mazeA.Bits1082[:], c) {
+	if testBit(mazeA.SpecialCells[:], c) {
 		switch gameStateArg {
 		case 0, 1, 2, 3, 4, 6, 8, 10, 12:
 			if gameStateArg != 12 || partyBlock < 9 {
@@ -512,7 +512,7 @@ func canEnterCell(dir int, visited []byte) bool {
 			}
 		}
 	}
-	if testBit(mazeA.Bits1178[:], c) && gameStateArg == 2 {
+	if testBit(mazeA.SolidCells[:], c) && gameStateArg == 2 {
 		setMapOffset(x, y)
 		return true
 	}
@@ -532,7 +532,7 @@ func tryStep(visited []byte) bool {
 func showPrevPosition() {
 	x, y, cx, cy, b := partyX, partyY, cellX, cellY, partyBlock
 	s := &saveState
-	partyX, partyY, cellX, cellY, partyBlock = s.G4f96, s.G4f94, s.G4f92, s.G4f90, s.G4f8e
+	partyX, partyY, cellX, cellY, partyBlock = s.SavedPartyX, s.SavedPartyY, s.SavedCellX, s.SavedCellY, s.SavedBlock
 	redrawMazeView()
 	waitAnimating(2)
 	partyX, partyY, cellX, cellY, partyBlock = x, y, cx, cy, b
@@ -554,8 +554,8 @@ func fleeParty(steps int) {
 	shown := false
 	setBit(visited[:], partyCell(), true)
 	away := partyFacing
-	if int16(gameStateArg) == saveState.G4f98 {
-		away = (saveState.G4f8c + 2) % 4
+	if int16(gameStateArg) == saveState.SavedMap {
+		away = (saveState.SavedFacing + 2) % 4
 	}
 	turn := int16(1)
 	if (partyFacing+3)%4 == away {
@@ -578,7 +578,7 @@ func fleeParty(steps int) {
 			if tryStep(visited[:]) {
 				partyFacing = (partyFacing + 2) % 4
 				if tryStep(visited[:]) {
-					partyFacing = saveState.G4f8c
+					partyFacing = saveState.SavedFacing
 				} else {
 					if !shown {
 						shown = showFleeingMsg()
@@ -607,7 +607,7 @@ func fleeParty(steps int) {
 				if !tryStep(visited[:]) {
 					showPrevPosition()
 				} else {
-					partyFacing = saveState.G4f8c
+					partyFacing = saveState.SavedFacing
 					eraseWindow(mainWindow, true)
 					return
 				}

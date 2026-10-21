@@ -138,17 +138,17 @@ func buildMonsterAnimFrames(g, col int) []byte {
 		st := &monsterFrames[col][layer]
 		var frame int
 		if c.Condition == 2 || c.Status[3] > 0 || c.Status[2] > 0 {
-			frame = int(p.Unk104[st[0]])
+			frame = int(p.SeqStartFrame[st[0]])
 		} else {
 			frame = int(st[1])
 			ticks := int(st[2]) - 1
 			if ticks <= 0 {
 				seq := int(st[0])
 				frame++
-				if int(p.Unk104[seq])+animRunLength(p, seq)-1 < frame {
-					seq = random(int(p.Unk94[layer])) + int(p.Unk84[layer])
+				if int(p.SeqStartFrame[seq])+animRunLength(p, seq)-1 < frame {
+					seq = random(int(p.SeqCount[layer])) + int(p.SeqFirst[layer])
 					st[0] = uint8(seq)
-					frame = int(p.Unk104[seq])
+					frame = int(p.SeqStartFrame[seq])
 				}
 				st[1] = uint8(frame)
 				ticks = random(int(p.Quads[frame][3])) + int(p.Quads[frame][2])
@@ -220,13 +220,13 @@ func queueMonsterSpriteNoShift(row, col int) {
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}
-	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + int(p.Pairs[f][mirror])
+	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + int(p.FrameX[f][mirror])
 	if x < 0 {
 		x = 0
 	} else if x >= 248 {
 		return
 	}
-	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
+	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.FrameY[f])
 	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
@@ -251,8 +251,8 @@ func drawSprite(i int) {
 				s.Layers[j] = 9
 				j--
 			}
-			x := int(s.X) - int(p.Pairs[first][mir]) + int(p.Pairs[f][mir])
-			y := int(s.Y) - int(p.Unk57[first]) + int(p.Unk57[f])
+			x := int(s.X) - int(p.FrameX[first][mir]) + int(p.FrameX[f][mir])
+			y := int(s.Y) - int(p.FrameY[first]) + int(p.FrameY[f])
 			drv.DrawFrames(slot, x, y, int(s.W), int(s.H), int(s.Mirror), false, []byte{f})
 		}
 	default:
@@ -614,13 +614,13 @@ func pcItemType(m, i int) uint8 {
 func choosePartyActions(win *Window) {
 	for m := 0; m < partyCount; m++ {
 		p, c := &party[m], &monsterGroups[0].Members[m]
-		power := max(random(10)+int(p.Unk1AB)+int(c.B41), 1)
-		step := power / int(p.Unk1AA)
+		power := max(random(10)+int(p.AttackPower)+int(c.B41), 1)
+		step := power / int(p.SecondaryAttacks)
 		if uint8(c.B35[1]) > 0 {
 			c.B35[2] = int8(random(power/2) + random(20) + power/2)
 		}
 		c.B33, c.B24[4], c.B24[5] = 0, 0, 1
-		swings := min(max(int(p.Unk1AA)+int(c.B41)/10, 1), 4)
+		swings := min(max(int(p.SecondaryAttacks)+int(c.B41)/10, 1), 4)
 		for i := range 4 {
 			if i >= swings || p.Condition >= 2 || p.Status[3] > 0 || p.Status[2] > 0 {
 				c.B24[i] = 0
@@ -987,14 +987,14 @@ func chooseGroupActions(group, targetGroup int) {
 				switch {
 				case group == 6:
 					reach = 9
-				case group >= 3 && rec.Attacks[a].B13 <= 1:
+				case group >= 3 && rec.Attacks[a].Range <= 1:
 				default:
 					reach = 3
 					far := 0
 					if group >= 3 {
 						far = 2
 					}
-					if far < int(rec.Attacks[a].B13) {
+					if far < int(rec.Attacks[a].Range) {
 						reach = 6
 					}
 				}
@@ -1019,7 +1019,7 @@ func chooseGroupActions(group, targetGroup int) {
 		m.W12 = -1
 		if m.B24[6] == 0 {
 			a := int(uint8(m.B24[5]))
-			if group >= 3 && rec.Attacks[a].B13 <= 1 {
+			if group >= 3 && rec.Attacks[a].Range <= 1 {
 				m.B24[1], m.B24[3] = 0, 0
 			} else {
 				m.W12 = attackBits(rec, a)

@@ -41,6 +41,50 @@ var (
 	diffRoots = map[string]any{}
 )
 
+// renamedFields maps dbs field names the goldens were recorded with to their
+// current names.
+var renamedFields = map[string]string{
+	"Unk1A6":   "RestHPRoll",
+	"Unk1A7":   "RestStaminaPct",
+	"Unk1A9":   "PrimaryAttacks",
+	"Unk1AA":   "SecondaryAttacks",
+	"Unk1AB":   "AttackPower",
+	"Unk1AF":   "LevelBeforeClassChange",
+	"Idx23":    "MapIndex",
+	"Idx5":     "NPCIndex",
+	"Idx7":     "TreasureIndex",
+	"Idx4":     "MonsterIndex",
+	"Idx8":     "MonsterPicIndex",
+	"G4f98":    "SavedMap",
+	"G4f96":    "SavedPartyX",
+	"G4f94":    "SavedPartyY",
+	"G4f92":    "SavedCellX",
+	"G4f90":    "SavedCellY",
+	"G4f8e":    "SavedBlock",
+	"G4f8c":    "SavedFacing",
+	"G4f80":    "Minutes",
+	"G4f7c":    "LastRestMinutes",
+	"G4f78":    "RestBankMinutes",
+	"Unk28":    "Spell",
+	"Bits1082": "SpecialCells",
+	"Bits1178": "SolidCells",
+	"Bits1274": "StartX",
+	"Bits1298": "StartY",
+	"Bits1322": "EncounterTables",
+	"Unk1334":  "EncounterTableChance",
+	"Unk1296":  "Block",
+	"B13":      "Range",
+	"Unk64":    "GoldLow",
+	"Unk66":    "GoldHigh",
+	"Unk162":   "Treasure",
+	"Unk7E":    "Scripts",
+	"Pairs":    "FrameX",
+	"Unk57":    "FrameY",
+	"Unk84":    "SeqFirst",
+	"Unk94":    "SeqCount",
+	"Unk104":   "SeqStartFrame",
+}
+
 var pathPart = regexp.MustCompile(`\.?(\w+)|\[(\d+)\]`)
 
 // field resolves a case path like "monsterGroups[1].Members[0].HP".
@@ -172,7 +216,29 @@ func loadDiffCases(t *testing.T, f string) []diffCase {
 	if err := json.NewDecoder(z).Decode(&cases); err != nil {
 		t.Fatal(err)
 	}
+	for i := range cases {
+		cases[i].State = renamePaths(cases[i].State)
+		cases[i].Out = renamePaths(cases[i].Out)
+	}
 	return cases
+}
+
+// renamePaths rewrites the renamedFields in the paths of m.
+func renamePaths(m map[string]int64) map[string]int64 {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]int64, len(m))
+	for p, v := range m {
+		p = pathPart.ReplaceAllStringFunc(p, func(s string) string {
+			if n, ok := renamedFields[strings.TrimPrefix(s, ".")]; ok && strings.HasPrefix(s, ".") {
+				return "." + n
+			}
+			return s
+		})
+		out[p] = v
+	}
+	return out
 }
 
 func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {

@@ -352,7 +352,7 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 		hp++
 	}
 	hp = max(hp, 1)
-	if int(p.Level) < int(p.Unk1AF) {
+	if int(p.Level) < int(p.LevelBeforeClassChange) {
 		hp, st = 1, 1
 	}
 	p.HP += int16(hp)
@@ -404,7 +404,7 @@ func levelUpCombat(m int) {
 	if p.Stats[4] < 8 {
 		th--
 	}
-	if int(p.Level) < int(p.Unk1AF) {
+	if int(p.Level) < int(p.LevelBeforeClassChange) {
 		th = 0
 	}
 	if p.ToHit -= int8(th); p.ToHit < 0 {
@@ -504,7 +504,7 @@ func levelUpSpellPoints(m int) {
 		if stat > 16 {
 			bonus++
 		}
-		if int(p.Level) < int(p.Unk1AF) {
+		if int(p.Level) < int(p.LevelBeforeClassChange) {
 			p.SP[r].Max++
 			continue
 		}
@@ -517,8 +517,8 @@ func levelUpSpellPoints(m int) {
 func doLevelUp(sheet, menu *Window, m int) {
 	p := &party[m]
 	p.Level++
-	if int16(p.Unk1AF) <= p.Level {
-		p.Unk1AF = 0
+	if int16(p.LevelBeforeClassChange) <= p.Level {
+		p.LevelBeforeClassChange = 0
 	}
 	updateRank(m)
 	drawSheet(sheet, menu, m)
@@ -649,9 +649,9 @@ func doChangeClass(sheet, menu *Window, m int) {
 	}
 	p.Class = uint8(c - 1)
 	if p.Level < 250 {
-		p.Unk1AF = uint8(p.Level)
+		p.LevelBeforeClassChange = uint8(p.Level)
 	} else {
-		p.Unk1AF = 0
+		p.LevelBeforeClassChange = 0
 	}
 	p.Level, p.Rank, p.Exp = 1, 0, 0
 	if int(p.Race) < len(raceMinStats) {

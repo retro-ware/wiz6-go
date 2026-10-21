@@ -12,6 +12,11 @@ type msgEntry struct {
 	Block uint8
 }
 
+const (
+	msgCountSize = 2    // MSG.HDR starts with the entry count word
+	msgBlockSize = 1024 // MSG.DBS block
+)
+
 // Messages is MSG.HDR (the index) plus MSG.DBS (1K blocks of encoded text)
 // and the MISC.HDR tree.
 type Messages struct {
@@ -34,14 +39,15 @@ func OpenMessages(dir string) (*Messages, error) {
 	if err != nil {
 		return nil, err
 	}
-	n := le16(hdr, 0)
-	if 2+6*n > len(hdr) {
+	n, entrySize := le16(hdr, 0), Size[msgEntry]()
+	if msgCountSize+entrySize*n > len(hdr) {
 		return nil, fmt.Errorf("MSG.HDR: %d entries do not fit", n)
 	}
 	m := &Messages{dbs: dbs, Tree: tree}
 	for i := 0; i < n; i++ {
-		e := hdr[2+6*i:]
-		m.index = append(m.index, msgEntry{int16(le16(e, 0)), uint16(le16(e, 2)), e[4], e[5]})
+		at := msgCountSize + entrySize*i
+		e, _ := Decode[msgEntry](hdr[at : at+entrySize])
+		m.index = append(m.index, e)
 	}
 	return m, nil
 }
@@ -75,7 +81,7 @@ func (m *Messages) Get(n int) []byte {
 	if e == nil {
 		return nil
 	}
-	base := int(e.Block) << 10
+	base := int(e.Block) * msgBlockSize
 	pos := int(e.Pos)
 	for i := int(e.First); i != n; i++ {
 		pos += int(m.at(base+pos)) + 1

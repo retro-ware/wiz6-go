@@ -477,7 +477,7 @@ func doMergeItems(sheet, menu *Window, m int) {
 }
 
 // useItemOnSheet (do_use_item, WPCVW 8fbf) uses item i of member m: the item record's
-// Unk69 picks a reading or key action, else Unk28 is a spell it casts.
+// Unk69 picks a reading or key action, else Spell is a spell it casts.
 func useItemOnSheet(sheet, menu *Window, m, i int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
@@ -496,9 +496,9 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 			}
 		case 2:
 			showTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
-		case 3: // a spell book: Unk28 is the spell
+		case 3: // a spell book: Spell is the spell
 			if testBit(mask16(rec.ClassMask), int(p.Class)) {
-				s := int(rec.Unk28) % 256
+				s := int(rec.Spell) % 256
 				if int(spellTable[s].Level)<<1 > int(p.Level) {
 					showTextPages(menu, 725)
 				} else {
@@ -528,10 +528,10 @@ func useItemOnSheet(sheet, menu *Window, m, i int) {
 		}
 		return
 	}
-	if rec.Unk28 == 0 {
+	if rec.Spell == 0 {
 		return
 	}
-	power, s := int(rec.Unk28)/256, int(rec.Unk28)%256
+	power, s := int(rec.Spell)/256, int(rec.Spell)%256
 	if spellTable[s].Target == 1 {
 		if pvSpellTarget = chooseMember(menu, 504, -1); pvSpellTarget == -1 {
 			return
@@ -641,8 +641,8 @@ func showItemInfo(menu *Window, m, i, power int) {
 			for b := 0; b < 14; b++ {
 				putChar(w, byte(byteAt(s, b)), maskColor(testBit(mask16(rec.ClassMask), b)))
 			}
-		} else if spell && rec.Unk28 != 0 {
-			centered(getMessage(int(rec.Unk28)%256+4000), 5, 4)
+		} else if spell && rec.Spell != 0 {
+			centered(getMessage(int(rec.Spell)%256+4000), 5, 4)
 		}
 		if skill {
 			s, c := getMessage(1567), 9
@@ -737,9 +737,9 @@ func showItemInfo(menu *Window, m, i, power int) {
 			printCipher(w, int(rec.Unk63), 1)
 			row++
 		}
-		if rec.Unk28 != 0 {
+		if rec.Spell != 0 {
 			setCursor(w, 1, row)
-			printString(w, getMessage(int(rec.Unk28)%256+4000), 4)
+			printString(w, getMessage(int(rec.Spell)%256+4000), 4)
 			setCursor(w, 16, row)
 			if p.Items[i].Qty == 0 {
 				printString(w, getMessage(480), 1)

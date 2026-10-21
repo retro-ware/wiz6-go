@@ -20,16 +20,17 @@ func LoadSound(path string) (*Sound, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(b) < 2 {
+	const wordSize = 2 // the tree length and the sample count words
+	if len(b) < wordSize {
 		return &Sound{}, nil
 	}
 	tl := le16(b, 0)
 	if tl == 0 {
-		return &Sound{Data: b[2:]}, nil
+		return &Sound{Data: b[wordSize:]}, nil
 	}
-	if 2+tl+2 > len(b) {
+	if wordSize+tl+wordSize > len(b) {
 		return &Sound{}, nil
 	}
-	tree := parseHuffman(b[2 : 2+tl])
-	return &Sound{Data: tree.decode(b[4+tl:], le16(b, 2+tl))}, nil
+	tree := parseHuffman(b[wordSize : wordSize+tl])
+	return &Sound{Data: tree.decode(b[wordSize+tl+wordSize:], le16(b, wordSize+tl))}, nil
 }

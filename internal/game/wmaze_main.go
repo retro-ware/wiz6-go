@@ -74,10 +74,10 @@ func encounterByte(i int) uint8 {
 // f46e8 (WMAZE): the encounter table of block blk, one of its two by its chance.
 func encounterTable(blk int) int {
 	i := 1
-	if random(100) < int(mazeA.Unk1334[blk]) {
+	if random(100) < int(mazeA.EncounterTableChance[blk]) {
 		i = 0
 	}
-	return getBitfield(mazeA.Bits1322[:], blk<<1+i, 4)
+	return getBitfield(mazeA.EncounterTables[:], blk<<1+i, 4)
 }
 
 // flood_mark_cells (WMAZE 4735) recursively sets (v 1) or clears (v 0) the reachable mark
@@ -93,11 +93,11 @@ func floodMarkCells(block, x, y, v int) {
 	setBit(reachableCells[:], c, v != 0)
 	if v == 0 {
 		for i := 0; i < 5; i++ {
-			sx := getBitfield(mazeA.Bits1274[:], block*5+i, 3)
-			sy := getBitfield(mazeA.Bits1298[:], block*5+i, 3)
+			sx := getBitfield(mazeA.StartX[:], block*5+i, 3)
+			sy := getBitfield(mazeA.StartY[:], block*5+i, 3)
 			if sx == x && sy == y {
-				setBitfield(mazeA.Bits1274[:], block*5+i, 3, 0)
-				setBitfield(mazeA.Bits1298[:], block*5+i, 3, 0)
+				setBitfield(mazeA.StartX[:], block*5+i, 3, 0)
+				setBitfield(mazeA.StartY[:], block*5+i, 3, 0)
 			}
 		}
 	}
@@ -139,7 +139,7 @@ func loadMazeLevel(m int) {
 	eventCells = [96]byte{}
 	cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
 	for blk := 0; blk < 12; blk++ {
-		for e := int(mazeB.FirstEvent[blk]); e < 144 && int(mazeB.Unk1296[e]) == blk; e++ {
+		for e := int(mazeB.FirstEvent[blk]); e < 144 && int(mazeB.Block[e]) == blk; e++ {
 			if mazeB.Kind[e] > 0 {
 				setBit(eventCells[:], blk<<6|int(mazeB.Y[e])<<3|int(mazeB.X[e]), true)
 			}
@@ -148,8 +148,8 @@ func loadMazeLevel(m int) {
 	reachableCells = [96]byte{}
 	for i := 0; i < 5; i++ {
 		for blk := 0; blk < 12; blk++ {
-			x := getBitfield(mazeA.Bits1274[:], blk*5+i, 3)
-			y := getBitfield(mazeA.Bits1298[:], blk*5+i, 3)
+			x := getBitfield(mazeA.StartX[:], blk*5+i, 3)
+			y := getBitfield(mazeA.StartY[:], blk*5+i, 3)
 			if x+y > 0 {
 				floodMarkCells(blk, x, y, 1)
 			}
@@ -506,11 +506,11 @@ func stepPosition(dir int, n int16) {
 // save_position (WMAZE 5651) remembers where the party is.
 func savePosition() {
 	s := &saveState
-	s.G4f96, s.G4f94 = partyX, partyY
-	s.G4f92, s.G4f90 = cellX, cellY
-	s.G4f8e = partyBlock
-	s.G4f98 = int16(gameStateArg)
-	s.G4f8c = partyFacing
+	s.SavedPartyX, s.SavedPartyY = partyX, partyY
+	s.SavedCellX, s.SavedCellY = cellX, cellY
+	s.SavedBlock = partyBlock
+	s.SavedMap = int16(gameStateArg)
+	s.SavedFacing = partyFacing
 }
 
 // f567c (WMAZE): message msg with sound snd, held n animation waits.
@@ -525,10 +525,10 @@ func showMessageHeld(msg, snd, n int) {
 // restore_position (WMAZE 56a9) puts the party back where save_position left it.
 func restorePosition() {
 	s := &saveState
-	partyX, partyY = s.G4f96, s.G4f94
-	cellX, cellY = s.G4f92, s.G4f90
-	partyBlock = s.G4f8e
-	partyFacing = s.G4f8c
+	partyX, partyY = s.SavedPartyX, s.SavedPartyY
+	cellX, cellY = s.SavedCellX, s.SavedCellY
+	partyBlock = s.SavedBlock
+	partyFacing = s.SavedFacing
 	moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY))
 	mzG503a = 2053
 	mzG5034 = 0
@@ -553,8 +553,8 @@ func tryMove(dir int) int {
 		return 0
 	}
 	c = cellIndex(int(partyBlock), int(cellX), int(cellY))
-	pit := testBit(mazeA.Bits1082[:], c)
-	b2 := testBit(mazeA.Bits1178[:], c)
+	pit := testBit(mazeA.SpecialCells[:], c)
+	b2 := testBit(mazeA.SolidCells[:], c)
 	if partyCounters[0].B == 1 && !pit {
 		partyCounters[0].B = 0
 	}

@@ -92,7 +92,7 @@ func loadGame(resume int) int {
 	g4fc8 = int16(hdr.Delay)
 	m := dbs.Size[MapA]()
 	n := dbs.Size[MapB]()
-	for i := 0; i < int(le16(scen.Master, 20+2*dbs.RecMapA)); i++ { // record_counts[2]
+	for i := 0; i < int(scen.Master.RecordCounts[dbs.RecMapA]); i++ { // record_counts[2]
 		a, c := next(m), next(n)
 		if a == nil || c == nil {
 			return fail()

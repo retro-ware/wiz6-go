@@ -486,8 +486,8 @@ func chooseCombatItem(win *Window, m int) int {
 		return -1
 	}
 	rec := itemRec(int(p.Items[pos].ID))
-	if rec.Unk28 != 0 {
-		spell := int(rec.Unk28) % 256
+	if rec.Spell != 0 {
+		spell := int(rec.Spell) % 256
 		c := &monsterGroups[0].Members[m]
 		switch spellTable[spell].Target {
 		case 1:

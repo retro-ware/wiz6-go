@@ -35,39 +35,62 @@ type MazeData struct {
 	Raw   []byte
 }
 
+// mazeTileRec is a MAZEDATA.EGA tile record as stored.
+type mazeTileRec struct {
+	Seg  uint16 // paragraphs
+	Sub  uint8
+	W, H uint8
+}
+
+// mazeCounts is the MAZEDATA.EGA header.
+type mazeCounts struct {
+	Tiles, Draws uint16
+}
+
+const paragraphSize = 16 // a real-mode segment step
+
 // LoadMazeData reads MAZEDATA.EGA.
 func LoadMazeData(path string) (*MazeData, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	if len(b) < 4 {
+	mazeCountsSize := Size[mazeCounts]()
+	if len(b) < mazeCountsSize {
 		return nil, fmt.Errorf("%s: too short", path)
 	}
-	n, n2 := le16(b, 0), le16(b, 2)
-	hdr := 4 + 5*(n+n2)
+	counts, _ := Decode[mazeCounts](b[:mazeCountsSize])
+	n, n2 := int(counts.Tiles), int(counts.Draws)
+	tileSz, drawSz := Size[mazeTileRec](), Size[MazeDraw]()
+	hdr := mazeCountsSize + tileSz*n + drawSz*n2
 	if hdr > len(b) {
 		return nil, fmt.Errorf("%s: header %d past end", path, hdr)
 	}
 	m := &MazeData{Raw: b}
 	for i := 0; i < n; i++ {
-		r := b[4+5*i:]
-		t := MazeTile{W: int(r[3]), H: int(r[4]), Off: hdr + le16(r, 0)*16 + int(r[2])}
-		t.Pix = make([]uint8, t.W*8*t.H)
+		at := mazeCountsSize + tileSz*i
+		r, _ := Decode[mazeTileRec](b[at : at+tileSz])
+		t := MazeTile{W: int(r.W), H: int(r.H), Off: hdr + int(r.Seg)*paragraphSize + int(r.Sub)}
+		width := t.W * pixelsPerByte
+		t.Pix = make([]uint8, width*t.H)
 		ps := t.W * t.H
-		if t.Off+4*ps <= len(b) {
-			pl := [4][]byte{b[t.Off:], b[t.Off+ps:], b[t.Off+2*ps:], b[t.Off+3*ps:]}
+		if t.Off+planeCount*ps <= len(b) {
+			var pl [planeCount][]byte
+			for p := range pl {
+				pl[p] = b[t.Off+p*ps:]
+			}
 			for y := 0; y < t.H; y++ {
-				for x := 0; x < t.W*8; x++ {
-					t.Pix[y*t.W*8+x] = planarPixel(pl, t.W, x, y)
+				for x := 0; x < width; x++ {
+					t.Pix[y*width+x] = planarPixel(pl, t.W, x, y)
 				}
 			}
 		}
 		m.Tiles = append(m.Tiles, t)
 	}
 	for i := 0; i < n2; i++ {
-		r := b[4+5*n+5*i:]
-		m.Draws = append(m.Draws, MazeDraw{r[0], int8(r[1]), r[2], r[3], r[4]})
+		at := mazeCountsSize + tileSz*n + drawSz*i
+		d, _ := Decode[MazeDraw](b[at : at+drawSz])
+		m.Draws = append(m.Draws, d)
 	}
 	return m, nil
 }

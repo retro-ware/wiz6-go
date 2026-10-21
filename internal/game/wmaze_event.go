@@ -329,7 +329,7 @@ func spinnerEvent() {
 		partyFacing = int16(d)
 		if dist > 0 {
 			s := &saveState
-			s.G4f96, s.G4f94, s.G4f92, s.G4f90, s.G4f8e, s.G4f8c = partyX, partyY, cellX, cellY, partyBlock, partyFacing
+			s.SavedPartyX, s.SavedPartyY, s.SavedCellX, s.SavedCellY, s.SavedBlock, s.SavedFacing = partyX, partyY, cellX, cellY, partyBlock, partyFacing
 			if randomDist == 1 {
 				stepPosition(int(partyFacing), int16(random(dist)+1))
 			} else {
@@ -779,7 +779,7 @@ func animateDoor(opening, col, depth, sound int) {
 		if depth > 0 || col == 1 {
 			pic := &monsterPics[2]
 			x0 := viewObjXOff[depth][col]
-			drv.DrawFrames(2, x0+int(pic.Pairs[frame][0])+i*step-start, int(pic.Unk57[frame]),
+			drv.DrawFrames(2, x0+int(pic.FrameX[frame][0])+i*step-start, int(pic.FrameY[frame]),
 				x0+doorClipL[depth], x0+doorClipR[depth], 0, false, []byte{byte(frame)})
 		}
 		drvShowWindow(pictureWin)

@@ -68,10 +68,10 @@ func npcUseItem(win *Window, m int) {
 		return
 	}
 	rec := itemRec(int(party[m].Items[slot].ID))
-	if rec.Unk28 == 0 {
+	if rec.Spell == 0 {
 		return
 	}
-	power, s := int(rec.Unk28)/256, int(rec.Unk28)%256
+	power, s := int(rec.Spell)/256, int(rec.Spell)%256
 	if spellTable[s].Target == 1 {
 		refreshAllWindows()
 		if npcTarget = npcChooseMember(2032, true); npcTarget == -1 {

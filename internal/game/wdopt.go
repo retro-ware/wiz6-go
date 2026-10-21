@@ -355,11 +355,11 @@ func wdoptMapCell(x, y, col, row int) {
 	case 14:
 		g = dpGlVoid
 	}
-	special := testBit(mazeA.Bits1082[:], cell)
+	special := testBit(mazeA.SpecialCells[:], cell)
 	if special {
 		g = dpGlSpecial
 	}
-	if testBit(mazeA.Bits1178[:], cell) {
+	if testBit(mazeA.SolidCells[:], cell) {
 		g = dpGlSolid // the C's following switch on the map changes nothing
 	}
 	if special {
@@ -803,8 +803,8 @@ func useItemInMaze(m int) {
 		} else {
 			rec := itemRec(int(p.Items[slot].ID))
 			switch {
-			case rec.Unk28 != 0:
-				level, spell := int(rec.Unk28)/256, int(rec.Unk28)%256
+			case rec.Spell != 0:
+				level, spell := int(rec.Spell)/256, int(rec.Spell)%256
 				if spellTable[spell].Target == 1 {
 					refreshAllWindows()
 					if dpTarget = wdoptChooseTarget(2032); dpTarget == -1 {

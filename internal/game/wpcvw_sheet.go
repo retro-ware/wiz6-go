@@ -124,7 +124,7 @@ func drawSheetFrame(w *Window) {
 type LoadCategory struct {
 	AC           int // w[0]: armour class penalty
 	A, B         int // w[1], w[2]
-	CapA, CapB   int // w[3], w[4]: caps on PC.Unk1A9, Unk1AA
+	CapA, CapB   int // w[3], w[4]: caps on PC.PrimaryAttacks, SecondaryAttacks
 	StaminaDrain int // w[5]
 	Color        int // w[6]: the load's colour on the sheet
 }
@@ -132,7 +132,7 @@ type LoadCategory struct {
 // getLoadCategory (WPCVW 518e) rates member m's load against his capacity.
 func getLoadCategory(m int) LoadCategory {
 	p := &party[m]
-	l := LoadCategory{CapA: int(p.Unk1A9), CapB: int(p.Unk1AA), Color: 9}
+	l := LoadCategory{CapA: int(p.PrimaryAttacks), CapB: int(p.SecondaryAttacks), Color: 9}
 	pct := int32(p.Carried) * 100 / int32(p.MaxLoad)
 	switch {
 	case pct <= 50:

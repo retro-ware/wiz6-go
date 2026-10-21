@@ -109,8 +109,8 @@ func npcChooseFrames(slot, col int) {
 				seq, step = 0, 0
 			}
 		} else {
-			seq = random(int(p.Unk94[i])) + int(p.Unk84[i])
-			step = random(animRunLength(p, seq)) + int(p.Unk104[seq])
+			seq = random(int(p.SeqCount[i])) + int(p.SeqFirst[i])
+			step = random(animRunLength(p, seq)) + int(p.SeqStartFrame[seq])
 		}
 		f := &monsterFrames[col][i]
 		f[0], f[1] = uint8(seq), uint8(step)
@@ -131,14 +131,14 @@ func npcBuildFrames(slot, col int) []byte {
 		if ticks <= 0 {
 			seq := int(st[0])
 			step++
-			if int(p.Unk104[seq])+animRunLength(p, seq)-1 < step {
+			if int(p.SeqStartFrame[seq])+animRunLength(p, seq)-1 < step {
 				if f := npcSeqForce[slot][col]; f > 0 {
 					seq = int(f)
 				} else {
-					seq = random(int(p.Unk94[layer])) + int(p.Unk84[layer])
+					seq = random(int(p.SeqCount[layer])) + int(p.SeqFirst[layer])
 				}
 				st[0] = uint8(seq)
-				step = int(p.Unk104[seq])
+				step = int(p.SeqStartFrame[seq])
 			}
 			st[1] = uint8(step)
 			ticks = random(int(p.Quads[step][3])) + int(p.Quads[step][2])
@@ -198,13 +198,13 @@ func npcQueueSprite(row, col, dx int) {
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col])
 	}
-	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + dx + int(p.Pairs[f][mirror])
+	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + dx + int(p.FrameX[f][mirror])
 	if x < 0 {
 		x = 0
 	} else if x >= 248 {
 		return
 	}
-	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
+	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.FrameY[f])
 	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
@@ -1084,7 +1084,7 @@ func npcMainMenu() {
 		if npcSound > 0 {
 			playSound(npcSound)
 		}
-		for _, s := range npcRec.Unk7E {
+		for _, s := range npcRec.Scripts {
 			if s > 0 && npcRunScript(m, int(s)) == 1 {
 				if npcLeaves == 1 {
 					npcGesture(1)

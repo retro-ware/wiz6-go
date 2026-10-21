@@ -52,13 +52,13 @@ func queueMonsterSprite(row, col, dx int) {
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}
-	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + dx + int(p.Pairs[f][mirror])
+	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + dx + int(p.FrameX[f][mirror])
 	if x < 0 {
 		x = 0
 	} else if x >= 248 {
 		return
 	}
-	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
+	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.FrameY[f])
 	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 

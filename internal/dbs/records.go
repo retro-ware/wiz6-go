@@ -79,54 +79,54 @@ type SpellPoints struct {
 
 // PC is a character record: PCFILE.DBS / SAVEGAME.DBS / party[6] at DS:0x43e8.
 type PC struct {
-	Name        [8]uint8       // +0x000 NUL-padded
-	AgeDays     int32          // +0x008
-	Exp         int32          // +0x00c
-	Kills       int32          // +0x010 "MKS"
-	Gold        int32          // +0x014
-	HP          int16          // +0x018
-	HPMax       int16          // +0x01a
-	Stamina     int16          // +0x01c
-	StaminaMax  int16          // +0x01e
-	Carried     int16          // +0x020 tenths of a pound
-	MaxLoad     int16          // +0x022
-	Level       int16          // +0x024 (pc_level)
-	Unk026      int16          // +0x026 ++ on resurrection; shown with glyph 31 (age-like)
-	SP          [6]SpellPoints // +0x028 fire water air earth mental magic
-	Items       [22]Item       // +0x040: 10 inventory, then up to 12 swag from 10 on
-	Hands       [2]Hand        // +0x0f0 primary, secondary
-	Equipped    [8]uint8       // +0x110 inventory index per equip position, 255 none
-	SpellsLearn [4]uint8       // +0x118 spells still to learn per book
-	SpellRegen  [6]uint8       // +0x11c per realm
-	Status      [10]uint8      // +0x122 status durations; [2] sleep, [5] poison
-	Stats       [8]uint8       // +0x12c STR INT PIE VIT DEX SPD PER KAR
-	Skills      [30]uint8      // +0x134 skill levels (10,17..21 not shown as skills)
-	Resist      [14]uint8      // +0x152
-	AC          [8]uint8       // +0x160 per body area
-	NPCAttitude [32]int8       // +0x168 indexed by NPC id
-	KnownSpells [12]uint8      // +0x188 bitset (test_bit)
-	Unk194      [4]uint8       // +0x194
-	Flags       [4]uint8       // +0x198 bitset
-	Portrait    uint8          // +0x19c
-	Race        uint8          // +0x19d
-	Sex         uint8          // +0x19e
-	Class       uint8          // +0x19f
-	Rank        uint8          // +0x1a0
-	Condition   uint8          // +0x1a1
-	Regen       uint8          // +0x1a2
-	Drain       uint8          // +0x1a3
-	PoisonStr   uint8          // +0x1a4
-	LoadCat     uint8          // +0x1a5 cached load category
-	Unk1A6      uint8          // +0x1a6 rest_party
-	Unk1A7      uint8          // +0x1a7 rest_party
-	SkillPoints uint8          // +0x1a8
-	Unk1A9      uint8          // +0x1a9 load calc
-	Unk1AA      uint8          // +0x1aa load calc
-	Unk1AB      uint8          // +0x1ab
-	ItemCount   uint8          // +0x1ac
-	SwagCount   uint8          // +0x1ad
-	ToHit       int8           // +0x1ae
-	Unk1AF      uint8          // +0x1af
+	Name                   [8]uint8       // +0x000 NUL-padded
+	AgeDays                int32          // +0x008
+	Exp                    int32          // +0x00c
+	Kills                  int32          // +0x010 "MKS"
+	Gold                   int32          // +0x014
+	HP                     int16          // +0x018
+	HPMax                  int16          // +0x01a
+	Stamina                int16          // +0x01c
+	StaminaMax             int16          // +0x01e
+	Carried                int16          // +0x020 tenths of a pound
+	MaxLoad                int16          // +0x022
+	Level                  int16          // +0x024 (pc_level)
+	Unk026                 int16          // +0x026 ++ on resurrection; shown with glyph 31 (age-like)
+	SP                     [6]SpellPoints // +0x028 fire water air earth mental magic
+	Items                  [22]Item       // +0x040: 10 inventory, then up to 12 swag from 10 on
+	Hands                  [2]Hand        // +0x0f0 primary, secondary
+	Equipped               [8]uint8       // +0x110 inventory index per equip position, 255 none
+	SpellsLearn            [4]uint8       // +0x118 spells still to learn per book
+	SpellRegen             [6]uint8       // +0x11c per realm
+	Status                 [10]uint8      // +0x122 status durations; [2] sleep, [5] poison
+	Stats                  [8]uint8       // +0x12c STR INT PIE VIT DEX SPD PER KAR
+	Skills                 [30]uint8      // +0x134 skill levels (10,17..21 not shown as skills)
+	Resist                 [14]uint8      // +0x152
+	AC                     [8]uint8       // +0x160 per body area
+	NPCAttitude            [32]int8       // +0x168 indexed by NPC id
+	KnownSpells            [12]uint8      // +0x188 bitset (test_bit)
+	Unk194                 [4]uint8       // +0x194
+	Flags                  [4]uint8       // +0x198 bitset
+	Portrait               uint8          // +0x19c
+	Race                   uint8          // +0x19d
+	Sex                    uint8          // +0x19e
+	Class                  uint8          // +0x19f
+	Rank                   uint8          // +0x1a0
+	Condition              uint8          // +0x1a1
+	Regen                  uint8          // +0x1a2
+	Drain                  uint8          // +0x1a3
+	PoisonStr              uint8          // +0x1a4
+	LoadCat                uint8          // +0x1a5 cached load category
+	RestHPRoll             uint8          // +0x1a6 rest_party: hit point roll - 1 per hour
+	RestStaminaPct         uint8          // +0x1a7 rest_party: stamina percent per hour
+	SkillPoints            uint8          // +0x1a8
+	PrimaryAttacks         uint8          // +0x1a9 attacks per round, primary hand; load cap
+	SecondaryAttacks       uint8          // +0x1aa attacks per round, secondary hand; load cap
+	AttackPower            uint8          // +0x1ab SPD + level
+	ItemCount              uint8          // +0x1ac
+	SwagCount              uint8          // +0x1ad
+	ToHit                  int8           // +0x1ae
+	LevelBeforeClassChange uint8          // +0x1af level before a class change, 0 once reached again
 }
 
 // ------------------------------------------------------------------- headers
@@ -141,13 +141,13 @@ type MasterHeader struct {
 
 // DiskHeader is DISK.HDR (700 bytes, DS:0x3044).
 type DiskHeader struct {
-	Unk0    [4]uint8   // +0
-	Offsets [10]int32  // +4   SCENARIO.DBS offset of each record type
-	Idx23   [16]uint8  // +44  map -> record for types 2/3 (g3070)
-	Idx5    [64]uint8  // +60  NPC (g3080)
-	Idx7    [256]uint8 // +124 treasure (g30c0)
-	Idx4    [256]uint8 // +380 monster (g31c0)
-	Idx8    [64]uint8  // +636 monster pic (g32c0)
+	Unk0            [4]uint8   // +0
+	Offsets         [10]int32  // +4   SCENARIO.DBS offset of each record type
+	MapIndex        [16]uint8  // +44  map -> record for types 2/3 (g3070)
+	NPCIndex        [64]uint8  // +60  NPC (g3080)
+	TreasureIndex   [256]uint8 // +124 treasure (g30c0)
+	MonsterIndex    [256]uint8 // +380 monster (g31c0)
+	MonsterPicIndex [64]uint8  // +636 monster pic (g32c0)
 }
 
 // ScenarioHeader is SCENARIO.HDR and the first 414 bytes of NEWGAME/SAVEGAME
@@ -166,25 +166,25 @@ type ScenarioHeader struct {
 
 // SaveState is the 66-byte position block of SAVEGAME/NEWGAME, after the maps.
 type SaveState struct {
-	Map        int16           // +0  game_state_arg
-	PartyX     int16           // +2
-	PartyY     int16           // +4
-	CellX      int16           // +6
-	CellY      int16           // +8
-	Block      int16           // +10 party_level (8x8 block index)
-	Facing     int16           // +12
-	G4f98      int16           // +14
-	G4f96      int16           // +16
-	G4f94      int16           // +18
-	G4f92      int16           // +20
-	G4f90      int16           // +22
-	G4f8e      int16           // +24
-	G4f8c      int16           // +26
-	G4f80      int32           // +28
-	G4f7c      int32           // +32
-	G4f78      int32           // +36
-	Counters   [6]PartyCounter // +40 g4ec8
-	PartyCount int16           // +64
+	Map             int16           // +0  game_state_arg
+	PartyX          int16           // +2
+	PartyY          int16           // +4
+	CellX           int16           // +6
+	CellY           int16           // +8
+	Block           int16           // +10 party_level (8x8 block index)
+	Facing          int16           // +12
+	SavedMap        int16           // +14 g4f98, save_position
+	SavedPartyX     int16           // +16 g4f96
+	SavedPartyY     int16           // +18 g4f94
+	SavedCellX      int16           // +20 g4f92
+	SavedCellY      int16           // +22 g4f90
+	SavedBlock      int16           // +24 g4f8e
+	SavedFacing     int16           // +26 g4f8c
+	Minutes         int32           // +28 g4f80, game clock: ++ per step, +60 per hour rested
+	LastRestMinutes int32           // +32 g4f7c, Minutes at the last rest
+	RestBankMinutes int32           // +36 g4f78, minutes banked towards full-rest hours
+	Counters        [6]PartyCounter // +40 g4ec8
+	PartyCount      int16           // +64
 }
 
 // PartyCounter is one g4ec8 entry (party-wide timed effect: value, duration).
@@ -202,26 +202,28 @@ type SaveGame struct {
 	Party []PC
 }
 
-const saveFixed = 414 + 16*(1346+1740) + 66
+// saveFixedSize is the size of a save file before its PC records.
+var saveFixedSize = Size[ScenarioHeader]() + len(SaveGame{}.MapA)*(Size[MapA]()+Size[MapB]()) + Size[SaveState]()
 
 func DecodeSaveGame(b []byte) (*SaveGame, error) {
-	if len(b) < saveFixed || (len(b)-saveFixed)%432 != 0 {
+	pcSize := Size[PC]()
+	if len(b) < saveFixedSize || (len(b)-saveFixedSize)%pcSize != 0 {
 		return nil, fmt.Errorf("dbs: save file is %d bytes", len(b))
 	}
 	g := &SaveGame{}
 	o := 0
 	next := func(n int) []byte { o += n; return b[o-n : o] }
 	var err error
-	if g.Hdr, err = Decode[ScenarioHeader](next(414)); err != nil {
+	if g.Hdr, err = Decode[ScenarioHeader](next(Size[ScenarioHeader]())); err != nil {
 		return nil, err
 	}
 	for i := range g.MapA {
-		g.MapA[i], _ = Decode[MapA](next(1346))
-		g.MapB[i], _ = Decode[MapB](next(1740))
+		g.MapA[i], _ = Decode[MapA](next(Size[MapA]()))
+		g.MapB[i], _ = Decode[MapB](next(Size[MapB]()))
 	}
-	g.State, _ = Decode[SaveState](next(66))
+	g.State, _ = Decode[SaveState](next(Size[SaveState]()))
 	for o < len(b) {
-		pc, _ := Decode[PC](next(432))
+		pc, _ := Decode[PC](next(pcSize))
 		g.Party = append(g.Party, pc)
 	}
 	return g, nil
@@ -268,7 +270,7 @@ type ItemRec struct {
 	Price      int32     // +16
 	Charges    Dice      // +20 quantity roll
 	Damage     Dice      // +24 -> Hand.Damage
-	Unk28      int16     // +28
+	Spell      int16     // +28 power<<8 | spell
 	Weight     int16     // +30 tenths
 	SkillBonus [14]uint8 // +32 add_skill_bonus, [1..13]
 	HandData   [8]uint8  // +46 -> Hand.Data
@@ -296,20 +298,20 @@ type ItemRec struct {
 // Packed sub-arrays are read with get_bitfield/test_bit; index = cell index
 // (block<<6 | y<<3 | x) unless noted.
 type MapA struct {
-	Encounters [8][4][3]uint8 // +0    [p4][l2][l6]
-	Walls0     [192]uint8     // +96   2 bits x 768
-	Walls1     [192]uint8     // +288  2 bits x 768
-	BlockX     [12]uint8      // +480  map position of each 8x8 block
-	BlockY     [12]uint8      // +492
-	Floor      [384]uint8     // +504  4 bits x 768 (1,2,7,13,14 seen)
-	Feature    [192]uint8     // +888  2 bits x 768
-	Unk1080    [2]uint8       // +1080
-	Bits1082   [96]uint8      // +1082 1 bit x 768
-	Bits1178   [96]uint8      // +1178 1 bit x 768
-	Bits1274   [24]uint8      // +1274 3 bits x 64, index p4*5+i
-	Bits1298   [24]uint8      // +1298 3 bits x 64, index p4*5+i
-	Bits1322   [12]uint8      // +1322 4 bits x 24, index p4<<1|l2
-	Unk1334    [12]uint8      // +1334
+	Encounters           [8][4][3]uint8 // +0    [p4][l2][l6]
+	Walls0               [192]uint8     // +96   2 bits x 768
+	Walls1               [192]uint8     // +288  2 bits x 768
+	BlockX               [12]uint8      // +480  map position of each 8x8 block
+	BlockY               [12]uint8      // +492
+	Floor                [384]uint8     // +504  4 bits x 768 (1,2,7,13,14 seen)
+	Feature              [192]uint8     // +888  2 bits x 768
+	Unk1080              [2]uint8       // +1080
+	SpecialCells         [96]uint8      // +1082 1 bit x 768, pit / special cells
+	SolidCells           [96]uint8      // +1178 1 bit x 768, solid on the automap
+	StartX               [24]uint8      // +1274 3 bits x 64, index p4*5+i, block start points
+	StartY               [24]uint8      // +1298 3 bits x 64, index p4*5+i, block start points
+	EncounterTables      [12]uint8      // +1322 4 bits x 24, index p4<<1|l2, two per block
+	EncounterTableChance [12]uint8      // +1334 percent chance of a block's table 0
 }
 
 // MapB (type 3, 1740 bytes, g4fa8): the 144 cell events of one map.
@@ -320,7 +322,7 @@ type MapB struct {
 	Kind       [144]uint8 // +864 7 = lock
 	X          [144]uint8 // +1008
 	Y          [144]uint8 // +1152
-	Unk1296    [144]uint8 // +1296 block?
+	Block      [144]uint8 // +1296 8x8 block of the event
 	FlagBit    [144]uint8 // +1440 bit in LevelFlags
 	Param      [144]uint8 // +1584 99 special
 	FirstEvent [12]uint8  // +1728 per block
@@ -330,7 +332,7 @@ type MapB struct {
 type MonsterAttack struct {
 	Damage Dice     // +0
 	Unk4   [9]uint8 // +4
-	B13    uint8    // +13 (<=1 checked)
+	Range  uint8    // +13 reach; <=1 melee only
 	ToHit  int8     // +14
 	Effect uint8    // +15 bitset
 }
@@ -338,8 +340,8 @@ type MonsterAttack struct {
 // MonsterRec (type 4, 222 bytes; group_monster_rec[g]).
 type MonsterRec struct {
 	Names      [4][16]uint8     // +0   unid/id singular/plural
-	Unk64      int16            // +64
-	Unk66      int16            // +66
+	GoldLow    int16            // +64 gold carried, low word
+	GoldHigh   int16            // +66 gold carried, high word
 	Attacks    [3]MonsterAttack // +68
 	GroupSize  Dice             // +116 hard: Base+1
 	HP         Dice             // +120 HP.Count is the level (hard: +1)
@@ -350,7 +352,7 @@ type MonsterRec struct {
 	Unk135     [3]uint8         // +135 summed in attack
 	Unk138     [10]uint8        // +138
 	Resist     [14]uint8        // +148
-	Unk162     [2]uint8         // +162
+	Treasure   [2]uint8         // +162 treasure ids
 	Companion  [2]uint8         // +164 monster id
 	CompChance [2]uint8         // +166
 	Unk168     [4]uint8         // +168
@@ -378,7 +380,7 @@ type NPCRec struct {
 	Topics   [20]int16   // +0x40 message ids
 	Unk68    [9]int16    // +0x68
 	Gold     int32       // +0x7a g51c0
-	Unk7E    [8]uint8    // +0x7e
+	Scripts  [8]uint8    // +0x7e event script ids (npcRunScript)
 	Unk86    [5]uint8    // +0x86
 	Treasure uint8       // +0x8b g51d1
 	Disarm   int8        // +0x8c spell_disarm_result
@@ -414,23 +416,23 @@ type TreasureRec struct {
 
 // MonsterPicRec (type 8, 314 bytes; 10 slots at DS:0x36de).
 type MonsterPicRec struct {
-	Unk0       [4]uint8      // +0
-	W4         int16         // +4   g36e2
-	Pairs      [25][2]uint8  // +6   g36e4
-	Unk56      uint8         // +56
-	Unk57      [27]uint8     // +57  g3717
-	Unk84      [10]uint8     // +84
-	Unk94      [10]uint8     // +94
-	Unk104     [10]uint8     // +104
-	Unk114     [9]uint8      // +114
-	Quads      [40][4]uint8  // +123
-	Unk283     uint8         // +283
-	Offsets    [2][5][2]int8 // +284 g37fa
-	Unk304     [2]uint8      // +304
-	Unk306     [2]uint8      // +306 g3810
-	FrameCount uint8         // +308 g3812
-	Unk309     [4]uint8      // +309 g3813..g3816
-	Unk313     uint8         // +313
+	Unk0          [4]uint8      // +0
+	W4            int16         // +4   g36e2
+	FrameX        [25][2]uint8  // +6   g36e4 per-frame x: normal, mirrored
+	Unk56         uint8         // +56
+	FrameY        [27]uint8     // +57  g3717 per-frame y
+	SeqFirst      [10]uint8     // +84 per layer: first sequence to pick
+	SeqCount      [10]uint8     // +94 per layer: sequences to pick from
+	SeqStartFrame [10]uint8     // +104 per sequence: first frame
+	Unk114        [9]uint8      // +114
+	Quads         [40][4]uint8  // +123
+	Unk283        uint8         // +283
+	Offsets       [2][5][2]int8 // +284 g37fa
+	Unk304        [2]uint8      // +304
+	Unk306        [2]uint8      // +306 g3810
+	FrameCount    uint8         // +308 g3812
+	Unk309        [4]uint8      // +309 g3813..g3816
+	Unk313        uint8         // +313
 }
 
 // SoundRec (type 9, 12 bytes; table [14] at DS:0x3344).

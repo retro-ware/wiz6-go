@@ -11,7 +11,31 @@ import (
 // 0/1 bits; colour glyphs hold 4-plane indices 0..15. Glyphs[g][y][x].
 type Font struct {
 	Mono   bool
-	Glyphs [128][8][8]uint8
+	Glyphs [glyphCount][tileSize][tileSize]uint8
+}
+
+const (
+	glyphCount     = 128
+	monoFontSize   = glyphCount * tileSize        // 1 bit per pixel
+	planarFontSize = glyphCount * planarTileBytes // 4 planes
+)
+
+// Screen geometry of LoadScreen's full-screen pictures.
+const (
+	ScreenWidth     = 320
+	ScreenHeight    = 200
+	screenRowBytes  = ScreenWidth / pixelsPerByte
+	screenPlaneUsed = screenRowBytes * ScreenHeight // 8000
+	screenPlaneSlot = 8192                          // planes start 8K apart
+)
+
+// tilePlanes splits one planar 8x8 tile into its planes.
+func tilePlanes(tile []byte) [planeCount][]byte {
+	var pl [planeCount][]byte
+	for p := range pl {
+		pl[p] = tile[p*tileSize : (p+1)*tileSize]
+	}
+	return pl
 }
 
 // LoadFont reads a 1024-byte mono or 4096-byte planar font.
@@ -22,22 +46,21 @@ func LoadFont(path string) (*Font, error) {
 	}
 	f := &Font{}
 	switch {
-	case len(b) >= 4096:
-		for g := 0; g < 128; g++ {
-			gb := b[g*32:]
-			pl := [4][]byte{gb[0:8], gb[8:16], gb[16:24], gb[24:32]}
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
+	case len(b) >= planarFontSize:
+		for g := 0; g < glyphCount; g++ {
+			pl := tilePlanes(b[g*planarTileBytes:])
+			for y := 0; y < tileSize; y++ {
+				for x := 0; x < tileSize; x++ {
 					f.Glyphs[g][y][x] = planarPixel(pl, 1, x, y)
 				}
 			}
 		}
-	case len(b) >= 1024:
+	case len(b) >= monoFontSize:
 		f.Mono = true
-		for g := 0; g < 128; g++ {
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
-					f.Glyphs[g][y][x] = b[g*8+y] >> (7 - x) & 1
+		for g := 0; g < glyphCount; g++ {
+			for y := 0; y < tileSize; y++ {
+				for x := 0; x < tileSize; x++ {
+					f.Glyphs[g][y][x] = b[g*tileSize+y] >> (pixelsPerByte - 1 - x) & 1
 				}
 			}
 		}
@@ -50,19 +73,22 @@ func LoadFont(path string) (*Font, error) {
 // LoadScreen reads a full-screen picture (TITLEPAG/DRAGONSC/GRAVEYRD.EGA):
 // four 8192-byte plane slots, 8000 bytes used, 40 bytes per row. EGA.DRV
 // op_b6 copies the file's 32K as is.
-func LoadScreen(path string) ([320 * 200]uint8, error) {
-	var px [320 * 200]uint8
+func LoadScreen(path string) ([ScreenWidth * ScreenHeight]uint8, error) {
+	var px [ScreenWidth * ScreenHeight]uint8
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return px, err
 	}
-	if len(b) < 0x6000+8000 {
-		return px, fmt.Errorf("%s: %d bytes, want 32768", path, len(b))
+	if len(b) < (planeCount-1)*screenPlaneSlot+screenPlaneUsed {
+		return px, fmt.Errorf("%s: %d bytes, want %d", path, len(b), planeCount*screenPlaneSlot)
 	}
-	pl := [4][]byte{b[0:8000], b[0x2000 : 0x2000+8000], b[0x4000 : 0x4000+8000], b[0x6000 : 0x6000+8000]}
-	for y := 0; y < 200; y++ {
-		for x := 0; x < 320; x++ {
-			px[y*320+x] = planarPixel(pl, 40, x, y)
+	var pl [planeCount][]byte
+	for p := range pl {
+		pl[p] = b[p*screenPlaneSlot : p*screenPlaneSlot+screenPlaneUsed]
+	}
+	for y := 0; y < ScreenHeight; y++ {
+		for x := 0; x < ScreenWidth; x++ {
+			px[y*ScreenWidth+x] = planarPixel(pl, screenRowBytes, x, y)
 		}
 	}
 	return px, nil
@@ -86,27 +112,42 @@ type Pic struct {
 	Raw    []byte
 }
 
+// picFrameRec is a frame record as stored.
+type picFrameRec struct {
+	Offset  uint16
+	W, H    uint8
+	Present [20]uint8 // tile bits, LSB first
+}
+
+const (
+	picMaxTiles       = len(picFrameRec{}.Present) * bitsPerByte
+	transparentColour = 15
+
+	rleChunkSize = 4096 // op_ae reads the file in chunks this size
+	rleRunFlag   = 128  // control bytes from this up are runs
+)
+
 // UnRLE is op_ae's decompressor (EGA.DRV 0x1d25): the file is read in 4096-
 // byte chunks and control bytes are taken only while the chunk index is below
 // 0xfff. 0 ends; 1..0x7f copy that many literals; 0x80..0xff repeat the next
 // byte -ctrl times.
 func UnRLE(b []byte) []byte {
 	var out []byte
-	for base := 0; base < len(b); base += 0x1000 {
-		chunk := b[base:min(base+0x1000, len(b))]
+	for base := 0; base < len(b); base += rleChunkSize {
+		chunk := b[base:min(base+rleChunkSize, len(b))]
 		at := func(i int) byte {
 			if i < len(chunk) {
 				return chunk[i]
 			}
 			return 0
 		}
-		for si := 0; si < 0xfff && si < len(chunk); {
+		for si := 0; si < rleChunkSize-1 && si < len(chunk); {
 			c := chunk[si]
 			si++
 			switch {
 			case c == 0:
 				return out
-			case c < 0x80:
+			case c < rleRunFlag:
 				for k := 0; k < int(c); k++ {
 					out = append(out, at(si))
 					si++
@@ -114,7 +155,7 @@ func UnRLE(b []byte) []byte {
 			default:
 				v := at(si)
 				si++
-				for k := 0; k < 256-int(c); k++ {
+				for k := 0; k < -int(int8(c)); k++ {
 					out = append(out, v)
 				}
 			}
@@ -130,36 +171,37 @@ func LoadPic(path string) (*Pic, error) {
 		return nil, err
 	}
 	raw := UnRLE(b)
-	if len(raw) < 24 {
+	recSize := Size[picFrameRec]()
+	if len(raw) < recSize {
 		return nil, fmt.Errorf("%s: decompressed to %d bytes", path, len(raw))
 	}
 	p := &Pic{Raw: raw}
-	n := le16(raw, 0) / 24
-	for k := 0; k < n && k*24+24 <= len(raw); k++ {
-		r := raw[k*24:]
-		f := PicFrame{Offset: le16(r, 0), W: int(r[2]), H: int(r[3])}
+	n := le16(raw, 0) / recSize
+	for k := 0; k < n && (k+1)*recSize <= len(raw); k++ {
+		r, _ := Decode[picFrameRec](raw[k*recSize : (k+1)*recSize])
+		f := PicFrame{Offset: int(r.Offset), W: int(r.W), H: int(r.H)}
 		f.Present = make([]bool, f.W*f.H)
-		f.Pix = make([]uint8, f.W*8*f.H*8)
+		width := f.W * tileSize
+		f.Pix = make([]uint8, width*f.H*tileSize)
 		src := f.Offset
 		for t := range f.Present {
-			f.Present[t] = t < 160 && r[4+t/8]&(1<<(t%8)) != 0
-			tx, ty := t%f.W*8, t/f.W*8
-			if !f.Present[t] || src+32 > len(raw) {
-				for y := 0; y < 8; y++ {
-					for x := 0; x < 8; x++ {
-						f.Pix[(ty+y)*f.W*8+tx+x] = 15
+			f.Present[t] = t < picMaxTiles && r.Present[t/bitsPerByte]&(1<<(t%bitsPerByte)) != 0
+			tx, ty := t%f.W*tileSize, t/f.W*tileSize
+			if !f.Present[t] || src+planarTileBytes > len(raw) {
+				for y := 0; y < tileSize; y++ {
+					for x := 0; x < tileSize; x++ {
+						f.Pix[(ty+y)*width+tx+x] = transparentColour
 					}
 				}
 				continue
 			}
-			tb := raw[src:]
-			pl := [4][]byte{tb[0:8], tb[8:16], tb[16:24], tb[24:32]}
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
-					f.Pix[(ty+y)*f.W*8+tx+x] = planarPixel(pl, 1, x, y)
+			pl := tilePlanes(raw[src:])
+			for y := 0; y < tileSize; y++ {
+				for x := 0; x < tileSize; x++ {
+					f.Pix[(ty+y)*width+tx+x] = planarPixel(pl, 1, x, y)
 				}
 			}
-			src += 32
+			src += planarTileBytes
 		}
 		p.Frames = append(p.Frames, f)
 	}
@@ -172,6 +214,12 @@ type Portrait struct {
 	Pix  []uint8
 }
 
+const (
+	portraitTiles = 3 // tiles per side
+	portraitSide  = portraitTiles * tileSize
+	portraitBytes = portraitTiles * portraitTiles * planarTileBytes // 288
+)
+
 // LoadPortraits reads every whole 288-byte portrait in the file.
 func LoadPortraits(path string) ([]Portrait, error) {
 	b, err := os.ReadFile(path)
@@ -179,14 +227,14 @@ func LoadPortraits(path string) ([]Portrait, error) {
 		return nil, err
 	}
 	var out []Portrait
-	for o := 0; o+288 <= len(b); o += 288 {
-		p := Portrait{W: 24, H: 24, Pix: make([]uint8, 24*24)}
-		for t := 0; t < 9; t++ {
-			tb := b[o+t*32:]
-			pl := [4][]byte{tb[0:8], tb[8:16], tb[16:24], tb[24:32]}
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
-					p.Pix[(t/3*8+y)*24+t%3*8+x] = planarPixel(pl, 1, x, y)
+	for o := 0; o+portraitBytes <= len(b); o += portraitBytes {
+		p := Portrait{W: portraitSide, H: portraitSide, Pix: make([]uint8, portraitSide*portraitSide)}
+		for t := 0; t < portraitTiles*portraitTiles; t++ {
+			pl := tilePlanes(b[o+t*planarTileBytes:])
+			tx, ty := t%portraitTiles*tileSize, t/portraitTiles*tileSize
+			for y := 0; y < tileSize; y++ {
+				for x := 0; x < tileSize; x++ {
+					p.Pix[(ty+y)*portraitSide+tx+x] = planarPixel(pl, 1, x, y)
 				}
 			}
 		}

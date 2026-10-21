@@ -132,7 +132,7 @@ func killCombatant(g, i int) {
 	}
 	if g >= 1 && g <= 5 {
 		rec := groupMonsterRec[g]
-		combatGold += int32(uint16(rec.Unk64)) | int32(rec.Unk66)<<16
+		combatGold += int32(uint16(rec.GoldLow)) | int32(rec.GoldHigh)<<16
 	}
 }
 
@@ -464,8 +464,8 @@ func doAttack(c *Combatant, slot, kind int) {
 			rec := itemRec(int(p.Items[item].ID))
 			mexeText = cstr(rec.Name[:])
 			if thrownOrBash {
-				if kind == 4 && rec.Unk28 != 0 {
-					spell = int(rec.Unk28)
+				if kind == 4 && rec.Spell != 0 {
+					spell = int(rec.Spell)
 					mexeVerb = getMessage(3384)
 				}
 				switch p.Items[item].Icon {

@@ -634,8 +634,8 @@ func initClassSkills() {
 
 // initHPStamina (WPCMK 8aed) rolls age, hit points, stamina and carrying capacity.
 func initHPStamina() {
-	newPC.Unk1A6 = 1
-	newPC.Unk1A7 = 10
+	newPC.RestHPRoll = 1
+	newPC.RestStaminaPct = 10
 	newPC.AgeDays = int32(random(1000) + 6570)
 	str, vit := int(newPC.Stats[0]), int(newPC.Stats[3])
 	var hp int
@@ -786,9 +786,9 @@ func choosePortrait() {
 
 // initNewCharacter (WPCMK 9341) sets the new character's starting values.
 func initNewCharacter() {
-	newPC.Unk1A9 = 1
-	newPC.Unk1AA = 1
-	newPC.Unk1AB = newPC.Stats[5] + 1
+	newPC.PrimaryAttacks = 1
+	newPC.SecondaryAttacks = 1
+	newPC.AttackPower = newPC.Stats[5] + 1
 	newPC.ToHit = 100
 	initHPStamina()
 	initClassRatings()

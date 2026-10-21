@@ -138,12 +138,12 @@ Where a pointer to the buffer is passed on (`f1234(&l76)`), the callee's `pN` is
   - `g4ecc` to `g4edc` are fields of `g4ec8[i]` (`partyCounters`).
   - `g36e2` and the related `g36e4`… are fields of `monsterPics[0]`. For slot s, add 314*s.
   - `g51c0` and `g51c2` are the low and high halves of `NPCRec.Gold`.
-- **Double reads:** `ItemRec.HandFlags` (+72) and `MonsterPicRec.Pairs` (+6) are sometimes read as int16 across two fields. In Go, write `int16(a) | int16(b)<<8` explicitly.
+- **Double reads:** `ItemRec.HandFlags` (+72) and `MonsterPicRec.FrameX` (+6) are sometimes read as int16 across two fields. In Go, write `int16(a) | int16(b)<<8` explicitly.
 - **SaveState:** `party_count` is saved as int16. Maps 14 and 15 are always zero, and only 14 maps are cached.
 - **MASTER.HDR:** `RecordCounts` are capacities. For types 2 and 3 there are 16 (and 14 are used).
 
 ## Uncertain fields
 
-- These names are guesses: `PC.Unk026`, `Hand.B0C` and `Hand.B0D`, `ItemRec.HandD` and `HandC`, `MapA.Feature` and the `Bits*` fields, `MapB.Data` and `Unk288`, `MonsterAttack.B13`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `B24` to `B41`.
+- These names are guesses: `PC.Unk026`, `Hand.B0C` and `Hand.B0D`, `ItemRec.HandD` and `HandC`, `MapA.Feature`, `SpecialCells` and `SolidCells`, `MapB.Data` and `Unk288`, `MonsterAttack.Range`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `B24` to `B41`.
 - Every `UnkXX` field is unknown. Name it when a translated function makes its meaning clear.
 - The race and spell tables are static data in the ROOT or overlay data segments, not scenario records. They are not typed here. Their layout is in the per-image `data.c`. The spell table has 6-byte entries at 0xde.

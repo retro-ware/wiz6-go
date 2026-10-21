@@ -99,11 +99,11 @@ func addSkillBonus(m, r, v int) {
 }
 
 // levelCap is member m's level capped at limit, or its level before a class
-// change (Unk1AF) when that was higher.
+// change (LevelBeforeClassChange) when that was higher.
 func levelCap(p *PC, limit int, minus1 bool) int {
 	l := int(p.Level)
-	if l < int(p.Unk1AF) {
-		l = int(p.Unk1AF)
+	if l < int(p.LevelBeforeClassChange) {
+		l = int(p.LevelBeforeClassChange)
 	}
 	if minus1 {
 		if l <= limit {
@@ -125,8 +125,8 @@ func setBaseResists(m int, t [2]string) {
 	}
 }
 
-// setAttackCounts (WPCVW ccd2) sets member m's attacks per round (Unk1A9 primary, Unk1AA
-// secondary, at most most) and Unk1AB.
+// setAttackCounts (WPCVW ccd2) sets member m's attacks per round (PrimaryAttacks and
+// SecondaryAttacks, at most most) and AttackPower.
 func setAttackCounts(m, most, a, b, c, d int) {
 	p := &party[m]
 	lv := levelCap(p, 20, false)
@@ -137,9 +137,9 @@ func setAttackCounts(m, most, a, b, c, d int) {
 		}
 		return min(v, uint8(most))
 	}
-	p.Unk1A9 = f(int(p.Stats[4]), a, b)
-	p.Unk1AA = f(int(p.Stats[5]), c, d)
-	p.Unk1AB = p.Stats[5] + uint8(lv)
+	p.PrimaryAttacks = f(int(p.Stats[4]), a, b)
+	p.SecondaryAttacks = f(int(p.Stats[5]), c, d)
+	p.AttackPower = p.Stats[5] + uint8(lv)
 }
 
 // resetCombatValues (WPCVW cdb3) recomputes member m's bare resistances, attacks, hands
@@ -389,9 +389,9 @@ func doEquipItems(sheet, menu *Window, m int) {
 				p.Stats[v-1]++
 			}
 		case v == 9:
-			p.Unk1A9 = max(p.Unk1A9, 4)
+			p.PrimaryAttacks = max(p.PrimaryAttacks, 4)
 		case v == 10:
-			p.Unk1AA = max(p.Unk1AA, 4)
+			p.SecondaryAttacks = max(p.SecondaryAttacks, 4)
 		case v == 11:
 			p.Condition = 0
 			p.Status = [10]uint8{}

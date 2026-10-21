@@ -232,8 +232,8 @@ func queueCombatantSprite(row, col int) {
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}
-	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + int(p.Pairs[f][mirror])
-	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.Unk57[f])
+	x := int(p.Offsets[row][col][0]) + int(monsterJitterX[row][col]) + int(p.FrameX[f][mirror])
+	y := int(p.Offsets[row][col][1]) + int(monsterJitterY[row][col]) + int(p.FrameY[f])
 	insertSprite(depth, slot, x, y, 72, 248, mirror, frames)
 }
 
@@ -285,11 +285,11 @@ func queueEffectSprite(row, col int) {
 		depth = 29
 	}
 	p := &monsterPics[0]
-	y := int(p.Unk57[frame]) + effectY[row][col]
+	y := int(p.FrameY[frame]) + effectY[row][col]
 	if row == 1 {
 		y -= 8
 	}
-	insertSprite(depth, 0, int(p.Pairs[frame][0])+effectX[row][col], y, 72, 248, mirror, []byte{byte(frame)})
+	insertSprite(depth, 0, int(p.FrameX[frame][0])+effectX[row][col], y, 72, 248, mirror, []byte{byte(frame)})
 	if animCycle == 0 {
 		*e++
 	}
@@ -494,7 +494,7 @@ func fillPartyRecord(m int, acSum bool) {
 			}
 		}
 	}
-	r.Unk211[0], r.Unk211[2], r.Unk211[1] = p.Unk1AB, p.Unk1AA, p.Unk1A9
+	r.Unk211[0], r.Unk211[2], r.Unk211[1] = p.AttackPower, p.SecondaryAttacks, p.PrimaryAttacks
 	r.Unk211[3] = p.Sex
 	r.Unk208 = p.Class
 }

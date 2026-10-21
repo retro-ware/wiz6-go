@@ -227,13 +227,13 @@ func loadMonsterPicSlot(mon, slot int) {
 // shifted by dx, clipped to columns lo..hi.
 func drawCampSprite(n, dx, lo, hi int) {
 	p := &monsterPics[4]
-	drv.DrawFrames(4, int(p.Pairs[n][0])+dx, int(p.Unk57[n]), lo, hi, 0, false, []byte{byte(n)})
+	drv.DrawFrames(4, int(p.FrameX[n][0])+dx, int(p.FrameY[n]), lo, hi, 0, false, []byte{byte(n)})
 }
 
 // drawCampBackdropChar (WBASE 4cd9) draws frame n of the picture in slot 2 at its place.
 func drawCampBackdropChar(n int) {
 	p := &monsterPics[2]
-	drv.DrawFrames(2, int(p.Pairs[n][0]), int(p.Unk57[n]), 72, 248, 0, false, []byte{byte(n)})
+	drv.DrawFrames(2, int(p.FrameX[n][0]), int(p.FrameY[n]), 72, 248, 0, false, []byte{byte(n)})
 }
 
 // drawCampScene (WBASE 4d1b) draws the camp scene into the view for animation frame,

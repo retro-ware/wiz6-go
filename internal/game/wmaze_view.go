@@ -111,7 +111,7 @@ func moveToMazeCell(cx, cy, block *int16, x, y int) int {
 // (cx, cy) from event index start on, or -1.
 func findCellEvent(cx, cy, block, start int) int {
 	for i := start; i < 144; i++ {
-		if int(mazeB.Unk1296[i]) != block {
+		if int(mazeB.Block[i]) != block {
 			return -1
 		}
 		if int(mazeB.X[i]) == cx && int(mazeB.Y[i]) == cy && mazeB.Kind[i] > 0 &&
@@ -184,7 +184,7 @@ func getFrontWall(x, y, cx, cy, block int16, side int) int {
 		return 0
 	}
 	cell := cellIndex(int(block), int(cx), int(cy))
-	if testBit(mazeA.Bits1082[:], cell) {
+	if testBit(mazeA.SpecialCells[:], cell) {
 		switch gameStateArg {
 		case 0, 4, 5, 12:
 			if gameStateArg == 12 && block < 9 {
@@ -214,7 +214,7 @@ func getFrontWall(x, y, cx, cy, block int16, side int) int {
 			mzG504e[viewRow][col] = 1
 		}
 	}
-	if testBit(mazeA.Bits1178[:], cell) {
+	if testBit(mazeA.SolidCells[:], cell) {
 		switch gameStateArg {
 		case 0, 1, 3, 4, 6, 8, 10, 11, 12, 13:
 			mzG5042[viewRow][col] = 1
@@ -286,7 +286,7 @@ func getSideWall(x, y, cx, cy, block int16, side, turn int) int {
 		return 0
 	}
 	cell := cellIndex(int(block), int(cx), int(cy))
-	if testBit(mazeA.Bits1082[:], cell) {
+	if testBit(mazeA.SpecialCells[:], cell) {
 		switch gameStateArg {
 		case 0, 4, 5, 12:
 			if gameStateArg != 12 || block > 8 {
@@ -334,8 +334,8 @@ func addViewObject(kind int, a, b int, frame uint8, c, d int, row uint8) {
 	o.Kind = uint8(kind)
 	o.A, o.B = int16(a), int16(b)
 	if kind != 255 {
-		o.A += int16(monsterPics[kind].Pairs[frame][0])
-		o.B += int16(monsterPics[kind].Unk57[frame])
+		o.A += int16(monsterPics[kind].FrameX[frame][0])
+		o.B += int16(monsterPics[kind].FrameY[frame])
 	}
 	o.Frame = frame
 	o.C, o.D = int16(c), int16(d)
@@ -600,7 +600,7 @@ func drawMazeView() {
 	g4fa6 = 0
 	viewRowsOpen = 1
 	drvFillBack(pictureWin, 0)
-	if testBit(mazeA.Bits1082[:], cellIndex(int(block), int(cx), int(cy))) {
+	if testBit(mazeA.SpecialCells[:], cellIndex(int(block), int(cx), int(cy))) {
 		switch gameStateArg {
 		case 0, 4, 5:
 			drawViewFrame()

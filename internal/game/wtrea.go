@@ -91,7 +91,7 @@ func animateChestLid(n int) int {
 		return -1
 	}
 	p := &monsterPics[0]
-	drv.DrawFrames(0, int(p.Pairs[frame][0]), int(p.Unk57[frame])-8, 72, 248, mirror, false, []byte{byte(frame)})
+	drv.DrawFrames(0, int(p.FrameX[frame][0]), int(p.FrameY[frame])-8, 72, 248, mirror, false, []byte{byte(frame)})
 	return n + 1
 }
 
@@ -130,7 +130,7 @@ func animateChestTrap(member, anim, step int) int {
 		right, mirror = 1, 1-mirror
 	}
 	p := &monsterPics[slot]
-	frame := p.Quads[p.Unk104[sub]][1] + uint8(step)
+	frame := p.Quads[p.SeqStartFrame[sub]][1] + uint8(step)
 	pos := trTrapPos[anim][1][right][step]
 	drv.DrawFrames(slot, int(pos[0]), int(pos[1]), 72, 248, mirror, false, []byte{frame})
 	return step + 1
@@ -152,7 +152,7 @@ func animateTreasureView() {
 	if trChestOpen == 1 {
 		f := trChestKind*3 + trChestPhase + 1
 		p := &monsterPics[3]
-		drv.DrawFrames(3, int(p.Pairs[f][0]), int(p.Unk57[f]), 72, 248, 0, false, []byte{byte(f)})
+		drv.DrawFrames(3, int(p.FrameX[f][0]), int(p.FrameY[f]), 72, 248, 0, false, []byte{byte(f)})
 	}
 	if trLidFrame >= 0 {
 		trLidFrame = animateChestLid(trLidFrame)

@@ -91,7 +91,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 	}
 	playSound(mexeSpellSound)
 	p := &monsterPics[pic]
-	q := int(p.Unk104[frame])
+	q := int(p.SeqStartFrame[frame])
 	for s := 0; s < 3; s++ {
 		f := byte(int(p.Quads[q][1]) + step[s])
 		viewAnimState = -2
@@ -219,8 +219,8 @@ func doUseItemAction(c *Combatant) {
 		item := int(c.W10)
 		rec := itemRec(int(p.Items[item].ID))
 		mexeText = cstr(rec.Name[:])
-		if rec.Unk28 != 0 {
-			power, spell = int(rec.Unk28)/256, int(rec.Unk28)%256
+		if rec.Spell != 0 {
+			power, spell = int(rec.Spell)/256, int(rec.Spell)%256
 			switch rec.Type {
 			case 12:
 				mexeVerb = getMessage(3313)
