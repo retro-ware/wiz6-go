@@ -66,7 +66,7 @@ func npcUseItem(win *Window, m int) {
 	if slot == -1 {
 		return
 	}
-	rec := itemRec(int(wpcvwGetItem(&party[m], slot).ID))
+	rec := itemRec(int(party[m].Items[slot].ID))
 	if rec.Unk28 == 0 {
 		return
 	}
@@ -95,7 +95,7 @@ func npcDrawItemList(win *Window, m, sel int, hi bool) {
 		}
 		setCursor(win, 2, row+2)
 		slot := npcItemSlots[sel+row]
-		it := wpcvwGetItem(p, slot)
+		it := p.Items[slot]
 		stack := stackable[it.Type] == 1
 		if hi && row == 0 {
 			printString(win, npcItemNames[slot], 3)
@@ -121,7 +121,7 @@ func npcDrawItemList(win *Window, m, sel int, hi bool) {
 
 // npcAddItem (WMNPC 99e6) lists item slot of member m.
 func npcAddItem(m, slot int) {
-	rec := itemRec(int(wpcvwGetItem(&party[m], slot).ID))
+	rec := itemRec(int(party[m].Items[slot].ID))
 	npcItemNames[slot] = cstr(rec.Name[:])
 	npcItemSlots = append(npcItemSlots, slot)
 }
@@ -387,7 +387,7 @@ func npcShop(m int) {
 // the reaction script's result if sold, else 0.
 func npcSellItem(win *Window, m, slot int) int {
 	p := &party[m]
-	it := wpcvwGetItem(p, slot)
+	it := p.Items[slot]
 	id := int(it.ID)
 	rec := itemRec(id)
 	full := max(int(rec.Charges.Count)*int(rec.Charges.Sides)+int(rec.Charges.Base), 1)
@@ -476,7 +476,7 @@ func npcGiveGold(win *Window, m int) int {
 	if slot == -1 {
 		return 0
 	}
-	it := wpcvwGetItem(p, slot)
+	it := p.Items[slot]
 	if it.Flags&1 != 0 {
 		npcRefuse(1528)
 		return 0

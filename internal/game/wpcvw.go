@@ -1,7 +1,6 @@
 package game
 
 import (
-	"encoding/binary"
 	"strconv"
 	"strings"
 
@@ -109,28 +108,6 @@ func itemRec(id int) ItemRec {
 
 // mask16 is a 16-bit mask as the byte pair test_bit reads.
 func mask16(v uint16) []byte { return []byte{byte(v), byte(v >> 8)} }
-
-// The PC record has 22 item slots: 10 inventory, then up to 12 swag from 10 on. dbs.PC
-// types the first 20 as Items; the last two are the 16 bytes of Unk0E0.
-// TODO(merge): widen dbs.PC.Items to [22]Item and drop these.
-func wpcvwGetItem(p *PC, i int) Item {
-	if i < len(p.Items) {
-		return p.Items[i]
-	}
-	b := p.Unk0E0[8*(i-len(p.Items)):]
-	return Item{ID: int16(binary.LittleEndian.Uint16(b)), Weight: int16(binary.LittleEndian.Uint16(b[2:])), Type: b[4], Icon: b[5], Qty: b[6], Flags: b[7]}
-}
-
-func wpcvwSetItem(p *PC, i int, it Item) {
-	if i < len(p.Items) {
-		p.Items[i] = it
-		return
-	}
-	b := p.Unk0E0[8*(i-len(p.Items)):]
-	binary.LittleEndian.PutUint16(b, uint16(it.ID))
-	binary.LittleEndian.PutUint16(b[2:], uint16(it.Weight))
-	b[4], b[5], b[6], b[7] = it.Type, it.Icon, it.Qty, it.Flags
-}
 
 // staminaPct is the stamina percentage the sheet shows (16-bit, as the C computes it),
 // at least 1 while there is any stamina.

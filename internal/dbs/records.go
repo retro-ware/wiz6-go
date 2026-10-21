@@ -93,8 +93,7 @@ type PC struct {
 	Level       int16          // +0x024 (pc_level)
 	Unk026      int16          // +0x026 ++ on resurrection; shown with glyph 31 (age-like)
 	SP          [6]SpellPoints // +0x028 fire water air earth mental magic
-	Items       [20]Item       // +0x040
-	Unk0E0      [16]uint8      // +0x0e0
+	Items       [22]Item       // +0x040: 10 inventory, then up to 12 swag from 10 on
 	Hands       [2]Hand        // +0x0f0 primary, secondary
 	Equipped    [8]uint8       // +0x110 inventory index per equip position, 255 none
 	SpellsLearn [4]uint8       // +0x118 spells still to learn per book

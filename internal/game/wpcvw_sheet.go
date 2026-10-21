@@ -156,7 +156,7 @@ func getLoadCategory(m int) LoadCategory {
 // getItemWeight (WPCVW 5311) is the weight of item slot i of member m, times its
 // quantity for stackable items.
 func getItemWeight(i, m int) int16 {
-	it := wpcvwGetItem(&party[m], i)
+	it := party[m].Items[i]
 	qty := int16(1)
 	if stackable[it.Type] == 1 {
 		if qty = int16(it.Qty); qty < 1 {

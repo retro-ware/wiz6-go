@@ -67,7 +67,7 @@ func removeSwagItem(m, i int) {
 	p := &party[m]
 	p.SwagCount--
 	for j := i; j < int(p.SwagCount); j++ {
-		wpcvwSetItem(p, j+10, wpcvwGetItem(p, j+11))
+		p.Items[j+10] = p.Items[j+11]
 		pvSwagNames[j] = pvSwagNames[j+1]
 	}
 }
@@ -212,7 +212,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		wpcvwPutIconAt(w, 2, 1, 100)
 		wpcvwPutIconAt(w, 17, 1, 100)
 		for i := 0; i < int(p.SwagCount); i++ {
-			it := wpcvwGetItem(p, i+10)
+			it := p.Items[i+10]
 			if !loaded {
 				rec := itemRec(int(it.ID))
 				pvSwagNames[i] = cstr(rec.Name[:])
@@ -264,7 +264,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 				if p.Items[pvChosenItem].Flags&1 != 0 {
 					playSound(0)
 				} else {
-					wpcvwSetItem(p, int(p.SwagCount)+10, p.Items[pvChosenItem])
+					p.Items[int(p.SwagCount)+10] = p.Items[pvChosenItem]
 					pvSwagNames[p.SwagCount] = pvItemNames[pvChosenItem]
 					p.SwagCount++
 					wpcvwRemoveItem(m, pvChosenItem)
@@ -276,7 +276,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 			resumeWindowDraw(w)
 		case 1:
 			if i := chooseItem(w, menu, 761, m, true); i != -1 {
-				p.Items[p.ItemCount] = wpcvwGetItem(p, i+10)
+				p.Items[p.ItemCount] = p.Items[i+10]
 				pvItemNames[p.ItemCount] = pvSwagNames[i]
 				p.ItemCount++
 				removeSwagItem(m, i)
@@ -284,7 +284,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 			}
 		case 2:
 			if i := chooseItem(w, menu, 762, m, true); i != -1 {
-				if wpcvwGetItem(p, i+10).Flags&64 != 0 {
+				if p.Items[i+10].Flags&64 != 0 {
 					playSound(0)
 				} else {
 					removeSwagItem(m, i)
@@ -352,7 +352,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		// Stack onto a like item of the receiver's inventory, else its swag, else add.
 		add, slot := 1, int(q.ItemCount)
 		stacks := func(s int) bool {
-			o := wpcvwGetItem(q, s)
+			o := q.Items[s]
 			return o.ID == it.ID && stackable[o.Type] == 1 && int(o.Qty)+n <= 250
 		}
 		for s := slot - 1; s >= 0; s-- {
@@ -368,7 +368,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 				}
 			}
 		}
-		o := wpcvwGetItem(q, slot)
+		o := q.Items[slot]
 		if add > 0 {
 			o = *it
 			o.Qty = uint8(n)
@@ -381,7 +381,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		} else {
 			o.Qty += uint8(n)
 		}
-		wpcvwSetItem(q, slot, o)
+		q.Items[slot] = o
 		if whole {
 			wpcvwRemoveItem(m, pvChosenItem)
 		} else {

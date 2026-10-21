@@ -210,7 +210,7 @@ func wdoptRemoveItem(m, slot int) {
 	if slot >= 10 {
 		p.SwagCount--
 		for i := slot; i < int(p.SwagCount)+10; i++ {
-			wpcvwSetItem(p, i, wpcvwGetItem(p, i+1))
+			p.Items[i] = p.Items[i+1]
 		}
 		return
 	}
@@ -244,10 +244,10 @@ func wdoptRemoveItem(m, slot int) {
 // with its last.
 func wdoptUseItemCharge(m, slot int) {
 	p := &party[m]
-	it := wpcvwGetItem(p, slot)
+	it := p.Items[slot]
 	if it.Qty > 0 {
 		it.Qty--
-		wpcvwSetItem(p, slot, it)
+		p.Items[slot] = it
 		if it.Qty == 0 {
 			wdoptRemoveItem(m, slot)
 		}
@@ -632,7 +632,7 @@ func wdoptApplySpell(caster, s, power, target int) {
 // something on the party's cell: an item event (kind 19) for it swaps its flags and plays
 // its sound; the key of the lock ahead opens it.
 func wdoptItemLocationEvent(m, slot int) bool {
-	id := wpcvwGetItem(&party[m], slot).ID
+	id := party[m].Items[slot].ID
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
 		if ev = wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			return false
@@ -693,7 +693,7 @@ func wdoptDrawItemList(win *Window, m, sel int, hi bool) {
 			}
 		}
 		setCursor(win, 18, row+2)
-		putCharHi(win, wpcvwGetItem(&party[m], slot).Icon+1, 4)
+		putCharHi(win, party[m].Items[slot].Icon+1, 4)
 	}
 	resumeWindowDraw(win)
 	refreshWindow(win)
@@ -722,7 +722,7 @@ func wdoptDoUseItem(m int) {
 	p := &party[m]
 	dpItemSlots = dpItemSlots[:0]
 	add := func(slot int) {
-		it := wpcvwGetItem(p, slot)
+		it := p.Items[slot]
 		rec := itemRec(int(it.ID))
 		dpItemNames[slot] = cstr(rec.Name[:])
 		dpItemQty[slot] = 0
@@ -795,7 +795,7 @@ func wdoptDoUseItem(m int) {
 		if wdoptItemLocationEvent(m, slot) {
 			wdoptUseItemCharge(m, slot)
 		} else {
-			rec := itemRec(int(wpcvwGetItem(p, slot).ID))
+			rec := itemRec(int(p.Items[slot].ID))
 			switch {
 			case rec.Unk28 != 0:
 				level, spell := int(rec.Unk28)/256, int(rec.Unk28)%256

@@ -217,7 +217,7 @@ func giveItemToMember(member, loot int) int {
 		qty = uint8(rollDice(rec.Charges))
 	}
 	stacks := func(i int) bool {
-		it := wpcvwGetItem(p, i)
+		it := p.Items[i]
 		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+int(qty) <= 250
 	}
 	place := 1 // 1 a new pack slot, 2 a new swag slot, 0 a stack
@@ -239,7 +239,7 @@ func giveItemToMember(member, loot int) int {
 			return -1
 		}
 	}
-	it := wpcvwGetItem(p, slot)
+	it := p.Items[slot]
 	if place > 0 {
 		it.Qty = 0
 		if place == 1 {
@@ -259,7 +259,7 @@ func giveItemToMember(member, loot int) int {
 			it.Flags |= f[1]
 		}
 	}
-	wpcvwSetItem(p, slot, it)
+	p.Items[slot] = it
 	calcCarriedWeight(member)
 	return 0
 }
