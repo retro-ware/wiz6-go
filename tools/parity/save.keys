@@ -1,9 +1,7 @@
-# Add the six roster PCs, start (magic word: empty), clear the entry messages, party options -> DISK -> SAVE GAME & RESUME.
-# The entry events differ between runs (random rolls), so "enter esc" pairs clear any number of
-# messages: enter dismisses a message, or opens the party menu and esc closes it again.
-# OUTDIR/work/dos/SAVEGAME.DBS and OUTDIR/work/godata/SAVEGAME.DBS are then compared.
+# Add the six roster PCs, start (magic word: empty), dismiss the entry messages,
+# party options -> DISK -> SAVE GAME & RESUME. parity.sh then compares the SAVEGAME.DBS files.
 WAIT 8
-PACE 2
+PACE 3
 enter
 enter
 enter
@@ -18,74 +16,23 @@ enter
 enter
 enter
 ,
+enter
 ,
 enter
 ,
+enter
 ,
 enter
 ,
-,
 enter
 ,
-,
-esc
-,
-,
 enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
-,
-esc
-,
-,
-enter
-,
 ,
 right
-,
 right
-,
 down
-,
 enter
 ,
-,
 enter
-,
 ,
 ,
