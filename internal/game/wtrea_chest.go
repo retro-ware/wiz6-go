@@ -14,6 +14,19 @@ var (
 	trSpellTarget     int      // g51d4: the member a spell is cast on
 )
 
+const (
+	trapCount         = 16   // chest traps 0 (none) .. 15, TreasureRec.Traps bits
+	trapNameMsg       = 5300 // plus the trap: its name
+	trapGuessMax      = 18   // the letters of a trap guess
+	trapLetterGuessed = '$'  // a trTrapPool letter already found
+	trapLetterWrong   = '*'  // a guessed letter found wrong
+	spellOpenChest    = 39   // may open the chest or spring its trap (spellLockInNPC in a meeting)
+	spellRevealTrap   = 52   // reveals letters of the trap's name
+	disarmOpened      = 1    // disarmChest, spellDisarmResult: the chest is open
+	disarmFailed      = 0    // nothing happened
+	disarmSprung      = -1   // the trap went off
+)
+
 // show_trap_effect (WTREA 5edf) says the trap went off, names it and starts trap animation
 // anim (-1 none) aimed at member.
 func showTrapEffect(member, anim int) {
@@ -54,14 +67,14 @@ func springTrap(trap, member int) {
 	case 2:
 		showTrapEffect(0, 16)
 		for i := 0; i < partyCount; i++ {
-			trInflictStatus(i, 5253, 10, 3, 10, 10, 50)
+			trInflictStatus(i, 5253, 10, statusParalyzed, 10, 10, 50)
 		}
 	case 3, 9:
 		showTrapEffect(0, -1)
 	case 4:
 		showTrapEffect(member, 6)
 		trTrapDamageMember(member, 1, 6)
-		trInflictStatus(member, 5255, 0, 5, lvl+2, 10, 50)
+		trInflictStatus(member, 5255, 0, statusPoisoned, lvl+2, 10, 50)
 	case 5:
 		showTrapEffect(0, 2)
 		for i := 0; i < partyCount; i++ {
@@ -74,13 +87,13 @@ func springTrap(trap, member int) {
 			case 1:
 				trInflictStatus(i, 5254, 2, 4, 10, 10, 50)
 			case 2:
-				trInflictStatus(i, 5252, 9, 2, 10, 10, 50)
+				trInflictStatus(i, 5252, 9, statusAsleep, 10, 10, 50)
 			case 3:
-				trInflictStatus(i, 5253, 4, 3, 10, 10, 50)
+				trInflictStatus(i, 5253, 4, statusParalyzed, 10, 10, 50)
 			case 4:
-				trInflictCondition(i, 5260, 11, 3)
+				trInflictCondition(i, 5260, 11, conditionDead)
 			case 5:
-				trInflictCondition(i, 5263, 11, 2)
+				trInflictCondition(i, 5263, 11, conditionStoned)
 			}
 		}
 	case 6:
@@ -88,11 +101,11 @@ func springTrap(trap, member int) {
 		for i := 0; i < partyCount; i++ {
 			p := &party[i]
 			trInflictStatus(i, 5265, 11, 9, 10, 10, 50)
-			if random(100) > int(p.Resist[11])+75 && p.Stats[0] > 3 && p.Condition < 3 {
-				p.Stats[0]--
+			if random(100) > int(p.Resist[11])+75 && p.Stats[statStrength] > 3 && p.Condition < conditionDead {
+				p.Stats[statStrength]--
 				trLoseMessage(i, 5267)
-			} else if random(100) > int(p.Resist[11])+75 && p.Stats[3] > 3 && p.Condition < 3 {
-				p.Stats[3]--
+			} else if random(100) > int(p.Resist[11])+75 && p.Stats[statVitality] > 3 && p.Condition < conditionDead {
+				p.Stats[statVitality]--
 				trLoseMessage(i, 5268)
 			}
 		}
@@ -102,7 +115,7 @@ func springTrap(trap, member int) {
 		showTrapEffect(0, 2)
 		for i := 0; i < partyCount; i++ {
 			p := &party[i]
-			if random(100) > int(p.Resist[11])+50 && p.Condition < 3 {
+			if random(100) > int(p.Resist[11])+50 && p.Condition < conditionDead {
 				p.HPMax -= int16(random(4) + 1)
 				if p.HPMax < 1 {
 					p.HPMax = 1
@@ -116,7 +129,7 @@ func springTrap(trap, member int) {
 	case 10:
 		showTrapEffect(0, 16)
 		for i := 0; i < partyCount; i++ {
-			trInflictCondition(i, 5263, 11, 2)
+			trInflictCondition(i, 5263, 11, conditionStoned)
 		}
 	case 11:
 		showTrapEffect(0, 4)
@@ -136,7 +149,7 @@ func springTrap(trap, member int) {
 	case 15:
 		showTrapEffect(0, 4)
 		for i := 0; i < partyCount; i++ {
-			trInflictCondition(i, 5260, 11, 3)
+			trInflictCondition(i, 5260, 11, conditionDead)
 		}
 	}
 }
@@ -145,7 +158,7 @@ func springTrap(trap, member int) {
 func phantomHand() {
 	var i int
 	for {
-		if i = random(partyCount); party[i].Condition < 3 {
+		if i = random(partyCount); party[i].Condition < conditionDead {
 			break
 		}
 	}
@@ -154,7 +167,7 @@ func phantomHand() {
 	notice := func(msg int) {
 		clearWindow(partyPictureWin, true)
 		printCentered(partyPictureWin, getMessage(msg), trRow, 5)
-		playSound(0)
+		playSound(soundBeep)
 		trWaitAnimating(messageDelay)
 	}
 	says := func(msg int) {
@@ -165,11 +178,11 @@ func phantomHand() {
 	notice(5270)
 	says(5271)
 	trTrapDamageMember(i, gameStateArg+1, 8)
-	if p.Condition < 3 && random(21) > int(p.Stats[7]) {
+	if p.Condition < conditionDead && random(21) > int(p.Stats[statKarma]) {
 		says(5272)
 		trTrapDamageMember(i, gameStateArg<<1+2, 8)
-		if random(21) > int(p.Stats[7]) {
-			trInflictCondition(i, 5273, 11, 3)
+		if random(21) > int(p.Stats[statKarma]) {
+			trInflictCondition(i, 5273, 11, conditionDead)
 		}
 	}
 	notice(5274)
@@ -181,7 +194,7 @@ func pickChestTrap(chest *TreasureRec) {
 	chestTrap = 0
 	left, wraps := random(100)+1, 0
 	for left > 0 && wraps < 100 {
-		if chestTrap++; chestTrap > 15 {
+		if chestTrap++; chestTrap >= trapCount {
 			chestTrap = 0
 			wraps++
 		}
@@ -189,7 +202,7 @@ func pickChestTrap(chest *TreasureRec) {
 			left--
 		}
 	}
-	trTrapName = getMessage(chestTrap + 5300)
+	trTrapName = getMessage(chestTrap + trapNameMsg)
 	trTrapPool = []byte(trTrapName)
 }
 
@@ -204,9 +217,9 @@ func revealTrapLetters(win *Window, member, letters, accuracy int) {
 		if random(100) < accuracy {
 			if k := strings.IndexByte(string(trTrapPool), trapGuessLetters[i]); k >= 0 {
 				trGuessKnown[i] = 1
-				trTrapPool[k] = '$'
+				trTrapPool[k] = trapLetterGuessed
 			} else {
-				trapGuessLetters[i] = '*'
+				trapGuessLetters[i] = trapLetterWrong
 			}
 		}
 		letters--
@@ -214,24 +227,24 @@ func revealTrapLetters(win *Window, member, letters, accuracy int) {
 	for ; letters > 0; letters-- {
 		unknown := 0
 		for _, c := range trTrapPool {
-			if c != '$' {
+			if c != trapLetterGuessed {
 				unknown++
 			}
 		}
 		if random(100) < accuracy {
-			if unknown > 0 && trapGuessLen < 18 {
+			if unknown > 0 && trapGuessLen < trapGuessMax {
 				var k int
 				for {
-					if k = random(len(trTrapPool)); trTrapPool[k] != '$' {
+					if k = random(len(trTrapPool)); trTrapPool[k] != trapLetterGuessed {
 						break
 					}
 				}
 				trapGuessLetters[trapGuessLen] = trTrapPool[k]
 				trGuessKnown[trapGuessLen] = 1
 				trapGuessLen++
-				trTrapPool[k] = '$'
+				trTrapPool[k] = trapLetterGuessed
 			}
-		} else if unknown > 0 && random(100) > 50 && trapGuessLen < 18 {
+		} else if unknown > 0 && random(100) > 50 && trapGuessLen < trapGuessMax {
 			trapGuessLetters[trapGuessLen] = byte(random(26) + 'A')
 			trGuessKnown[trapGuessLen] = 0
 			trapGuessLen++
@@ -255,17 +268,17 @@ func revealTrapLetters(win *Window, member, letters, accuracy int) {
 	refreshWindow(win)
 }
 
-// trThiefClass is whether class c is a thief (3), or a bard, ninja or ranger (13, 4, 6),
-// who also handle traps well.
+// trThiefClass is whether class c is a thief, or a ninja, ranger or bard, who also
+// handle traps well.
 func trThiefClass(c uint8) (thief, half bool) {
-	return c == 3, c == 13 || c == 4 || c == 6
+	return c == classThief, c == classNinja || c == classRanger || c == classBard
 }
 
-// inspect_chest (WTREA 6919): member looks at the trap, by skill (Skills[15]) and class.
+// inspect_chest (WTREA 6919): member looks at the trap, by skill (skillPickLock) and class.
 func inspectChest(win *Window, member int) {
 	p := &party[member]
 	lv := min(int(p.Level)/5, 6)
-	sk := int(p.Skills[15])
+	sk := int(p.Skills[skillPickLock])
 	var letters, accuracy int
 	switch thief, half := trThiefClass(p.Class); {
 	case thief:
@@ -300,7 +313,7 @@ func drawTrapList(win *Window, at int, hi bool, n int, list []int) {
 		if hi && d == 0 {
 			c = 6
 		}
-		printMessage(list[at+d]+5300, win, c)
+		printMessage(list[at+d]+trapNameMsg, win, c)
 		if hi && d == 0 {
 			for win.CurX < 17 {
 				putChar(win, ' ', 6)
@@ -315,11 +328,11 @@ func drawTrapList(win *Window, at int, hi bool, n int, list []int) {
 // it; 1 disarmed, 0 failed safely, -1 sprung.
 func disarmChest(member int, chest *TreasureRec) int {
 	if chestTrap == 0 {
-		return -1
+		return disarmSprung
 	}
-	win := createWindow(20, 19, 20, 5, 25, -5, 0, false)
+	win := createWindow(20, 19, 20, 5, 25, borderTopEdge, 0, false)
 	var traps []int
-	for t := range 16 {
+	for t := range trapCount {
 		if testBit(chest.Traps[:], t) {
 			traps = append(traps, t)
 		}
@@ -328,47 +341,47 @@ func disarmChest(member int, chest *TreasureRec) int {
 	setClickRegion(0, win.X+2, win.Y+2, win.X+19, win.Y+2)
 	setClickRegion(1, win.X+1, win.Y, win.X+1, win.Y)
 	setClickRegion(2, win.X+1, win.Y+4, win.X+1, win.Y+4)
-	setClickRegion(3, 255, 0, 0, 0)
+	setClickRegion(3, clickRegionsEnd, 0, 0, 0)
 	for {
 		drawTrapList(win, sel, true, len(traps), traps)
 		k := trInput()
 		if menuClicked == 1 {
 			switch k {
 			case 0:
-				k = 5
+				k = menuKeyEnter
 			case 1:
-				k = 2
+				k = menuKeyUp
 			case 2:
-				k = 4
+				k = menuKeyDown
 			}
 		}
 		switch k {
-		case 2:
+		case menuKeyUp:
 			if sel > 0 {
 				sel--
 			}
-		case 4:
+		case menuKeyDown:
 			if sel+1 < len(traps) {
 				sel++
 			}
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
 	destroyWindow(win, false)
 	if traps[sel] != chestTrap {
-		return -1
+		return disarmSprung
 	}
 	p := &party[member]
-	chance := int(p.Skills[15])/2 + int(p.Stats[4])/2 + int(p.Level) - gameStateArg<<1
+	chance := int(p.Skills[skillPickLock])/2 + int(p.Stats[statDexterity])/2 + int(p.Level) - gameStateArg<<1
 	switch thief, half := trThiefClass(p.Class); {
 	case thief:
-		chance += int(p.Stats[4]) * 3
-		trySkillGain(member, 15, 3)
+		chance += int(p.Stats[statDexterity]) * 3
+		trySkillGain(member, skillPickLock, 3)
 	case half:
-		chance += int(p.Stats[4]) << 1
-		trySkillGain(member, 15, 2)
+		chance += int(p.Stats[statDexterity]) << 1
+		trySkillGain(member, skillPickLock, 2)
 	}
 	chance = max(min(chance, 95), 5)
 	return trDisarmRoll(chance)
@@ -379,11 +392,11 @@ func trDisarmRoll(chance int) int {
 	r := random(100)
 	switch {
 	case r < chance:
-		return 1
+		return disarmOpened
 	case 100-(100-chance)/3 < r:
-		return -1
+		return disarmSprung
 	}
-	return 0
+	return disarmFailed
 }
 
 // try_spell_disarm (WTREA 6d83) is the open-chest spell at power level: it may open the
@@ -399,14 +412,14 @@ func trySpellDisarm(win, trapWin *Window, member, level int) {
 	switch {
 	case r < chance:
 		chestTrap = 0
-		spellDisarmResult = 1
+		spellDisarmResult = disarmOpened
 		trChestOpen = 1
 		trLine = getMessage(5234)
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 7)
 	case 100-(100-chance)/3 < r:
-		spellDisarmResult = -1
+		spellDisarmResult = disarmSprung
 	default:
-		spellDisarmResult = 0
+		spellDisarmResult = disarmFailed
 		trLine = getMessage(5235)
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 7)
 	}
@@ -421,85 +434,85 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 	c := &partyCounters
 	t := &party[target]
 	switch spell {
-	case 53:
-		c[2].A += int16(level * 50)
-		c[2].B = int16(clampToward(level*5+70, int(c[2].B), 0))
-	case 68:
-		c[3].A += int16(level * 35)
-		c[3].B = int16(clampToward((level-1)/2+1, int(c[3].B), 0))
-	case 41:
-		c[1].A += int16(level * 50)
-		c[1].B = int16(clampToward((level-1)/2+1, int(c[1].B), 0))
-	case 30:
-		c[5].A += int16(level * 5)
-	case 38:
-		c[0].A += int16(100 * level)
-	case 70:
-		c[4].A += int16(level * 50)
-		c[4].B = int16(clampToward(level*5, int(c[4].B), 0))
-	case 39:
+	case spellDetectSecret:
+		c[effectDetectSecret].A += int16(level * 50)
+		c[effectDetectSecret].B = int16(clampToward(level*5+70, int(c[effectDetectSecret].B), 0))
+	case spellEnchantedBlade:
+		c[effectEnchantedBlade].A += int16(level * 35)
+		c[effectEnchantedBlade].B = int16(clampToward((level-1)/2+1, int(c[effectEnchantedBlade].B), 0))
+	case spellArmorplate:
+		c[effectArmorplate].A += int16(level * 50)
+		c[effectArmorplate].B = int16(clampToward((level-1)/2+1, int(c[effectArmorplate].B), 0))
+	case spellLevitate:
+		c[effectLevitate].A += int16(level * 5)
+	case spellDirection:
+		c[effectDirection].A += int16(100 * level)
+	case spellMagicScreen:
+		c[effectMagicScreen].A += int16(level * 50)
+		c[effectMagicScreen].B = int16(clampToward(level*5, int(c[effectMagicScreen].B), 0))
+	case spellOpenChest:
 		trySpellDisarm(win, trapWin, member, level)
-	case 52:
+	case spellRevealTrap:
 		lv := min(int(party[member].Level), 12)
 		revealTrapLetters(trapWin, member, level+4, min(level*5+65-gameStateArg<<1+lv, 95))
-	case 10:
+	case spellStamina:
 		t.Stamina = min(t.Stamina+int16(rollDice(formatDice(level<<1, 8, level))), t.StaminaMax)
 		drawMemberStatus(target)
-	case 15:
-		t.Status[3] = uint8(max(int(int16(int(t.Status[3])-level*25)), 0)) // C int wraps
+	case spellCureParalysis:
+		t.Status[statusParalyzed] = uint8(max(int(int16(int(t.Status[statusParalyzed])-level*25)), 0)) // C int wraps
 		drawMemberStatus(target)
-	case 26:
+	case spellCurePoison:
 		n := int(int16(int(t.PoisonStr) - level)) // C int wraps
 		if n <= 0 {
 			n = 0
-			t.Status[5] = 0
+			t.Status[statusPoisoned] = 0
 		}
 		t.PoisonStr = uint8(n)
-		if n = int(int16(int(t.Status[5]) - level*5)); n <= 0 { // C int wraps
+		if n = int(int16(int(t.Status[statusPoisoned]) - level*5)); n <= 0 { // C int wraps
 			n = 0
 			t.PoisonStr = 0
 		}
-		t.Status[5] = uint8(n)
+		t.Status[statusPoisoned] = uint8(n)
 		drawMemberStatus(target)
-	case 46:
-		if t.Condition == 2 && int(int16(level*3)) > 21-int(t.Stats[3]) { // C int wraps
-			t.Stats[3]--
-			if random(21) > int(t.Stats[3]) {
-				t.Condition = 3
+	case spellCureStone:
+		if t.Condition == conditionStoned && int(int16(level*3)) > 21-int(t.Stats[statVitality]) { // C int wraps
+			t.Stats[statVitality]--
+			if random(21) > int(t.Stats[statVitality]) {
+				t.Condition = conditionDead
 				t.HP, t.Stamina = 0, 0
 			} else {
-				t.Condition = 0
+				t.Condition = conditionOK
 			}
 			drawMemberStatus(target)
 		}
-	case 57:
-		t.Status[7] = uint8(max(int(int16(int(t.Status[7])-level*25)), 0)) // C int wraps
+	case spellSaneMind:
+		t.Status[statusInsane] = uint8(max(int(int16(int(t.Status[statusInsane])-level*25)), 0)) // C int wraps
 		drawMemberStatus(target)
-	case 51:
-		for _, s := range []int{1, 2, 4, 8, 9} {
+	case spellCureLesserCnd:
+		for _, s := range []int{1, statusAsleep, 4, 8, 9} {
 			t.Status[s] = uint8(max(int(int16(int(t.Status[s])-level<<1)), 0)) // C int wraps
 		}
 		drawMemberStatus(target)
-	case 64:
+	case spellHealWounds:
 		t.HP = min(t.HP+int16(rollDice(formatDice(level, 7, level))), t.HPMax)
 		drawMemberStatus(target)
-	case 77:
-		if t.Condition == 3 && int(int16(level*3)) > 18-int(t.Stats[3]) { // C int wraps
-			t.Stats[3]--
-			t.Condition = 0
+	case spellResurrection:
+		if t.Condition == conditionDead && int(int16(level*3)) > 18-int(t.Stats[statVitality]) { // C int wraps
+			t.Stats[statVitality]--
+			t.Condition = conditionOK
 			t.HP = 1
 			t.Stamina = t.StaminaMax / 10
 			t.Unk026++
 			drawMemberStatus(target)
 		}
-	case 80:
+	case spellHelpFood:
 		p := &party[member]
 		p.Stamina = min(p.Stamina+int16(rollDice(formatDice(level, 8, level))), p.StaminaMax)
 		p.HP = min(p.HP+int16(rollDice(formatDice(level, 2, 0))), p.HPMax)
 		drawMemberStatus(member)
-	case 81:
+	case spellMagicFood:
 		p := &party[member]
-		for r := range 6 {
+		for r := range realmCount {
 			p.SP[r].Cur = min(p.SP[r].Cur+int16(rollDice(formatDice(level, 10, 0))), p.SP[r].Max)
 		}
 		drawMemberStatus(member)
@@ -518,7 +531,7 @@ func trSetBlink(x, y int, a string, ca int, b string, cb int) {
 func chooseChestSpell(win *Window, member int) int {
 	p := &party[member]
 	book := createWindow(0, 18, 23, 7, 25, -1, 0, false)
-	list := createWindow(22, 19, 18, 6, 26, -5, 0, false)
+	list := createWindow(22, 19, 18, 6, 26, borderTopEdge, 0, false)
 	closeAll := func() {
 		trBlink = -1
 		destroyWindow(book, false)
@@ -527,7 +540,7 @@ func chooseChestSpell(win *Window, member int) int {
 	drawBookSpellWindow(book, member)
 	drawListFrame(list, true)
 	realm := 0
-	for r := range 6 {
+	for r := range realmCount {
 		x, y := r/3*6+1, r%3<<1+1
 		setClickRegion(r, book.X+byte(x), book.Y+byte(y), book.X+byte(x), book.Y+byte(y))
 	}
@@ -536,7 +549,7 @@ func chooseChestSpell(win *Window, member int) int {
 	var count, spell, level int
 	for {
 		// The realm.
-		setClickRegion(7, 255, 0, 0, 0)
+		setClickRegion(7, clickRegionsEnd, 0, 0, 0)
 		redraw := true
 		trBlinkWin = book
 		for {
@@ -565,18 +578,18 @@ func chooseChestSpell(win *Window, member int) int {
 			if menuClicked == 1 {
 				switch {
 				case k == realm:
-					k = 5
-				case k < 6:
+					k = menuKeyEnter
+				case k < realmCount:
 					unhighlightBookRealm(book, realm)
-					realm, k = k, 0
+					realm, k = k, menuKeyEscape
 				default:
 					unhighlightBookRealm(book, realm)
-					realm, k, count = -1, 5, -1
+					realm, k, count = -1, menuKeyEnter, -1
 				}
 				redraw = true
 			} else {
 				switch k {
-				case 1:
+				case menuKeyLeft:
 					if realm == -1 {
 						unhighlightBookRealm(book, realm)
 						realm, redraw = 4, true
@@ -584,27 +597,27 @@ func chooseChestSpell(win *Window, member int) int {
 						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-3, true
 					}
-				case 2:
+				case menuKeyUp:
 					if realm != -1 && realm%3 > 0 {
 						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-1, true
 					}
-				case 3:
+				case menuKeyRight:
 					if realm != -1 {
 						unhighlightBookRealm(book, realm)
 						redraw = true
-						if realm += 3; realm >= 6 {
+						if realm += 3; realm >= realmCount {
 							realm = -1
 						}
 					}
-				case 4:
+				case menuKeyDown:
 					if realm != -1 && realm%3+1 < 3 {
 						unhighlightBookRealm(book, realm)
 						realm, redraw = realm+1, true
 					}
 				}
 			}
-			if k == 5 && count != 0 {
+			if k == menuKeyEnter && count != 0 {
 				break
 			}
 		}
@@ -622,7 +635,7 @@ func chooseChestSpell(win *Window, member int) int {
 		setClickRegion(7, list.X+1, list.Y, list.X+1, list.Y)
 		setClickRegion(8, list.X+1, list.Y+4, list.X+1, list.Y+4)
 		setClickRegion(9, list.X+2, list.Y+2, list.X+19, list.Y+2)
-		setClickRegion(10, 255, 0, 0, 0)
+		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		for {
 			trBlink = 1
 			trBlinkText[1] = getMessage(spells[pos] + 4000)
@@ -639,31 +652,31 @@ func chooseChestSpell(win *Window, member int) int {
 			if menuClicked == 1 {
 				switch k {
 				case 0, 1, 2, 3, 4, 5:
-					realm, k = k, 1
+					realm, k = k, menuKeyLeft
 				case 6:
 					closeAll()
 					return -1
 				case 7:
-					k = 2
+					k = menuKeyUp
 				case 8:
-					k = 4
+					k = menuKeyDown
 				case 9:
-					k = 5
+					k = menuKeyEnter
 				}
 			}
 			switch k {
-			case 1:
+			case menuKeyLeft:
 				back = true
-			case 2:
+			case menuKeyUp:
 				if pos > 0 {
 					pos--
 				}
-			case 4:
+			case menuKeyDown:
 				if pos+1 < count {
 					pos++
 				}
 			}
-			if k == 5 || back {
+			if k == menuKeyEnter || back {
 				break
 			}
 		}
@@ -686,7 +699,7 @@ func chooseChestSpell(win *Window, member int) int {
 		setClickRegion(l, book.X+byte(l)+15, book.Y+3, book.X+byte(l)+15, book.Y+3)
 	}
 	setClickRegion(maxLevel, book.X+13, book.Y+3, book.X+13, book.Y+3)
-	setClickRegion(maxLevel+1, 255, 0, 0, 0)
+	setClickRegion(maxLevel+1, clickRegionsEnd, 0, 0, 0)
 	redraw := true
 	plainLevel := func() {
 		setCursor(book, level+14, 3)
@@ -717,28 +730,28 @@ func chooseChestSpell(win *Window, member int) int {
 		k := trInput()
 		if menuClicked == 1 {
 			if k+1 == level {
-				k = 5
+				k = menuKeyEnter
 			} else {
 				plainLevel()
 				level = 0
 				if k < maxLevel {
 					level = k + 1
 				}
-				k = 0
+				k = menuKeyEscape
 				if level == 0 {
-					k = 5
+					k = menuKeyEnter
 				}
 			}
 			redraw = true
 		} else {
 			switch k {
-			case 1:
+			case menuKeyLeft:
 				if level > 0 {
 					plainLevel()
 					level--
 					redraw = true
 				}
-			case 3:
+			case menuKeyRight:
 				if level == 0 {
 					unhighlightBookRealm(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
@@ -752,7 +765,7 @@ func chooseChestSpell(win *Window, member int) int {
 				}
 			}
 		}
-		if k == 5 && int(p.SP[realm].Cur) >= cost {
+		if k == menuKeyEnter && int(p.SP[realm].Cur) >= cost {
 			break
 		}
 	}
@@ -760,7 +773,7 @@ func chooseChestSpell(win *Window, member int) int {
 	if level == 0 {
 		return -1
 	}
-	if spellTable[spell].Target == 1 {
+	if spellTable[spell].Target == spellTargetMember {
 		if trSpellTarget = trChooseMember(2030, 1); trSpellTarget == -1 {
 			return -1
 		}
@@ -783,7 +796,7 @@ func castSpellOnChest(win, trapWin *Window, member int) {
 	p.Stamina -= int16(random(level) + int(s.Level) + level)
 	if p.Stamina < 0 {
 		p.Stamina = 0
-		p.Status[2] = uint8(random(6) + 6)
+		p.Status[statusAsleep] = uint8(random(6) + 6)
 	}
 	drawMemberStatus(member)
 }
@@ -812,9 +825,9 @@ func handleChest(chest *TreasureRec) int {
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	eraseCursorMark(bottomLineWin, false)
-	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	trapWin := createWindow(20, 19, 20, 5, 21, -5, 0, false)
+	trapWin := createWindow(20, 19, 20, 5, 21, borderTopEdge, 0, false)
 	fillWindow(trapWin, ' ', 3)
 	deferWindowDraw(trapWin)
 	setCursor(trapWin, 4, 0)
@@ -844,7 +857,7 @@ func handleChest(chest *TreasureRec) int {
 		case 0: // inspect
 			if m := trChooseMember(5223, 0); m != -1 {
 				if inspected[m] {
-					playSound(0)
+					playSound(soundBeep)
 				} else if isMemberAble(m) {
 					inspectChest(trapWin, m)
 					inspected[m] = true
@@ -862,12 +875,12 @@ func handleChest(chest *TreasureRec) int {
 			clearWindow(partyPictureWin, false)
 			refreshAllWindows()
 			switch r {
-			case 1:
+			case disarmOpened:
 				trChestOpen = 1
 				showCenteredLine(partyPictureWin, trRow, getMessage(5229), true, 7)
 				closeChestWindows(win, trapWin)
 				return 0
-			case -1:
+			case disarmSprung:
 				trChestOpen = 1
 				closeChestWindows(win, trapWin)
 				springTrap(chestTrap, m)
@@ -889,14 +902,14 @@ func handleChest(chest *TreasureRec) int {
 			if m == -1 || !isMemberAble(m) {
 				break
 			}
-			spellDisarmResult = 0
+			spellDisarmResult = disarmFailed
 			castSpellOnChest(win, trapWin, m)
 			switch spellDisarmResult {
-			case 1:
+			case disarmOpened:
 				trChestOpen = 1
 				closeChestWindows(win, trapWin)
 				return 0
-			case -1:
+			case disarmSprung:
 				trChestOpen = 1
 				closeChestWindows(win, trapWin)
 				springTrap(chestTrap, m)

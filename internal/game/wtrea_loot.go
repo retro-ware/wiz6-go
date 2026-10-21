@@ -19,6 +19,13 @@ var (
 	lootImportant [6]int    // g5274: the item must not be left behind
 )
 
+// TreasureEntry.Kind values.
+const (
+	treasureGold = 1 // gold between B and A
+	treasureItem = 2 // item A plus up to B-1
+	treasureExp  = 4 // A times B experience
+)
+
 // treasure_after_combat (WTREA 9b80): the fight is won; share its gold, then its treasure.
 func treasureAfterCombat() {
 	trChestKind = -1
@@ -37,7 +44,7 @@ func treasureAfterCombat() {
 		shareCombatGold()
 	}
 	if treasureID != -1 {
-		returnCmd = 15
+		returnCmd = int16(stateTreasureAfterFight)
 		openTreasure()
 	}
 }
@@ -54,7 +61,7 @@ func treasureFound() {
 	deferWindowDraw(bottomLineWin)
 	clearWindow(partyPictureWin, false)
 	if treasureID != -1 {
-		returnCmd = 21
+		returnCmd = int16(stateTreasureFound)
 		openTreasure()
 	}
 	cellEventIndex++
@@ -64,7 +71,7 @@ func treasureFound() {
 func trLiving() int {
 	n := 0
 	for m := 0; m < partyCount; m++ {
-		if party[m].Condition == 0 {
+		if party[m].Condition == conditionOK {
 			n++
 		}
 	}
@@ -80,7 +87,7 @@ func shareCombatGold() {
 	trLine = replaceCharWithString(trLine, trNum, '$')
 	showCenteredLine(partyPictureWin, 2, trLine, false, 6)
 	for m := 0; m < partyCount; m++ {
-		if party[m].Condition == 0 {
+		if party[m].Condition == conditionOK {
 			party[m].Exp += share
 		}
 	}
@@ -100,7 +107,7 @@ func openTreasure() {
 		}
 		clearWindow(partyPictureWin, false)
 	}
-	if returnCmd == 21 {
+	if returnCmd == int16(stateTreasureFound) {
 		markChestOpened()
 	}
 	refreshAllWindows()
@@ -111,11 +118,11 @@ func openTreasure() {
 			continue
 		}
 		switch e.Kind {
-		case 1:
+		case treasureGold:
 			gold += int32(int16(random(int(e.A)-int(e.B)) + int(e.B))) // C int sum wraps
-		case 4:
+		case treasureExp:
 			exp += int32(e.A) * int32(e.B)
-		case 2:
+		case treasureItem:
 			if lootItem[lootCount] = int(int16(random(int(e.B)) + int(e.A))); lootItem[lootCount] > 0 { // C int sum wraps
 				lootCount++
 			}
@@ -123,7 +130,7 @@ func openTreasure() {
 	}
 	living := trLiving()
 	if living == 0 {
-		gameState = 8
+		gameState = stateGraveyard
 		return
 	}
 	gold /= int32(living)
@@ -141,7 +148,7 @@ func openTreasure() {
 			lootWeight[i] = lootQty[i] * int(rec.Weight)
 			lootIcon[i] = int(rec.Icon)
 			lootImportant[i] = 0
-			if rec.Flags&2 != 0 {
+			if rec.Flags&itemImportant != 0 {
 				lootImportant[i] = 1
 			}
 			switch rec.Type {
@@ -172,7 +179,7 @@ func openTreasure() {
 		showCenteredLine(partyPictureWin, trRow, trLine, true, 4)
 	}
 	for m := 0; m < partyCount; m++ {
-		if party[m].Condition == 0 {
+		if party[m].Condition == conditionOK {
 			party[m].Exp += exp
 			party[m].Gold += gold
 		}
@@ -219,7 +226,7 @@ func giveItemToMember(member, loot int) int {
 	}
 	stacks := func(i int) bool {
 		it := p.Items[i]
-		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+int(qty) <= 250
+		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+int(qty) <= maxStackQty
 	}
 	place := 1 // 1 a new pack slot, 2 a new swag slot, 0 a stack
 	slot := int(p.ItemCount)
@@ -228,15 +235,15 @@ func giveItemToMember(member, loot int) int {
 			slot, place = i, 0
 		}
 	}
-	if slot >= 10 {
+	if slot >= packSlots {
 		place = 2
-		slot = int(p.SwagCount) + 10
+		slot = int(p.SwagCount) + packSlots
 		for i := int(p.SwagCount) - 1; i >= 0; i-- {
-			if stacks(i + 10) {
-				slot, place = i+10, 0
+			if stacks(i + packSlots) {
+				slot, place = i+packSlots, 0
 			}
 		}
-		if slot >= 22 {
+		if slot >= itemSlots {
 			return -1
 		}
 	}
@@ -255,7 +262,7 @@ func giveItemToMember(member, loot int) int {
 	it.Weight = rec.Weight
 	it.Qty += qty
 	it.Flags = 0
-	for _, f := range [][2]uint8{{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}} {
+	for _, f := range [][2]uint8{{recItemOffHand, itemOffHand}, {recItemTwoHanded, itemTwoHanded}, {16, 16}, {32, 32}, {itemImportant, itemKept}} {
 		if rec.Flags&f[0] != 0 {
 			it.Flags |= f[1]
 		}
@@ -295,9 +302,9 @@ func distributeLoot() {
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	eraseCursorMark(bottomLineWin, false)
-	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	list := createWindow(20, 19, 20, 5, 21, -5, 0, false)
+	list := createWindow(20, 19, 20, 5, 21, borderTopEdge, 0, false)
 	fillWindow(list, ' ', 3)
 	deferWindowDraw(win)
 	setCursor(win, 2, 1)
@@ -333,7 +340,7 @@ func distributeLoot() {
 		}
 		resumeWindowDraw(list)
 		setClickRegion(lootCount, win.X+byte(noneX), win.Y+byte(noneY), byte(len(none)+int(win.X)+noneX-1), win.Y+byte(noneY))
-		setClickRegion(lootCount+1, 255, 0, 0, 0)
+		setClickRegion(lootCount+1, clickRegionsEnd, 0, 0, 0)
 		refreshAllWindows()
 		hiNone := func() {
 			setCursor(win, noneX, noneY)
@@ -361,25 +368,25 @@ func distributeLoot() {
 			k := trInput()
 			if menuClicked == 1 {
 				if k == sel {
-					k = 5
+					k = menuKeyEnter
 				} else {
 					if sel != -1 {
 						drawLootLine(list, sel)
 					}
 					if k < lootCount {
-						sel, k = k, 0
+						sel, k = k, menuKeyEscape
 					} else {
-						sel, k = -1, 5
+						sel, k = -1, menuKeyEnter
 					}
 				}
 			} else {
 				switch k {
-				case 1:
+				case menuKeyLeft:
 					if sel != -1 {
 						drawLootLine(list, sel)
 						sel = -1
 					}
-				case 2:
+				case menuKeyUp:
 					if sel == -1 {
 						hiNone()
 					} else {
@@ -388,11 +395,11 @@ func distributeLoot() {
 							sel = -1
 						}
 					}
-				case 3:
+				case menuKeyRight:
 					if sel == -1 {
 						hiNone()
 					}
-				case 4:
+				case menuKeyDown:
 					if sel == -1 {
 						hiNone()
 					} else {
@@ -403,7 +410,7 @@ func distributeLoot() {
 					}
 				}
 			}
-			if k == 5 {
+			if k == menuKeyEnter {
 				break
 			}
 		}
@@ -412,7 +419,7 @@ func distributeLoot() {
 				if giveItemToMember(m, sel) == -1 {
 					printChestPrompt(5108, 6)
 					refreshWindow(mainWindow)
-					playSound(0)
+					playSound(soundBeep)
 					trWaitAnimating(messageDelay)
 				} else {
 					removeLootEntry(sel)
@@ -429,7 +436,7 @@ func distributeLoot() {
 			if important {
 				printChestPrompt(5109, 1)
 				refreshWindow(mainWindow)
-				playSound(0)
+				playSound(soundBeep)
 				trWaitAnimating(messageDelay)
 			}
 		}

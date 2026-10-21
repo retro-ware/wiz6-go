@@ -20,14 +20,14 @@ func wtreaOvmain() {
 	trLidFrame = -1
 	trTrapFrame = -1
 	switch gameState {
-	case 15:
-		gameState = 22
+	case stateTreasureAfterFight:
+		gameState = stateLevelUp
 		treasureAfterCombat()
-	case 21:
-		gameState = 22
+	case stateTreasureFound:
+		gameState = stateLevelUp
 		treasureFound()
 	default:
-		gameState = 22
+		gameState = stateLevelUp
 	}
 }
 
@@ -62,8 +62,27 @@ var (
 	trNum2     string // 0x5142 (g5142)
 )
 
-// trTextControls are print_text_line's control characters (0x4fee).
+// trTextControls are print_text_line's control characters (0x4fee), in the order of
+// the npcText... constants (wmnpc.go).
 const trTextControls = "!%#&]@"
+
+// The monster picture slots and the drawing range of the treasure view.
+const (
+	picChestLid    = 0  // the lid animation
+	picChest       = 3  // the chest, open or idle
+	picTrapsFirst  = 7  // trap animations 0..4
+	picTrapsSecond = 8  // trap animations trAnimsSecond..12
+	picTrapsThird  = 9  // trap animations trAnimsThird..15
+	trAnimsSecond  = 5  // the first trap animation of picTrapsSecond
+	trAnimsThird   = 13 // the first trap animation of picTrapsThird
+	trViewLeft     = 72 // the maze view's columns, as DrawFrames clips
+	trViewRight    = 248
+	trLidSteps     = 7   // animate_chest_lid's steps
+	trTrapSteps    = 3   // animate_chest_trap's steps
+	trTextRows     = 5   // the text window's rows
+	trMoreGlyph    = 126 // the more mark
+	trLineCenter   = 20  // the centre column of a 40-column line
+)
 
 // animate_chest_lid (WTREA 45de) draws lid step n of the chest picture (slot 0) and returns
 // the next step, -1 after the last.
@@ -87,11 +106,11 @@ func animateChestLid(n int) int {
 		frame = 1
 	case 6:
 		frame, mirror = 1, 1
-	case 7:
+	case trLidSteps:
 		return -1
 	}
-	p := &monsterPics[0]
-	drv.DrawFrames(0, int(p.FrameX[frame][0]), int(p.FrameY[frame])-8, 72, 248, mirror, false, []byte{byte(frame)})
+	p := &monsterPics[picChestLid]
+	drv.DrawFrames(picChestLid, int(p.FrameX[frame][0]), int(p.FrameY[frame])-8, trViewLeft, trViewRight, mirror, false, []byte{byte(frame)})
 	return n + 1
 }
 
@@ -111,15 +130,15 @@ func animateChestTrap(member, anim, step int) int {
 	if dtLog != nil { // the difftest stubs it
 		return 0
 	}
-	if step == 3 {
+	if step == trTrapSteps {
 		return -1
 	}
-	slot, sub := 7, anim
+	slot, sub := picTrapsFirst, anim
 	switch {
-	case anim >= 13:
-		slot, sub = 9, anim-13
-	case anim >= 5:
-		slot, sub = 8, anim-5
+	case anim >= trAnimsThird:
+		slot, sub = picTrapsThird, anim-trAnimsThird
+	case anim >= trAnimsSecond:
+		slot, sub = picTrapsSecond, anim-trAnimsSecond
 	}
 	symmetric := anim == 6 || anim == 8 || anim >= 10 && anim <= 13 || anim == 15
 	right, mirror := 0, 1
@@ -132,7 +151,7 @@ func animateChestTrap(member, anim, step int) int {
 	p := &monsterPics[slot]
 	frame := p.Quads[p.SeqStartFrame[sub]][1] + uint8(step)
 	pos := trTrapPos[anim][1][right][step]
-	drv.DrawFrames(slot, int(pos[0]), int(pos[1]), 72, 248, mirror, false, []byte{frame})
+	drv.DrawFrames(slot, int(pos[0]), int(pos[1]), trViewLeft, trViewRight, mirror, false, []byte{frame})
 	return step + 1
 }
 
@@ -151,8 +170,8 @@ func animateTreasureView() {
 	drawMazeView()
 	if trChestOpen == 1 {
 		f := trChestKind*3 + trChestPhase + 1
-		p := &monsterPics[3]
-		drv.DrawFrames(3, int(p.FrameX[f][0]), int(p.FrameY[f]), 72, 248, 0, false, []byte{byte(f)})
+		p := &monsterPics[picChest]
+		drv.DrawFrames(picChest, int(p.FrameX[f][0]), int(p.FrameY[f]), trViewLeft, trViewRight, 0, false, []byte{byte(f)})
 	}
 	if trLidFrame >= 0 {
 		trLidFrame = animateChestLid(trLidFrame)
@@ -166,7 +185,7 @@ func animateTreasureView() {
 	}
 }
 
-// trAnimate is one idle step of the treasure view: every 10th call flips the animation phase
+// trAnimate is one idle step of the treasure view: every animFrameSteps-th call flips the animation phase
 // and draws a frame, else an ambient sound or a pause.
 func trAnimate() {
 	if trAnimCounter == 0 {
@@ -176,7 +195,7 @@ func trAnimate() {
 	} else {
 		idleStep()
 	}
-	trAnimCounter = (trAnimCounter + 1) % 10
+	trAnimCounter = (trAnimCounter + 1) % animFrameSteps
 }
 
 // wait_animating (WTREA 48df) animates for seconds, less on Enter or a click.
@@ -186,7 +205,7 @@ func trWaitAnimating(seconds int) {
 	}
 	flushKeys()
 	for n := seconds * 5; n > 0; n-- {
-		if checkScreenClick() || keyAvailable(1) && int8(getKey(1)) == 13 {
+		if checkScreenClick() || keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		trAnimate()
@@ -201,8 +220,8 @@ func trWaitMorePrompt() {
 	blink := 3
 	flushKeys()
 	for {
-		if keyAvailable(1) {
-			if int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) {
+			if int8(getKey(keyClassMenu)) == keyEnter {
 				return
 			}
 			continue
@@ -218,13 +237,13 @@ func trWaitMorePrompt() {
 			if blink < 2 {
 				putChar(trTextWin, ' ', 1)
 			} else {
-				putCharHi(trTextWin, 126, 1)
+				putCharHi(trTextWin, trMoreGlyph, 1)
 			}
 			blink = (blink + 1) % 4
 		} else {
 			idleStep()
 		}
-		trAnimCounter = (trAnimCounter + 1) % 10
+		trAnimCounter = (trAnimCounter + 1) % animFrameSteps
 	}
 }
 
@@ -253,29 +272,29 @@ func trPrintTextLine(s string) {
 			break
 		}
 		switch k {
-		case 0:
+		case npcTextNewRow:
 			s = s[1:]
 			trTextRow++
-		case 1:
+		case npcTextPause:
 			s = s[1:]
 			trWaitAnimating(messageDelay)
-		case 2:
+		case npcTextShowPic: // the picture byte is skipped
 			s = s[min(2, len(s)):]
-		case 3:
+		case npcTextHidePic:
 			s = s[1:]
-		case 4:
+		case npcTextClear:
 			s = s[1:]
 			clearWindow(trTextWin, true)
 			trTextRow = 0
-		case 5:
+		case npcTextMore:
 			s = s[1:]
 			trEndTextPage(0)
 		}
 	}
-	if trTextRow > 4 {
+	if trTextRow >= trTextRows {
 		trEndTextPage(0)
 	}
-	col := 20 - (len(s)+1)/2
+	col := trLineCenter - (len(s)+1)/2
 	if len(s) > 0 {
 		switch s[0] {
 		case '$':
@@ -296,7 +315,7 @@ func trShowMessageText(msg, timed int) {
 		return
 	}
 	trTextCol, trTextRow = 0, 0
-	trTextWin = createWindow(0, 19, 40, 5, 20, -1, 0, true)
+	trTextWin = createWindow(0, 19, 40, trTextRows, 20, -1, 0, true)
 	for {
 		s := getMessage(msg)
 		if msgNotFound {
@@ -328,8 +347,8 @@ func getChestInput(keys string, regions []byte) int {
 	}
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if k := strings.IndexByte(keys, byte(getKey(1))); k >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if k := strings.IndexByte(keys, byte(getKey(keyClassMenu))); k >= 0 {
 				return k
 			}
 			continue
@@ -349,7 +368,7 @@ func getChestInput(keys string, regions []byte) int {
 		} else {
 			idleStep()
 		}
-		trAnimCounter = (trAnimCounter + 1) % 10
+		trAnimCounter = (trAnimCounter + 1) % animFrameSteps
 	}
 }
 
@@ -382,7 +401,7 @@ func trChooseMember(msg, refreshAll int) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	exitHi, exitLo := getMessage(2027), getMessage(2028)
 	printChestPrompt(msg, 10-(len(getMessage(msg))+6)/2)
@@ -407,7 +426,7 @@ func trChooseMember(msg, refreshAll int) int {
 		setClickRegion(m, win.X+byte(x), win.Y+byte(y), byte(len(name)+int(win.X)+x-1), win.Y+byte(y))
 	}
 	setClickRegion(partyCount, mainWindow.X+byte(exitX), mainWindow.Y+byte(exitY), byte(len(exitLo)+int(mainWindow.X)+exitX-1), mainWindow.Y+byte(exitY))
-	setClickRegion(partyCount+1, 255, 0, 0, 0)
+	setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 	sel := -1
 	for {
 		if !mousePresent {
@@ -428,24 +447,24 @@ func trChooseMember(msg, refreshAll int) int {
 			break
 		}
 		switch key {
-		case 1:
+		case menuKeyLeft:
 			if sel != -1 && sel%2 > 0 {
 				drawMemberName(win, sel)
 				sel--
 			}
-		case 2:
+		case menuKeyUp:
 			if sel != -1 {
 				drawMemberName(win, sel)
 				if sel -= 2; sel < 0 {
 					sel = -1
 				}
 			}
-		case 3:
+		case menuKeyRight:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
 				drawMemberName(win, sel)
 				sel++
 			}
-		case 4:
+		case menuKeyDown:
 			if sel == -1 {
 				setCursor(mainWindow, exitX, exitY)
 				printStringHi(mainWindow, exitHi, 3)
@@ -455,7 +474,7 @@ func trChooseMember(msg, refreshAll int) int {
 				sel += 2
 			}
 		}
-		if key == 5 {
+		if key == menuKeyEnter {
 			break
 		}
 	}
@@ -471,10 +490,10 @@ func showCenteredLine(win *Window, y int, s string, beep bool, color int) {
 	}
 	clearWindowArea(win, 0, y, 39, y)
 	trWaitAnimating(1)
-	setCursor(win, 20-(len(s)+1)/2, y)
+	setCursor(win, trLineCenter-(len(s)+1)/2, y)
 	printString(win, s, color)
 	if beep {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	trWaitAnimating(messageDelay)
 }
@@ -490,7 +509,7 @@ func trPrintMemberMessage(m int, s1, s2, s3 string, c0, c1, c2, c3 int) {
 			gaps++
 		}
 	}
-	setCursor(w, 20-(len(name)+len(s1)+len(s2)+len(s3)+gaps)/2, 1)
+	setCursor(w, trLineCenter-(len(name)+len(s1)+len(s2)+len(s3)+gaps)/2, 1)
 	printString(w, name, c0)
 	w.CurX++
 	for i, s := range []string{s1, s2, s3} {
@@ -506,10 +525,10 @@ func trInflictCondition(m, msg, resist, cond int) {
 	p := &party[m]
 	if (resist == 0 || random(100) > int(p.Resist[resist])) && int(p.Condition) < cond {
 		p.Condition = uint8(cond)
-		if cond >= 3 {
+		if cond >= conditionDead {
 			p.HP = 0
 			p.Stamina = 0
-			playSound(int(p.Sex) + 8)
+			playSound(int(p.Sex) + soundDeathBase)
 		}
 		trPrintMemberMessage(m, getMessage(msg), "", "", 1, 6, 0, 0)
 		drawMemberStatus(m)
@@ -522,7 +541,7 @@ func trInflictCondition(m, msg, resist, cond int) {
 func trTrapDamageMember(m, count, sides int) {
 	n := rollDice(formatDice(count, sides, 0))
 	p := &party[m]
-	if n == 0 || p.Condition >= 3 {
+	if n == 0 || p.Condition >= conditionDead {
 		return
 	}
 	num := itoa(n)
@@ -535,7 +554,7 @@ func trTrapDamageMember(m, count, sides int) {
 	drawMemberStatus(m)
 	if p.HP <= 0 {
 		trWaitAnimating(4)
-		trInflictCondition(m, 5264, 0, 3)
+		trInflictCondition(m, 5264, 0, conditionDead)
 	} else {
 		playSound(2)
 		trWaitAnimating(messageDelay)
@@ -545,22 +564,22 @@ func trTrapDamageMember(m, count, sides int) {
 // inflict_status (WTREA 5dbb) is WMAZE's, except that the resistance save ignores count.
 func trInflictStatus(m, msg, resist, status, count, sides, base int) {
 	p := &party[m]
-	if p.Condition >= 2 {
+	if p.Condition >= conditionDown {
 		return
 	}
 	n := rollDice(formatDice(count, sides, base))
 	if resist != 0 && random(100) <= int(p.Resist[resist]) {
 		return
 	}
-	if base == 255 {
-		p.Status[status] = 0xff
+	if base == statusForever {
+		p.Status[status] = statusForever
 	} else {
 		if int16(int(p.Status[status])+n) > 250 { // C int sum wraps
 			n = 250 - int(p.Status[status])
 		}
 		p.Status[status] += uint8(n)
 	}
-	if status == 5 {
+	if status == statusPoisoned {
 		p.PoisonStr = uint8(count)
 	}
 	trPrintMemberMessage(m, getMessage(msg), "", "", 1, 6, 0, 0)

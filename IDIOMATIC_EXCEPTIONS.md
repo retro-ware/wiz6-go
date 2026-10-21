@@ -283,3 +283,26 @@ No identifiers renamed. New names: in wpops.go the party menu's extra entries `m
 
 - `int8`/`uint8`/`int16` casts on Combatant fields: the C's byte fields, kept for parity.
 - Spell choices packed as `level<<8 + spell`: the combat action format WMEXE reads.
+
+## internal/game: wtrea
+
+No identifiers renamed (the loot/chest/tr... state names are in the parity goldens and already descriptive). New names: in wtrea.go the picture slots `picChestLid`/`picChest`/`picTrapsFirst`..`picTrapsThird`, `trAnimsSecond`/`trAnimsThird`, `trViewLeft`/`trViewRight`, `trLidSteps`, `trTrapSteps`, `trTextRows`, `trMoreGlyph`, `trLineCenter`; in wtrea_chest.go `trapCount`, `trapNameMsg`, `trapGuessMax`, `trapLetterGuessed`/`trapLetterWrong`, `spellOpenChest` (39), `spellRevealTrap` (52), `disarmOpened`/`disarmFailed`/`disarmSprung`; in wtrea_loot.go the TreasureEntry kinds `treasureGold`/`treasureItem`/`treasureExp`. Game states, `menuKey...` (trInput's results), `npcText...` (print_text_line's controls, same string as WMNPC's), `keyClassMenu`/`keyEnter`, `borderRightEdge`/`borderTopEdge`, `clickRegionsEnd`, `animFrameSteps`, `soundBeep`/`soundDeathBase`, `condition...`, `status...`, `stat...`, `skillPickLock`, `classThief`/`classNinja`/`classRanger`/`classBard`, the castSpell `spell...`/`effect...` names, `spellTargetMember`, `realmCount`, `packSlots`/`itemSlots`/`maxStackQty`, `itemImportant`/`itemKept`/`itemOffHand`/`itemTwoHanded`/`recItem...` replace literals.
+
+### Hex/binary literals in code
+
+- None (`"\x22"` in chooseChestSpell is a book glyph code in a string, as in WPCVW).
+
+### Unclear names kept
+
+- springTrap's trap numbers 1..15 (names only as messages 5300+), its resistance indexes (`Resist[2]`, 4, 5, 9, 10, 11), the statuses 4, 8, 9 (also in spellCureLesserCnd's list, as in wpcvw), trap animation numbers, and the chest kinds (`ChestType` 0..2 to trChestKind -1..1).
+- `trTrapPos` (ROOT g038e): a coordinate table kept as numbers.
+- Item types 12, 13, 16 in openTreasure (messages 5006..5008) and item record flag bits 16, 32 in giveItemToMember (copied as is): meaning not known.
+- The status cap 250 in trInflictStatus is a literal as in wmaze's inflictStatus.
+- Message numbers, window positions, sizes, colours, glyph codes of the trap/loot frames, dice and chance formulas, handleChest's menu choices (0..4, commented), and the click region indexes in chooseChestSpell/disarmChest: the original's arguments.
+
+### Low-level code kept
+
+- `int16` wrap casts (`// C int wraps`) and `int8(getKey(...))`: kept for parity, as in WMAZE/WPCVW.
+- markChestOpened reads the cell event's packed DirBits with extractBits (bits 0..7, 9..10, 11), as WMAZE does.
+- giveItemToMember duplicates WMNPC's npcGiveItemToMember (both overlays carry it); kept separate for the qty differences.
+- Spell choices packed as `level<<8 + spell`, as in WPCVW/WPOPS.
