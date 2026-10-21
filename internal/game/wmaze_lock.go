@@ -328,6 +328,7 @@ func swapFlagsEvent() {
 
 // clampValue (WMAZE c3c7) is v clamped into lo..hi.
 func clampValue(v, lo, hi int) int {
+	v = int(int16(v)) // the C's int argument wraps
 	if lo > v {
 		return lo
 	}

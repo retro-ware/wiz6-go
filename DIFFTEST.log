@@ -2,3 +2,5 @@
 2026-10-21 10:07:31 12 WMEXE leaf functions (f7ddc f7af7 7b59 7c5a 7848 7a16 8064 80cc 8149 825f 83f3 86aa) x1000 cases all match after 3 int16-wrap fixes (resistReduce x2, rollDice, damageRoll)
 2026-10-21 10:10:36 +7 WMEXE (f4572 77d4 7254 8861 c4e7 c546 7816); fixed wraps in reduceStamina, trySkillGain, clampToward; DIFFTEST.md table started
 2026-10-21 10:22:21 do_attack + apply_hit_effects 1000 each match (harness: scenario records, stub side effects, KEEP actor fields)
+[widths] 10:24 starting audit of internal/game (non-combat)
+2026-10-21 10:25:27 [combat] split harness: generic emu/layout/gen/specs.py + specs_combat.py; Go difftest_test.go + difftest_combat_test.go; HOWTO in DIFFTEST.md
