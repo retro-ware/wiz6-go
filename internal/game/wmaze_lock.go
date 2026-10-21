@@ -687,7 +687,7 @@ func forceLock(member, ev int) int {
 			}
 			drawMemberStatus(member)
 		}
-		strength = (random(power) + random(power) + random(power) + random(power)) / 4
+		strength = int(int16(random(power)+random(power)+random(power)+random(power))) / 4 // C int sum wraps
 		strength = max(1, min(strength, 18))
 		setCursor(win, 1, 1)
 		color := 6
