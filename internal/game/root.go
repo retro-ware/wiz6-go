@@ -79,6 +79,10 @@ func Main(dir string) (code int) {
 			wmexeOvmain()
 		case 18:
 			wmnpcOvmain()
+		case 12:
+			wpopsOvmain()
+		case 19, 20:
+			wdoptOvmain()
 		case 3:
 			shutdownGame(0)
 			return 0
