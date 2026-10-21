@@ -846,7 +846,7 @@ func wdoptDoCastSpell(m int) {
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
 	fillWindow(win, ' ', 3)
-	s := wdoptChooseSpell(win, m)
+	s := chooseSpellBook(m, func() int { return wdoptGetMenuChoice(dpKeys) }, func(msg int) int { dpTarget = wdoptChooseTarget(msg); return dpTarget })
 	pvBlinkState = -1
 	if s != -1 {
 		level, spell := s/256, s%256

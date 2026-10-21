@@ -2,10 +2,11 @@ package game
 
 import "strings"
 
-// choose_spell (WDOPT 6bfd): member m's spell book under info window win. Pick a realm,
-// a known spell, then a power level the member can pay; power<<8 + spell, or -1. A spell
-// cast on a member also asks for it (dpTarget).
-func wdoptChooseSpell(_ *Window, m int) int {
+// choose_spell (WDOPT 6bfd; WMNPC 8ce8 npc_choose_spell): member m's spell book. Pick a
+// realm, a known spell, then a power level the member can pay; power<<8 + spell, or -1.
+// input reads the menu (the overlays differ only there and in the target picker); a
+// spell cast on a member also asks chooseTarget(2030) for it, -1 cancelling.
+func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) int {
 	p := &party[m]
 	win := createWindow(0, 18, 23, 7, 25, -1, 0, false)
 	list := createWindow(22, 19, 18, 6, 26, -5, 0, false)
@@ -51,7 +52,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 				pvBlinkColor = [2]int{17, 5}
 				redraw = false
 			}
-			c := wdoptGetMenuChoice(dpKeys)
+			c := input()
 			if menuClicked == 1 {
 				if c == realm {
 					c = 5
@@ -125,7 +126,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 			} else {
 				printInt(win, cost, 3, realmColors[realm])
 			}
-			c := wdoptGetMenuChoice(dpKeys)
+			c := input()
 			if menuClicked == 1 {
 				switch c {
 				case 0, 1, 2, 3, 4, 5:
@@ -209,7 +210,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 				}
 			}
 		}
-		c := wdoptGetMenuChoice(dpKeys)
+		c := input()
 		if menuClicked == 1 {
 			if c+1 == level {
 				c = 5
@@ -257,7 +258,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 	}
 	if sp.Target == 1 {
 		refreshAllWindows()
-		if dpTarget = wdoptChooseTarget(2030); dpTarget == -1 {
+		if chooseTarget(2030) == -1 {
 			return -1
 		}
 	}

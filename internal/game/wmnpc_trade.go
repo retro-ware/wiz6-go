@@ -43,7 +43,7 @@ func npcApplySpell(caster, s, power, target int) {
 // npcCastSpell (WMNPC 9edb): member m casts a spell from its book and pays for it.
 func npcCastSpell(win *Window, m int) {
 	fillWindow(win, ' ', 3)
-	r := npcChooseSpell(win, m)
+	r := chooseSpellBook(m, npcMenuInput, func(msg int) int { npcTarget = npcChooseMember(msg, true); return npcTarget })
 	pvBlinkState = -1
 	if r == -1 {
 		return
