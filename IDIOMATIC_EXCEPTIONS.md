@@ -214,3 +214,27 @@ Renamed core fields (state.go, goldens rewritten): `Combatant.W10` -> `Choice` (
 - `cloudStrike`/`setCloudStrike` join the two fields of bytes 406..409 by index (the goldens name them separately).
 - `kindAC`: kind -1 reads `AC[7]`, the byte before `Unk198`, as the C does.
 - targetOf's bounds check stands in for the C reading past monster_groups with target 255.
+
+## internal/game: wmnpc
+
+No identifiers renamed (the goldens name `npcRec`, `npcWares`, `npcPilfered`, ... and the rest already read clearly). New names in wmnpc.go: the event script opcodes `npcOpEnd`..`npcOpPicAlt` (EventRec Op 0..44), print_text_line's controls `npcTextNewRow`..`npcTextMore` (in `npcTextControls` order), npcMenuInput's key indexes `npcKeyLeft`/`npcKeyUp`/`npcKeyRight`/`npcKeyDown`/`npcKeySelect` (places in message 1500; also used by menuSelectCancel and npcScrollList), the main menu choices `npcMenuTalk`..`npcMenuLeave`, the reaction kinds `npcReactItemGiven`..`npcReactPilferCaught`, the `NPCRec.Unk8D` bits `npcNoBuySell`/`npcCharmProof`/`npcRumorProof`, `spellCharmNPC`/`spellDrawRumor`/`spellLockInNPC`/`spellMapInNPC`, `itemCurseWard` (245), item flag bits `itemEquipped`/`itemImportant`, `packSlots`/`itemSlots`, `maxStackQty`, `maxStat`, `maxAttitude`/`minAttitude`, `mapFlagCount`/`npcFlagCount`/`npcFlagsOffset`; in wmnpc_trade.go `tradeBuy`..`tradeDone`; in wmnpc_talk.go the parser's word classes `npcClassTopic`..`npcClassUnknown` and the interjections `npcInterjBye`/`npcInterjRepeat`/`npcInterjOffend`/`npcInterjChangeSubject`/`npcInterjFlatter`. Added to wmaze.go's PC set: `statPersonality` (6), `skillPilfer` (14, named by its use in npcPilfer). Game states, `keyClassMenu`/`keyEnter`/`keyLeft`, `inputPrintable`/`inputDigits`, borders, `clickRegionsEnd`, `dir...`, `conditionOK`/`conditionDead`, `statusAsleep`, `statDexterity`, `classThief`/`classRanger`/`classBard`/`classNinja`, `soundBeep` and `dbs.RecTreasure` replace literals.
+
+### Hex/binary literals in code
+
+- None.
+
+### Unclear names kept
+
+- `npcWord6`/`npcWord7` (messages 7040/7041) and their classes `npcClassWord6`/`npcClassWord7`: what the two words are is not known; a verb after word 7 swaps subject and object.
+- Interjections 0, 3, 4, 5 and 8, the verb numbers (0..9) and the question word indexes `tk.ask[0..6]` in npcAnswer, and the NPC text message numbers (1500..1641, 2025..2035, 5015, 5050, 7000..7197, 8000): left as numbers.
+- `npcOpRaiseStatus7` and `Status[7]`: which status 7 is (cured by spell 57) is not known.
+- `NPCRec.Unk68[0..8]` (topics base, greeting, interjection answers, rumours, buy and sell percentages, two accepted items), `Unk86[0..3]` (monster, picture, ?, level), `Unk8D`, `scenarioHdr.Unk140`, `MonsterPicRec.Unk306`/`Unk309`: dbs field names, not this group's to rename; their uses are described in comments.
+- The record-to-item flag table in npcGiveItemToMember (`{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}`), the spell lists in npcApplySpell whose panels are redrawn, picture ids 40/54 (npcPicAlt), the start-of-game and npcFullMessage destinations (137,151 / 129,132, maps 12/13), `stackable[...] == 1`, `g433a`/`g4338`/`g4354`/`g4fb0`: the original's data, meaning only partly known.
+- Window positions, priorities, colours, the text window's columns/rows (39, 4, 37, 21...), view clip 72/248, the animation states -3..12 of npcAnimStep, `Depth = 255`: the original's arguments, as elsewhere.
+
+### Low-level code kept
+
+- `int16(...)` casts in npcMood, npcMainMenu, npcApplySpell, npcPriceWares, npcSellItem, npcPilfer and npcGiveGold: the C's 16-bit int wrap, kept for parity.
+- npcReact's gold sums `a<<8 + b` and npcGiveGold's `n/256`, `n%256`: the reaction entry stores the amount as a high and a low byte.
+- Script args packed as `slot*256 + position` (ops 4 and 43) and spells as `power*256 + spell` (npcCastSpell, npcUseItem): the record and item formats.
+- npcScroll copies the window's cell array a row up, as the C.

@@ -67,8 +67,125 @@ type npcWare struct {
 	Price int32  // g57de
 }
 
-// npcTextControls are print_text_line's control characters (0x5004).
+// npcTextControls are print_text_line's control characters (0x5004), in the order of
+// the npcText... constants.
 const npcTextControls = "!%#&]@"
+
+const (
+	npcTextNewRow  = iota // '!': skip a row
+	npcTextPause          // '%': wait the message delay
+	npcTextShowPic        // '#': show the monster picture of the next byte
+	npcTextHidePic        // '&': take it away
+	npcTextClear          // ']': clear the window
+	npcTextMore           // '@': the more prompt
+)
+
+// npcMenuInput's menu keys: their indexes in npcKeys (message 1500).
+const (
+	npcKeyLeft   = 1
+	npcKeyUp     = 2
+	npcKeyRight  = 3
+	npcKeyDown   = 4
+	npcKeySelect = 5
+)
+
+// npcMainMenu's choices (messages 1530..).
+const (
+	npcMenuTalk = iota
+	npcMenuTrade
+	npcMenuCast
+	npcMenuUse
+	npcMenuPoolGold
+	npcMenuPilfer
+	npcMenuFight
+	npcMenuLeave
+)
+
+// npcReact's event kinds (NPCRec.Entries B[2]).
+const (
+	npcReactItemGiven    = 1
+	npcReactGoldGiven    = 2
+	npcReactItemSold     = 3
+	npcReactItemBought   = 4
+	npcReactFight        = 6
+	npcReactParting      = 7
+	npcReactPilferCaught = 10
+)
+
+// Event script opcodes (EventRec.Ops Op), as npcRunScript runs them.
+const (
+	npcOpEnd = iota
+	npcOpSay
+	npcOpFight
+	npcOpLeave
+	npcOpShowPicture
+	npcOpWait
+	npcOpAskWord
+	npcOpMore
+	npcOpStepBack
+	npcOpGiveItem
+	npcOpTakeItem
+	npcOpPayGold
+	npcOpChargeGold
+	npcOpNothing
+	npcOpSetMapFlag
+	npcOpSaveMapFlag
+	npcOpSetNPCFlag
+	npcOpSaveNPCFlag
+	npcOpIfMapFlagClear
+	npcOpIfMapFlagSet
+	npcOpIfNPCFlagClear
+	npcOpIfNPCFlagSet
+	npcOpIfHasItem
+	npcOpIfLacksItem
+	npcOpIfChance
+	npcOpRunIfMapFlagClear
+	npcOpRunIfMapFlagSet
+	npcOpRunIfNPCFlagClear
+	npcOpRunIfNPCFlagSet
+	npcOpRunIfChance
+	npcOpRaiseStatus7
+	npcOpCurse
+	npcOpGainStats
+	npcOpStamina
+	npcOpRun
+	npcOpSayRandom
+	npcOpFace
+	npcOpWalk
+	npcOpRunIfUnable
+	npcOpEndMeeting
+	npcOpRestart
+	npcOpFullMessage
+	npcOpExchangeItem
+	npcOpForceSequence
+	npcOpPicAlt
+)
+
+// NPCRec.Unk8D bits.
+const (
+	npcNoBuySell  = 2 // the trade menu offers no buying or selling
+	npcCharmProof = 4 // spell 50 fails
+	npcRumorProof = 8 // spell 56 fails
+)
+
+const (
+	spellCharmNPC  = 50 // adds to npcCharm
+	spellDrawRumor = 56 // the NPC tells a rumour
+	spellLockInNPC = 39 // with spellMapInNPC: does nothing in a meeting
+	spellMapInNPC  = 60
+	itemCurseWard  = 245 // spares the party op 31's curse
+	itemEquipped   = 1   // an item's Flags bit
+	itemImportant  = 2   // an item record's Flags bit: the NPC takes it only as Unk68[7]/[8]
+	packSlots      = 10  // Items[0..9] the pack, Items[10..] the swag
+	itemSlots      = 22
+	maxStackQty    = 250
+	maxStat        = 18
+	maxAttitude    = 100
+	minAttitude    = -100
+	mapFlagCount   = 79 // map flags 1..78 a script can set
+	npcFlagCount   = 15 // NPC flags 1..14
+	npcFlagsOffset = 28 // scenarioHdr.Unk140: the NPCs' flag pairs start here
+)
 
 // npcRecord reads scenario record idx of type typ.
 func npcRecord[T any](typ, idx int) T {
@@ -89,7 +206,7 @@ func npcAttitude(m int) *int8 { return &party[m].NPCAttitude[npcID] }
 
 // npcMood is member m's attitude plus personality and charm: below 0 the NPC is hostile.
 func npcMood(m int) int {
-	return int(int16(int(*npcAttitude(m)) + int(party[m].Stats[6]) + int(npcCharm))) // C int wraps
+	return int(int16(int(*npcAttitude(m)) + int(party[m].Stats[statPersonality]) + int(npcCharm))) // C int wraps
 }
 
 // --- The view
@@ -320,15 +437,15 @@ func npcInputLine(win *Window, max, color, digits int) string {
 	putChar(win, 'a', 1) // the cursor glyph
 	flushKeys()
 	for {
-		c := npcWaitKey(1)
-		if c == 13 {
+		c := npcWaitKey(keyClassMenu)
+		if c == keyEnter {
 			break
 		}
 		setCursor(win, x, y)
 		putChar(win, ' ', 1)
 		setCursor(win, x, y)
 		switch {
-		case c == 8:
+		case c == keyLeft: // Backspace
 			if len(s) > 0 {
 				s = s[:len(s)-1]
 				x--
@@ -336,11 +453,11 @@ func npcInputLine(win *Window, max, color, digits int) string {
 				putChar(win, ' ', 1)
 				setCursor(win, x, y)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
 		case len(s) >= max:
-			playSound(0)
-		case digits == 0 && c >= 32 && c <= 127 || digits == 1 && c >= '0' && c <= '9':
+			playSound(soundBeep)
+		case digits == inputPrintable && c >= ' ' && c <= 127 || digits == inputDigits && c >= '0' && c <= '9':
 			s = append(s, byte(c))
 			putChar(win, byte(c), color)
 			x++
@@ -365,8 +482,8 @@ func npcMenuInput() int {
 	flushKeys()
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if c := charIndex(npcKeys, int(uint8(getKey(1)))); c >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if c := charIndex(npcKeys, int(uint8(getKey(keyClassMenu)))); c >= 0 {
 				return c
 			}
 			continue
@@ -394,7 +511,7 @@ func npcWait(tenths int) {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		paceViewCycle()
@@ -410,8 +527,8 @@ func npcMorePrompt() {
 	blink := 3
 	flushKeys()
 	for {
-		if keyAvailable(1) {
-			if int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) {
+			if int8(getKey(keyClassMenu)) == keyEnter {
 				return
 			}
 			continue
@@ -462,11 +579,11 @@ func npcPrintTextLine(s string) {
 		}
 		s = s[1:]
 		switch k {
-		case 0:
+		case npcTextNewRow:
 			npcTextRow++
-		case 1:
+		case npcTextPause:
 			npcWait(messageDelay)
-		case 2:
+		case npcTextShowPic:
 			if len(s) > 0 {
 				npcLoadPic(int(s[0]), 4)
 				s = s[1:]
@@ -474,13 +591,13 @@ func npcPrintTextLine(s string) {
 			viewPosGroup[0][0] = 4
 			npcChooseFrames(4, 0)
 			npcAnimateCycle()
-		case 3:
+		case npcTextHidePic:
 			viewPosGroup[0][0] = 0
 			npcAnimateCycle()
-		case 4:
+		case npcTextClear:
 			clearWindow(npcTextWin, true)
 			npcTextRow = 0
-		case 5:
+		case npcTextMore:
 			npcEndPage(0)
 		}
 	}
@@ -508,7 +625,7 @@ func npcShowMessageText(msg, timed int) {
 	npcTextCol, npcTextRow = 0, 0
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	npcTextWin = createWindow(0, 19, 40, 5, 30, -1, 0, true)
+	npcTextWin = createWindow(0, 19, 40, 5, 30, borderNone, 0, true)
 	npcTextRows = 4
 	for {
 		s := getMessage(msg)
@@ -532,10 +649,10 @@ func npcNotice(s string, beep bool) {
 	}
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	npcTextWin = createWindow(0, 19, 40, 5, 30, -1, 0, true)
+	npcTextWin = createWindow(0, 19, 40, 5, 30, borderNone, 0, true)
 	printCentered(npcTextWin, s, 1, 5)
 	if beep {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	npcWait(messageDelay)
 	npcCloseText()
@@ -554,7 +671,7 @@ func npcOpenText() {
 	npcScrollCol, npcTextCol, npcTextRow = 0, 0, 0
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	npcTextWin = createWindow(0, 19, 40, 5, 30, -1, 0, true)
+	npcTextWin = createWindow(0, 19, 40, 5, 30, borderNone, 0, true)
 }
 
 // npcCloseText (WMNPC 6de9) closes it.
@@ -719,7 +836,7 @@ func npcFullMessage(msg, dest int) int {
 			delayTick()
 		}
 		done := checkScreenClick()
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			done = true
 		}
 		if done {
@@ -741,8 +858,8 @@ func npcFullMessage(msg, dest int) int {
 		for m := 0; m < partyCount; m++ {
 			setBit(party[m].Flags[:], dest, true)
 		}
-		gameState = 6
-		returnCmd = 18
+		gameState = stateLoadMap
+		returnCmd = int16(stateNPC)
 		return 1
 	case 3:
 		return 1
@@ -834,10 +951,10 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 		setClickRegion(n, win.X+byte(x), win.Y+byte(y), byte(len(s)+int(win.X)+x-1), win.Y+byte(y))
 	}
 	n := len(labels)
-	setClickRegion(n, 255, 0, 0, 0)
+	setClickRegion(n, clickRegionsEnd, 0, 0, 0)
 	if withCancel == 1 {
 		setClickRegion(n, mainWindow.X+byte(exitX), mainWindow.Y+byte(exitY), byte(len(exitLo)+int(mainWindow.X)+exitX-1), mainWindow.Y+byte(exitY))
-		setClickRegion(n+1, 255, 0, 0, 0)
+		setClickRegion(n+1, clickRegionsEnd, 0, 0, 0)
 		sel = -1
 	}
 	plain := func() { redrawMenuItem(win, sel, width, rows, x0, y0, labels[sel]) }
@@ -861,12 +978,12 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 			break
 		}
 		switch key {
-		case 1:
+		case npcKeyLeft:
 			if sel != -1 && sel-rows >= 0 {
 				plain()
 				sel -= rows
 			}
-		case 2:
+		case npcKeyUp:
 			if sel != -1 {
 				if sel%rows > 0 {
 					plain()
@@ -876,12 +993,12 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 					sel = -1
 				}
 			}
-		case 3:
+		case npcKeyRight:
 			if sel != -1 && sel+rows < n {
 				plain()
 				sel += rows
 			}
-		case 4:
+		case npcKeyDown:
 			if sel == -1 {
 				setCursor(mainWindow, exitX, exitY)
 				printStringHi(mainWindow, exitHi, 3)
@@ -891,7 +1008,7 @@ func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, r
 				sel++
 			}
 		}
-		if key == 5 {
+		if key == npcKeySelect {
 			break
 		}
 	}
@@ -910,7 +1027,7 @@ func npcChooseMember(msg int, withExit bool) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
@@ -938,11 +1055,11 @@ func npcChooseMember(msg int, withExit bool) int {
 		printStringHi(win, name, 3)
 		setClickRegion(m, win.X+byte(x), win.Y+byte(y), byte(len(name)+int(win.X)+x-1), win.Y+byte(y))
 	}
-	setClickRegion(partyCount, 255, 0, 0, 0)
+	setClickRegion(partyCount, clickRegionsEnd, 0, 0, 0)
 	sel := 0
 	if withExit {
 		setClickRegion(partyCount, mainWindow.X+byte(exitX), mainWindow.Y+byte(exitY), byte(len(exitLo)+int(mainWindow.X)+exitX-1), mainWindow.Y+byte(exitY))
-		setClickRegion(partyCount+1, 255, 0, 0, 0)
+		setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 		sel = -1
 	}
 	for {
@@ -965,12 +1082,12 @@ func npcChooseMember(msg int, withExit bool) int {
 			break
 		}
 		switch key {
-		case 1:
+		case npcKeyLeft:
 			if sel != -1 && sel%2 > 0 {
 				drawMemberName(win, sel)
 				sel--
 			}
-		case 2:
+		case npcKeyUp:
 			if sel != -1 {
 				if sel-2 >= 0 {
 					drawMemberName(win, sel)
@@ -980,12 +1097,12 @@ func npcChooseMember(msg int, withExit bool) int {
 					sel = -1
 				}
 			}
-		case 3:
+		case npcKeyRight:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
 				drawMemberName(win, sel)
 				sel++
 			}
-		case 4:
+		case npcKeyDown:
 			if sel == -1 {
 				setCursor(mainWindow, exitX, exitY)
 				printStringHi(mainWindow, exitHi, 3)
@@ -995,7 +1112,7 @@ func npcChooseMember(msg int, withExit bool) int {
 				sel += 2
 			}
 		}
-		if key == 5 {
+		if key == npcKeySelect {
 			break
 		}
 	}
@@ -1016,7 +1133,7 @@ func runNPCEncounter() {
 	npcLoadVocabulary()
 	eraseWindow(mainWindow, false)
 	deferWindowDraw(g4fb0)
-	monsterListWin = createWindow(20, 19, 20, 5, 10, -1, 0, false)
+	monsterListWin = createWindow(20, 19, 20, 5, 10, borderNone, 0, false)
 	npcDrawNameLine(monsterListWin)
 	npcMainMenu()
 	destroyWindow(monsterListWin, false)
@@ -1029,7 +1146,7 @@ func runNPCEncounter() {
 // init_npc_encounter (WMNPC b8de) clears the sprites and the view and reads NPC npcID.
 func initNPCEncounter() {
 	npcKeys = getMessage(1500)
-	gameState = 5
+	gameState = stateExplore
 	for i := range spriteList {
 		spriteList[i].Depth = 255
 	}
@@ -1040,7 +1157,7 @@ func initNPCEncounter() {
 	npcSeqForce = [10][5]int16{}
 	npcPicAlt = 0
 	npcRec = npcRecord[NPCRec](dbs.RecNPC, npcID)
-	copy(npcFlags[:], scenarioHdr.Unk140[28+2*npcID:])
+	copy(npcFlags[:], scenarioHdr.Unk140[npcFlagsOffset+2*npcID:])
 	npcGoldGiven = 0
 }
 
@@ -1074,7 +1191,7 @@ func npcMainMenu() {
 	npcLeaves, npcPilfered = 0, 0
 	enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, -1}
 	title := getMessage(1510)
-	win := createWindow(0, 19, 19, 5, 18, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 18, borderRightEdge, 0, false)
 	if g := npcRec.Unk68[1]; g > 0 {
 		npcShowMessageText(int(g), 0)
 	}
@@ -1104,7 +1221,7 @@ func npcMainMenu() {
 			return m >= 0 && isMemberAble(m)
 		}
 		switch choice {
-		case 0:
+		case npcMenuTalk:
 			if pick(1512) {
 				if npcMood(m) > 0 {
 					npcTalk(m)
@@ -1112,7 +1229,7 @@ func npcMainMenu() {
 					npcRefuse(1540)
 				}
 			}
-		case 1:
+		case npcMenuTrade:
 			if pick(1501) {
 				if npcMood(m) > 0 {
 					npcTrade(m)
@@ -1120,34 +1237,34 @@ func npcMainMenu() {
 					npcRefuse(1540)
 				}
 			}
-		case 2:
+		case npcMenuCast:
 			if pick(1514) {
 				npcCastSpell(win, m)
 			}
-		case 3:
+		case npcMenuUse:
 			if pick(1515) {
 				npcUseItem(win, m)
 			}
-		case 4:
+		case npcMenuPoolGold:
 			if pick(1519) {
 				npcPoolGold(m)
 			}
-		case 5:
+		case npcMenuPilfer:
 			if pick(1511) {
 				npcPilfer(m)
 			}
-		case 6:
+		case npcMenuFight:
 			for i := 0; i < partyCount; i++ {
 				a := npcAttitude(i)
 				if *a > 10 {
 					*a /= 5
 				}
-				*a = int8(max(int(*a)-(random(5)+5), -100))
+				*a = int8(max(int(*a)-(random(5)+5), minAttitude))
 			}
 			npcStartFight()
 			npcLeaves = 0
-			choice = 7
-		case 7:
+			choice = npcMenuLeave
+		case npcMenuLeave:
 			npcLeaves = 1
 		}
 		if m < 0 || m > partyCount-1 || random(4) == 0 {
@@ -1158,7 +1275,7 @@ func npcMainMenu() {
 			if a < 0 {
 				a = -a
 			}
-			if int(int16(random(100)+int(party[m].Stats[6])+int(npcCharm))) < a { // C int wraps
+			if int(int16(random(100)+int(party[m].Stats[statPersonality])+int(npcCharm))) < a { // C int wraps
 				if random(2) == 1 {
 					npcNoticeName(1541, true)
 					npcStartFight()
@@ -1166,17 +1283,17 @@ func npcMainMenu() {
 					npcNoticeName(1542, false)
 					npcLeaves = 1
 				}
-				choice = 7
+				choice = npcMenuLeave
 			}
 		}
-		if choice == 7 {
+		if choice == npcMenuLeave {
 			break
 		}
 	}
-	if gameState == 10 {
-		npcReact(0, 6, 0, 0, 0)
+	if gameState == stateBeginCombat {
+		npcReact(0, npcReactFight, 0, 0, 0)
 	} else {
-		npcReact(0, 7, 0, 0, 0)
+		npcReact(0, npcReactParting, 0, 0, 0)
 	}
 	if npcLeaves == 1 {
 		npcGesture(1)
@@ -1188,15 +1305,15 @@ func npcMainMenu() {
 func npcStartFight() {
 	g433a = int(npcRec.Unk86[0])
 	g4338, g4354 = 1, 0
-	gameState = 10
-	returnCmd = 18
+	gameState = stateBeginCombat
+	returnCmd = int16(stateNPC)
 }
 
 // npcRefuse (WMNPC a645) shows message msg on the message line with a beep.
 func npcRefuse(msg int) {
 	eraseWindow(mainWindow, true)
 	printCentered(mainWindow, getMessage(msg), 0, 18)
-	playSound(0)
+	playSound(soundBeep)
 	npcWait(messageDelay)
 	eraseWindow(mainWindow, true)
 }
@@ -1233,13 +1350,13 @@ func npcRunScript(m, n int) int {
 	}
 	step := func(dir int) {
 		switch dir {
-		case 0:
+		case dirNorth:
 			partyY++
-		case 1:
+		case dirEast:
 			partyX++
-		case 2:
+		case dirSouth:
 			partyY--
-		case 3:
+		case dirWest:
 			partyX--
 		}
 		moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY))
@@ -1248,9 +1365,9 @@ func npcRunScript(m, n int) int {
 	for _, op := range ev.Ops {
 		arg, param := int(op.Arg), int(op.Param)
 		switch op.Op {
-		case 0:
+		case npcOpEnd:
 			return 0
-		case 1: // say
+		case npcOpSay:
 			if param != 0 {
 				npcShowMessageText(arg, param-1)
 			} else if npcTextWin == nil {
@@ -1260,20 +1377,20 @@ func npcRunScript(m, n int) int {
 			} else {
 				npcSayAll(arg)
 			}
-		case 2: // fight
+		case npcOpFight:
 			npcNoticeName(1541, true)
 			npcStartFight()
 			npcLeaves = 0
 			return 1
-		case 3: // leave
+		case npcOpLeave:
 			if param == 0 {
 				npcNoticeName(1542, false)
 			}
 			npcLeaves = 1
-			gameState = 5
-			returnCmd = 18
+			gameState = stateExplore
+			returnCmd = int16(stateNPC)
 			return 1
-		case 4: // show picture param in slot arg>>8 at view position arg&255
+		case npcOpShowPicture: // show picture param in slot arg>>8 at view position arg&255
 			slot, pos := arg/256, arg%256
 			if param > 0 {
 				npcLoadPic(param, slot)
@@ -1283,9 +1400,9 @@ func npcRunScript(m, n int) int {
 				viewPosGroup[pos/5][pos%5] = 0
 			}
 			npcAnimateCycle()
-		case 5:
+		case npcOpWait:
 			npcWait(param)
-		case 6: // ask for a word
+		case npcOpAskWord: // ask for a word
 			open := npcTextWin == nil
 			if open {
 				npcOpenText()
@@ -1304,26 +1421,26 @@ func npcRunScript(m, n int) int {
 					npcNewline(npcTextWin)
 				}
 			}
-		case 7:
+		case npcOpMore:
 			npcMorePrompt()
-		case 8: // step back and turn round
+		case npcOpStepBack: // step back and turn round
 			switch partyFacing {
-			case 0:
+			case dirNorth:
 				partyY--
-			case 1:
+			case dirEast:
 				partyX--
-			case 2:
+			case dirSouth:
 				partyY++
-			case 3:
+			case dirWest:
 				partyX++
 			}
-			partyFacing = (partyFacing + 2) % 4
+			partyFacing = (partyFacing + 2) % dirCount
 			moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY))
 			cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
-			gameState = 5
-			returnCmd = 18
+			gameState = stateExplore
+			returnCmd = int16(stateNPC)
 			return 1
-		case 9: // give item arg to m, or to the first who can take it
+		case npcOpGiveItem: // give item arg to m, or to the first who can take it
 			r := npcGiveItemToMember(m, arg, -1)
 			who := m
 			for i := 0; i < partyCount && r == -1; i++ {
@@ -1335,7 +1452,7 @@ func npcRunScript(m, n int) int {
 			if param == 1 {
 				npcNotice(replaceCharWithString(getMessage(1547), memberName(who), '^'), true)
 			}
-		case 10: // take item arg (a charge of a stack)
+		case npcOpTakeItem: // take item arg (a charge of a stack)
 			if k := npcFindItem(m, arg); k != -1 {
 				if stackable[party[m].Items[k].Type] == 1 {
 					useItemCharge(m, k)
@@ -1343,13 +1460,13 @@ func npcRunScript(m, n int) int {
 					removeItem(m, k)
 				}
 			}
-		case 11: // pay arg*param gold
+		case npcOpPayGold: // pay arg*param gold
 			n := int32(arg) * int32(param)
 			party[m].Gold += n
 			if npcRec.Gold -= n; npcRec.Gold < 0 {
 				npcRec.Gold = 0
 			}
-		case 12: // charge arg*10 gold (0 takes everyone's), else run param
+		case npcOpChargeGold: // charge arg*10 gold (0 takes everyone's), else run param
 			n := int32(arg) * 10
 			if n == 0 {
 				for i := 0; i < partyCount; i++ {
@@ -1367,85 +1484,85 @@ func npcRunScript(m, n int) int {
 			}
 			party[m].Gold -= n
 			npcRec.Gold += n
-		case 13:
-		case 14, 15: // set map flag arg (15 also the saved one)
-			if arg > 0 && arg < 79 {
+		case npcOpNothing:
+		case npcOpSetMapFlag, npcOpSaveMapFlag: // set map flag arg (15 also the saved one)
+			if arg > 0 && arg < mapFlagCount {
 				setBit(levelFlags[gameStateArg][:], arg, param != 0)
-				if op.Op == 15 {
+				if op.Op == npcOpSaveMapFlag {
 					setBit(scenarioHdr.LevelFlags[gameStateArg][:], arg, param != 0)
 				}
 			}
-		case 16, 17: // set NPC flag arg (17 also the saved one)
-			if arg > 0 && arg < 15 {
+		case npcOpSetNPCFlag, npcOpSaveNPCFlag: // set NPC flag arg (17 also the saved one)
+			if arg > 0 && arg < npcFlagCount {
 				setBit(npcFlags[:], arg, param != 0)
-				if op.Op == 17 {
-					setBit(scenarioHdr.Unk140[28+2*npcID:], arg, param != 0)
+				if op.Op == npcOpSaveNPCFlag {
+					setBit(scenarioHdr.Unk140[npcFlagsOffset+2*npcID:], arg, param != 0)
 				}
 			}
-		case 18:
+		case npcOpIfMapFlagClear:
 			if levelBit(arg) {
 				return 0
 			}
-		case 19:
+		case npcOpIfMapFlagSet:
 			if !levelBit(arg) {
 				return 0
 			}
-		case 20:
+		case npcOpIfNPCFlagClear:
 			if npcBit(arg) {
 				return 0
 			}
-		case 21:
+		case npcOpIfNPCFlagSet:
 			if !npcBit(arg) {
 				return 0
 			}
-		case 22:
+		case npcOpIfHasItem:
 			if findAny(arg, param != 0) == -1 {
 				return 0
 			}
-		case 23:
+		case npcOpIfLacksItem:
 			if findAny(arg, param != 0) != -1 {
 				return 0
 			}
-		case 24:
+		case npcOpIfChance:
 			if random(100) > arg {
 				return 0
 			}
-		case 25:
+		case npcOpRunIfMapFlagClear:
 			if !levelBit(arg) && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 26:
+		case npcOpRunIfMapFlagSet:
 			if levelBit(arg) && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 27:
+		case npcOpRunIfNPCFlagClear:
 			if !npcBit(arg) && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 28:
+		case npcOpRunIfNPCFlagSet:
 			if npcBit(arg) && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 29:
+		case npcOpRunIfChance:
 			if random(100) < arg && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 30: // the well members gain status 7
+		case npcOpRaiseStatus7: // the well members gain status 7
 			for i := 0; i < partyCount; i++ {
-				if party[i].Condition == 0 {
+				if party[i].Condition == conditionOK {
 					npcNotice(replaceCharWithString(getMessage(1548), memberName(i), '^'), true)
 					party[i].Status[7]++
 					npcDrawMemberStatus(i, npcShowGold)
 				}
 			}
-		case 31: // a curse on the living, unless one carries item 245; then run arg or param
+		case npcOpCurse: // a curse on the living, unless one carries item 245; then run arg or param
 			next := arg
 			for i := 0; i < partyCount; i++ {
 				p := &party[i]
-				if p.Condition >= 3 {
+				if p.Condition >= conditionDead {
 					continue
 				}
-				if npcFindItem(i, 245) != -1 {
+				if npcFindItem(i, itemCurseWard) != -1 {
 					next = param
 					break
 				}
@@ -1459,7 +1576,7 @@ func npcRunScript(m, n int) int {
 			if npcRunScript(0, next) == 1 {
 				return 1
 			}
-		case 32: // everyone gains stats arg-1 and param-1 (7 on: a random one), up to 18
+		case npcOpGainStats: // everyone gains stats arg-1 and param-1 (7 on: a random one), up to 18
 			for i := 0; i < partyCount; i++ {
 				for _, s := range [2]int{arg - 1, param - 1} {
 					if s < 0 {
@@ -1468,7 +1585,7 @@ func npcRunScript(m, n int) int {
 					if s > 7 {
 						s = random(8)
 					}
-					if party[i].Stats[s] >= 18 {
+					if party[i].Stats[s] >= maxStat {
 						continue
 					}
 					party[i].Stats[s]++
@@ -1476,7 +1593,7 @@ func npcRunScript(m, n int) int {
 					npcNotice(replaceCharWithString(t, getMessage(s+5050), '$'), true)
 				}
 			}
-		case 33: // arg d8 of stamina, lost if param
+		case npcOpStamina: // arg d8 of stamina, lost if param
 			n := 0
 			for range arg {
 				n += random(8)
@@ -1485,45 +1602,45 @@ func npcRunScript(m, n int) int {
 			if param > 0 {
 				if p.Stamina -= int16(n); p.Stamina < 0 {
 					p.Stamina = 0
-					p.Status[2] = uint8(n)
+					p.Status[statusAsleep] = uint8(n)
 				}
 			} else {
 				p.Stamina = min(p.Stamina+int16(n), p.StaminaMax)
 			}
 			npcDrawMemberStatus(m, npcShowGold)
-		case 34:
+		case npcOpRun:
 			if npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 35: // one of param texts, two messages apart
+		case npcOpSayRandom: // one of param texts, two messages apart
 			npcShowMessageText(random(param)<<1+arg, 1)
-		case 36:
+		case npcOpFace:
 			partyFacing = int16(arg)
 			npcAnimateCycle()
 			npcWait(4)
-		case 37: // walk arg steps toward param
+		case npcOpWalk: // walk arg steps toward param
 			for range arg {
 				step(param)
 				npcAnimateCycle()
 				npcWait(4)
 			}
-		case 38:
+		case npcOpRunIfUnable:
 			if !isMemberAble(m) && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case 39:
+		case npcOpEndMeeting:
 			return 1
-		case 40: // back to the start of the game
+		case npcOpRestart: // back to the start of the game
 			partyX, partyY = 129, 132
 			cellX, cellY = 1, 4
 			partyBlock, partyFacing = 0, 0
 			gameStateArg = 13
-			gameState = 6
-			returnCmd = 18
+			gameState = stateLoadMap
+			returnCmd = int16(stateNPC)
 			return 1
-		case 41:
+		case npcOpFullMessage:
 			return npcFullMessage(arg, param)
-		case 42: // the first member with item param gets item arg for it
+		case npcOpExchangeItem: // the first member with item param gets item arg for it
 			r := -1
 			for i := 0; i < partyCount && r == -1; i++ {
 				if r = npcFindItem(i, param); r != -1 {
@@ -1531,9 +1648,9 @@ func npcRunScript(m, n int) int {
 					npcGiveItemToMember(i, arg, -1)
 				}
 			}
-		case 43:
+		case npcOpForceSequence:
 			npcSeqForce[arg/256][arg%256] = int16(param)
-		case 44:
+		case npcOpPicAlt:
 			npcPicAlt = param
 		}
 	}
@@ -1545,21 +1662,21 @@ func npcRunScript(m, n int) int {
 // until the reaction's amount), 3 an item sold, 4 bought, 6 a fight, 7 parting, 10 a
 // pilfer caught. The script's result, or 0.
 func npcReact(m, kind, a int, b, c uint8) int {
-	if kind == 2 {
+	if kind == npcReactGoldGiven {
 		npcGoldGiven += int32(a)<<8 + int32(b)
 	}
 	for _, e := range npcRec.Entries {
 		if int(e.B[2]) != kind {
 			continue
 		}
-		if kind == 2 {
+		if kind == npcReactGoldGiven {
 			if int32(e.A)<<8+int32(e.B[0]) > npcGoldGiven {
 				continue
 			}
 			npcGoldGiven = 0
 			return npcRunScript(m, int(e.B[3]))
 		}
-		if kind == 1 && e.A == 0 {
+		if kind == npcReactItemGiven && e.A == 0 {
 			a = 0
 		}
 		if int(e.A) != a && a != 0 || e.B[0] != b && b != 0 || e.B[1] != c && c != 0 {
@@ -1581,8 +1698,8 @@ func npcFindItem(m, id int) int {
 		}
 	}
 	for i := 0; i < int(p.SwagCount); i++ {
-		if int(p.Items[i+10].ID) == id {
-			return i + 10
+		if int(p.Items[i+packSlots].ID) == id {
+			return i + packSlots
 		}
 	}
 	return -1
@@ -1598,7 +1715,7 @@ func npcGiveItemToMember(member, id, qty int) int {
 	}
 	stacks := func(i int) bool {
 		it := p.Items[i]
-		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+qty <= 250
+		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+qty <= maxStackQty
 	}
 	place := 1 // 1 a new pack slot, 2 a new swag slot, 0 a stack
 	slot := int(p.ItemCount)
@@ -1607,15 +1724,15 @@ func npcGiveItemToMember(member, id, qty int) int {
 			slot, place = i, 0
 		}
 	}
-	if slot >= 10 {
+	if slot >= packSlots {
 		place = 2
-		slot = int(p.SwagCount) + 10
+		slot = int(p.SwagCount) + packSlots
 		for i := int(p.SwagCount) - 1; i >= 0; i-- {
-			if stacks(i + 10) {
-				slot, place = i+10, 0
+			if stacks(i + packSlots) {
+				slot, place = i+packSlots, 0
 			}
 		}
-		if slot >= 22 {
+		if slot >= itemSlots {
 			return -1
 		}
 	}

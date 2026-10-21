@@ -25,6 +25,29 @@ const (
 	npcListPronoun = 9 // 7090, 11
 )
 
+// npcParseWord's word classes (prevClass).
+const (
+	npcClassTopic   = 0 // a topic or a pronoun
+	npcClassVerb    = 1
+	npcClassFiller  = 2
+	npcClassInterj  = 3
+	npcClassSubject = 4
+	npcClassWord6   = 5 // npcWord6
+	npcClassWord7   = 6 // npcWord7: a verb after it swaps subject and object
+	npcClassPerson  = 7
+	npcClassAsk     = 8
+	npcClassUnknown = 10
+)
+
+// Interjections (npcListInterj) npcAnswerInterjection treats by name.
+const (
+	npcInterjBye           = 1 // ends the talk
+	npcInterjRepeat        = 2
+	npcInterjOffend        = 6
+	npcInterjChangeSubject = 7
+	npcInterjFlatter       = 9
+)
+
 var (
 	npcWords      [10][]string // the word lists
 	npcPairs      [5][2]string // person words and their answer form
@@ -295,36 +318,36 @@ func npcSetTopic(k, plural int) {
 func npcParseWord(s []byte) int {
 	prev := tk.prevClass
 	if npcMatchList(s, npcListFiller) != -1 {
-		return 2
+		return npcClassFiller
 	}
 	if k := npcMatchList(s, npcListInterj); k != -1 {
 		tk.interj = k
-		if k == 1 {
+		if k == npcInterjBye {
 			tk.done = true
 		}
-		return 3
+		return npcClassInterj
 	}
 	if k := npcMatchList(s, npcListAsk); k != -1 {
 		tk.lastAsk = k
 		npcSetAsk(k)
 		tk.verb, tk.verb2 = -1, -1
-		return 8
+		return npcClassAsk
 	}
 	if k := npcMatchList(s, npcListSubject); k != -1 {
-		if prev == 7 || prev == 0 {
+		if prev == npcClassPerson || prev == npcClassTopic {
 			tk.aboutSubject = true
 			tk.subject = tk.person
 		}
 		if k == 0 {
 			tk.negated = true
 		}
-		return 4
+		return npcClassSubject
 	}
 	if npcEat(s, npcWord6) {
-		return 5
+		return npcClassWord6
 	}
 	if k := npcMatchList(s, npcListVerb); k != -1 {
-		if prev == 6 {
+		if prev == npcClassWord7 {
 			tk.verb = -1
 			tk.subject, tk.object = tk.object, tk.subject
 		}
@@ -333,49 +356,49 @@ func npcParseWord(s []byte) int {
 		} else {
 			tk.verb = k
 		}
-		if prev == 7 {
+		if prev == npcClassPerson {
 			tk.subject = tk.person
 		}
-		return 1
+		return npcClassVerb
 	}
 	if npcEat(s, npcWord7) {
-		return 6
+		return npcClassWord7
 	}
 	if npcMatchList(s, npcListPronoun) != -1 {
 		npcSetTopic(tk.lastTopic, tk.lastPlural)
-		return 0
+		return npcClassTopic
 	}
 	if k, pl := npcMatchVocab(s); k != -1 {
 		switch {
-		case prev == 4:
+		case prev == npcClassSubject:
 			tk.question = true
 			if k == 0 {
 				tk.subject = 0
 			}
-		case (prev == 1 || prev == 6) && k == 0:
+		case (prev == npcClassVerb || prev == npcClassWord7) && k == 0:
 			tk.object = 0
 		}
 		if k == 0 {
 			tk.person = 0
 		}
 		npcSetTopic(k, pl)
-		return 0
+		return npcClassTopic
 	}
 	if k := npcMatchList(s, npcListPerson); k != -1 {
 		switch prev {
-		case 4:
+		case npcClassSubject:
 			tk.question = true
 			tk.subject = k
-		case 1, 6:
+		case npcClassVerb, npcClassWord7:
 			tk.object = k
 		}
 		tk.person = k
-		return 7
+		return npcClassPerson
 	}
-	if prev == 6 {
+	if prev == npcClassWord7 {
 		tk.verb = -1
 	}
-	return 10
+	return npcClassUnknown
 }
 
 // npcAnswerSpecial (WMNPC c9d7) answers a line with two topics, no topic, two verbs or no
@@ -427,12 +450,12 @@ func npcAnswerInterjection() {
 	switch tk.interj {
 	case 0:
 		npcSay(npcInterj[0], "")
-	case 1:
+	case npcInterjBye:
 		if npcInterj[1] > 0 {
 			npcSay(npcInterj[1], "")
 			npcWait(messageDelay)
 		}
-	case 2:
+	case npcInterjRepeat:
 		npcSay(1608, "")
 		tk.verb, tk.topic, tk.plural = tk.lastVerb, tk.lastTopic, tk.lastPlural
 		tk.question = true
@@ -442,19 +465,19 @@ func npcAnswerInterjection() {
 		tk.lastAsk = -1
 	case 4, 5, 8:
 		npcSay(1606+tk.interj, "")
-	case 6:
+	case npcInterjOffend:
 		npcSay(1612, "")
 		*a -= int8(random(5) + 1)
 		if random(2) == 1 {
 			tk.done = true
 		}
-	case 7:
+	case npcInterjChangeSubject:
 		npcSay(1613, "")
 		tk.topic, tk.plural, tk.verb = -1, 0, -1
 		tk.lastTopic, tk.lastPlural, tk.lastVerb, tk.lastAsk = -1, 0, -1, -1
-	case 9:
+	case npcInterjFlatter:
 		npcSay(1615, "")
-		if random(2) == 1 && *a < 50 {
+		if random(2) == 1 && *a < 50 { // flattery helps only up to 50
 			*a += int8(random(3) + 1)
 		}
 	}
@@ -604,7 +627,7 @@ func npcReadLine(m int) []byte {
 	prompt := replaceCharWithString(getMessage(1513), memberName(m), '^')
 	printString(npcTextWin, prompt, 1)
 	npcTextWin.CurX++
-	s := npcInputLine(npcTextWin, 37-len(prompt), 6, 0)
+	s := npcInputLine(npcTextWin, 37-len(prompt), 6, inputPrintable)
 	npcNewline(npcTextWin)
 	return []byte(s)
 }

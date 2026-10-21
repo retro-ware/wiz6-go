@@ -109,6 +109,7 @@ const (
 	statIntelligence  = 1
 	statDexterity     = 4
 	statSpeed         = 5
+	statPersonality   = 6
 	statKarma         = 7
 	skillNoticeSecret = 11 // check_secret_detect's skill
 	skillPickLock     = 15
@@ -116,6 +117,7 @@ const (
 	skillUnarmed      = 9  // the skill of an empty hand
 	skillInstrument   = 12 // a bard's skill with an item's spell
 	skillHide         = 16
+	skillPilfer       = 14 // npcPilfer's skill
 	skillSpotMonsters = 23 // identifies monster groups
 	classThief        = 3
 	classRanger       = 4

@@ -1,6 +1,10 @@
 package game
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/retro-ware/wiz6-go/internal/dbs"
+)
 
 // WMNPC trading: the shop, selling and giving to the NPC, pilfering, and the spells and
 // items the party uses during the meeting.
@@ -10,18 +14,18 @@ import "strconv"
 func npcApplySpell(caster, s, power, target int) {
 	c := &party[caster]
 	switch s {
-	case 39, 60: // the lock and map spells do nothing here
-	case 50:
-		if npcRec.Unk8D&4 != 0 || random(100) > int(int16(power*10+(int(c.Level)-npcLevel())*5+25)) { // C int wraps
+	case spellLockInNPC, spellMapInNPC: // the lock and map spells do nothing here
+	case spellCharmNPC:
+		if npcRec.Unk8D&npcCharmProof != 0 || random(100) > int(int16(power*10+(int(c.Level)-npcLevel())*5+25)) { // C int wraps
 			npcNoticeName(1544, false)
 		} else {
 			npcNoticeName(1543, false)
 			npcCharm += int16(rollDice(formatDice(power<<1, 6, power<<1)))
 		}
 		return
-	case 56:
+	case spellDrawRumor:
 		var s string
-		if npcRec.Unk8D&8 != 0 || random(int(c.Level)/2+power*3) < npcLevel() {
+		if npcRec.Unk8D&npcRumorProof != 0 || random(int(c.Level)/2+power*3) < npcLevel() {
 			s = getMessage(1545)
 		} else {
 			rumor := npcRumor(1) // before message 1546, as the C
@@ -56,7 +60,7 @@ func npcCastSpell(win *Window, m int) {
 	npcApplySpell(m, s, power, npcTarget)
 	if p.Stamina -= int16(random(power) + int(sp.Level) + power); p.Stamina < 0 {
 		p.Stamina = 0
-		p.Status[2] = uint8(random(6) + 6)
+		p.Status[statusAsleep] = uint8(random(6) + 6)
 	}
 	npcDrawMemberStatus(m, npcShowGold)
 }
@@ -137,7 +141,7 @@ func npcScrollList(list, lw *Window, ex, ey int, exitHi, exitLo string, n, sel i
 	setClickRegion(1, list.X+1, list.Y, list.X+1, list.Y)
 	setClickRegion(2, list.X+1, list.Y+4, list.X+1, list.Y+4)
 	setClickRegion(3, lw.X+byte(ex), lw.Y+byte(ey), lw.X+byte(ex+len(exitHi)-1), lw.Y+byte(ey))
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 	onExit := false
 	for {
 		setCursor(lw, ex, ey)
@@ -149,36 +153,36 @@ func npcScrollList(list, lw *Window, ex, ey int, exitHi, exitLo string, n, sel i
 		draw(sel, !onExit)
 		k := npcMenuInput()
 		if menuClicked == 1 {
-			switch k {
+			switch k { // the click regions above
 			case 0:
-				k = 5
+				k = npcKeySelect
 			case 1:
-				k = 2
+				k = npcKeyUp
 			case 2:
-				k = 4
+				k = npcKeyDown
 			case 3:
-				onExit, k = true, 5
+				onExit, k = true, npcKeySelect
 			}
 		}
 		switch k {
-		case 1:
+		case npcKeyLeft:
 			onExit = true
-		case 2:
+		case npcKeyUp:
 			if onExit {
 				onExit = false
 			} else if sel > 0 {
 				sel--
 			}
-		case 3:
+		case npcKeyRight:
 			onExit = false
-		case 4:
+		case npcKeyDown:
 			if onExit {
 				onExit = false
 			} else if sel+1 < n {
 				sel++
 			}
 		}
-		if k == 5 {
+		if k == npcKeySelect {
 			break
 		}
 	}
@@ -195,7 +199,7 @@ func npcChooseMemberItem(win *Window, m, msg, sel int) int {
 		return 0
 	}
 	fillWindow(win, ' ', 3)
-	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
+	list := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
 	fillWindow(list, ' ', 3)
 	npcPrompt(replaceCharWithString(getMessage(1508), copyName(memberName(m)), '$'), 0)
 	eraseCursorMark(bottomLineWin, false)
@@ -217,8 +221,8 @@ func npcChooseMemberItem(win *Window, m, msg, sel int) int {
 		}
 	}
 	for i := 0; i < int(p.SwagCount); i++ {
-		npcAddItem(m, i+10)
-		if i+10 == sel {
+		npcAddItem(m, i+packSlots)
+		if i+packSlots == sel {
 			at = len(npcItemSlots) - 1
 		}
 	}
@@ -274,7 +278,7 @@ func npcPriceWares() {
 func npcStockWares() {
 	n := 0
 	if npcRec.Treasure > 0 {
-		t := npcRecord[TreasureRec](7, int(npcRec.Treasure))
+		t := npcRecord[TreasureRec](dbs.RecTreasure, int(npcRec.Treasure))
 		for _, e := range t.Entries {
 			if e.Kind != 2 || e.A <= 0 {
 				continue
@@ -378,12 +382,12 @@ func npcBuyWare(m, i int) {
 	id := w.ID
 	w.ID = 0
 	npcDrawMemberStatus(m, npcShowGold)
-	npcReact(m, 4, id, 0, 0)
+	npcReact(m, npcReactItemBought, id, 0, 0)
 }
 
 // npcShop (WMNPC a76f): member m buys until it leaves the list.
 func npcShop(m int) {
-	win := createWindow(0, 19, 40, 5, 25, -1, 0, false)
+	win := createWindow(0, 19, 40, 5, 25, borderNone, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(bottomLineWin, false)
 	for sel := 0; ; {
@@ -414,13 +418,13 @@ func npcSellItem(win *Window, m, slot int) int {
 	price = int32(npcRec.Unk68[6]) * price / 100
 	accepted := id == int(npcRec.Unk68[7]) || id == int(npcRec.Unk68[8])
 	switch {
-	case rec.Flags&2 != 0 && !accepted:
+	case rec.Flags&itemImportant != 0 && !accepted:
 		npcRefuse(1529)
 		return 0
 	case price <= 0 && id != int(npcRec.Unk68[7]):
 		npcRefuse(1518)
 		return 0
-	case it.Flags&1 != 0:
+	case it.Flags&itemEquipped != 0:
 		npcRefuse(1528)
 		return 0
 	}
@@ -435,7 +439,7 @@ func npcSellItem(win *Window, m, slot int) int {
 	removeItem(m, slot)
 	p.Gold += price
 	npcDrawMemberStatus(m, npcShowGold)
-	return npcReact(m, 3, id, 0, 0)
+	return npcReact(m, npcReactItemSold, id, 0, 0)
 }
 
 // npcSell (WMNPC aae4): member m offers items until it leaves; 1 if a sale ended it.
@@ -469,7 +473,7 @@ func npcGiveGold(win *Window, m int) int {
 		resumeWindowDraw(win)
 		refreshAllWindows()
 		setCursor(win, x, y)
-		s := npcInputLine(win, 8, 5, 1)
+		s := npcInputLine(win, 8, 5, inputDigits)
 		n = 0
 		if s == "" {
 			break
@@ -478,45 +482,53 @@ func npcGiveGold(win *Window, m int) int {
 		if n = int32(v); n >= 0 && n <= p.Gold {
 			p.Gold -= n
 			npcRec.Gold += n
-			*a = int8(min(int16(int32(*a)+n/10/level), 100)) // (int) cast before the clamp
+			*a = int8(min(int16(int32(*a)+n/10/level), maxAttitude)) // (int) cast before the clamp
 			break
 		}
-		playSound(0)
+		playSound(soundBeep)
 	}
 	npcDrawMemberStatus(m, npcShowGold)
-	npcReact(m, 2, int(int16(n/256)), uint8(n%256), 0)
+	npcReact(m, npcReactGoldGiven, int(int16(n/256)), uint8(n%256), 0)
 	slot := npcChooseMemberItem(win, m, 1580, 0)
 	if slot == -1 {
 		return 0
 	}
 	it := p.Items[slot]
-	if it.Flags&1 != 0 {
+	if it.Flags&itemEquipped != 0 {
 		npcRefuse(1528)
 		return 0
 	}
 	id := int(it.ID)
 	rec := itemRec(id)
-	if rec.Flags&2 != 0 && id != int(npcRec.Unk68[7]) && id != int(npcRec.Unk68[8]) {
+	if rec.Flags&itemImportant != 0 && id != int(npcRec.Unk68[7]) && id != int(npcRec.Unk68[8]) {
 		npcRefuse(1529)
 		return 0
 	}
-	*a = int8(min(int16(int32(*a)+rec.Price/20/level), 100)) // (int) cast before the clamp
+	*a = int8(min(int16(int32(*a)+rec.Price/20/level), maxAttitude)) // (int) cast before the clamp
 	removeItem(m, slot)
 	npcDrawMemberStatus(m, npcShowGold)
 	npcRefuse(1504)
-	return npcReact(m, 1, id, 0, 0)
+	return npcReact(m, npcReactItemGiven, id, 0, 0)
 }
+
+// npcTrade's choices (messages 1520..).
+const (
+	tradeBuy = iota
+	tradeSell
+	tradeGive
+	tradeDone
+)
 
 // npcTrade (WMNPC aeb5): member m buys, sells or gives until done, the panels showing gold.
 func npcTrade(m int) {
 	enabled := []int{1, 1, 1, 1, -1}
-	if npcRec.Unk8D&2 != 0 {
+	if npcRec.Unk8D&npcNoBuySell != 0 {
 		enabled[0], enabled[1] = 0, 0
 	}
-	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)
 	title := replaceCharWithString(getMessage(1508), copyName(memberName(m)), '$')
 	npcShowGold = 1
-	for choice := 0; choice != 3; {
+	for choice := tradeBuy; choice != tradeDone; {
 		npcListWares()
 		if len(npcWareList) == 0 {
 			enabled[0] = 0
@@ -527,15 +539,15 @@ func npcTrade(m int) {
 		refreshAllWindows()
 		choice = menuSelectCancel(win, 1520, enabled, 4, 1, 7, 2, 5, 0, countEnabledItems(enabled, choice), npcMenuInput)
 		switch choice {
-		case 0:
+		case tradeBuy:
 			npcShop(m)
-		case 1:
+		case tradeSell:
 			if npcSell(win, m) == 1 {
-				choice = 3
+				choice = tradeDone
 			}
-		case 2:
+		case tradeGive:
 			if npcGiveGold(win, m) == 1 {
-				choice = 3
+				choice = tradeDone
 			}
 		}
 	}
@@ -544,19 +556,19 @@ func npcTrade(m int) {
 	npcDrawMemberStatus(m, npcShowGold)
 }
 
-// npcPilfer (WMNPC b047): member m tries to steal gold or a ware. Thieves (class 3) and
-// classes 4, 6 and 13 are better at it; each try makes the next harder. Caught, the
+// npcPilfer (WMNPC b047): member m tries to steal gold or a ware. Thieves and rangers,
+// bards and ninjas are better at it; each try makes the next harder. Caught, the
 // member's attitude drops.
 func npcPilfer(m int) {
 	p := &party[m]
-	chance := (int(p.Level)-npcLevel())*5 + int(p.Skills[14])/2
+	chance := (int(p.Level)-npcLevel())*5 + int(p.Skills[skillPilfer])/2
 	switch p.Class {
-	case 3:
-		chance += int(p.Stats[4]) << 1
-	case 4, 6, 13:
-		chance += int(p.Stats[4])
+	case classThief:
+		chance += int(p.Stats[statDexterity]) << 1
+	case classRanger, classBard, classNinja:
+		chance += int(p.Stats[statDexterity])
 	}
-	chance = min(max(int(int16(int(p.Stats[6])+int(int16(int(*npcAttitude(m))+int(npcCharm)))/4+chance-10)), 0), 95) // C int wraps
+	chance = min(max(int(int16(int(p.Stats[statPersonality])+int(int16(int(*npcAttitude(m))+int(npcCharm)))/4+chance-10)), 0), 95) // C int wraps
 	roll := random(100) + npcPilfered
 	npcPilfered += random(10) + 5
 	npcNotice(replaceCharWithString(getMessage(int(p.Sex)+1570), memberName(m), '^'), false)
@@ -581,8 +593,8 @@ func npcPilfer(m int) {
 	default:
 		npcNotice(replaceCharWithString(getMessage(1576), memberName(m), '^'), true)
 		a := npcAttitude(m)
-		*a = int8(max(int(*a)-(random(25)+25), -100))
-		npcReact(m, 10, 0, 0, 0)
+		*a = int8(max(int(*a)-(random(25)+25), minAttitude))
+		npcReact(m, npcReactPilferCaught, 0, 0, 0)
 		return
 	}
 	npcNotice(replaceCharWithString(getMessage(msg), memberName(m), '^'), true)
