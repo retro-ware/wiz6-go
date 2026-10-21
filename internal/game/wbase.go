@@ -89,6 +89,9 @@ func getMenuChoiceAnimated(keys string, regions []byte) int {
 	}
 }
 
+// menuInput is getMenuInput on menuKeys and the click regions.
+func menuInput() int { return getMenuInput(menuKeys, clickRegions[:]) }
+
 // getMenuInput (WBASE 73c0 get_menu_choice, WPCMK 45fc get_menu_input) is
 // getMenuChoiceAnimated without the animation.
 func getMenuInput(keys string, regions []byte) int {
@@ -123,10 +126,11 @@ func redrawMenuItem(win *Window, item, colWidth, rows, x0, y0 int, text string) 
 	printStringHi(win, text, 3)
 }
 
-// runMenuWbase (WBASE 47c0 run_menu) lays out the enabled messages msgbase+i in columns
+// runCampMenu (run_menu, WBASE 47c0) is menuSelect with the camp scene animating, no
+// first highlight and a full refresh. It lays out the enabled messages msgbase+i in columns
 // of rows entries colWidth apart from (x0, y0) and lets the player pick one, starting at
 // entry sel; the chosen message's index. enabled ends with -1.
-func runMenuWbase(win *Window, msgbase int, enabled []int, x0, y0, colWidth, rows, color, sel int) int {
+func runCampMenu(win *Window, msgbase int, enabled []int, x0, y0, colWidth, rows, color, sel int) int {
 	var texts []string
 	var items []int
 	deferWindowDraw(win)
@@ -694,7 +698,7 @@ func doMasterOptions() {
 			enabled[4] = 0
 		}
 		sel = countEnabledItems(enabled, sel)
-		choice := runMenuWbase(win, 1002, enabled, 2, 1, 19, 4, 5, sel)
+		choice := runCampMenu(win, 1002, enabled, 2, 1, 19, 4, 5, sel)
 		destroyWindow(win, false)
 		sel = 0
 		if partyCount >= 6 {

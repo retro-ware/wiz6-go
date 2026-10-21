@@ -102,13 +102,13 @@ func doSkillsMenu(menu *Window, m int) {
 		if !academic {
 			enabled[2] = 0
 		}
-		sel := wpcvwCountEnabledBefore(enabled, pg+1)
+		sel := countEnabledItems(enabled, pg+1)
 		if pg+1 == 2 && !academic {
-			sel = wpcvwCountEnabledBefore(enabled, pg+2)
+			sel = countEnabledItems(enabled, pg+2)
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		pg = wpcvwRunMenu(menu, 600, enabled, 2, 1, 10, 2, 5, sel)
+		pg = menuSelect(menu, 600, enabled, 2, 1, 10, 2, 5, sel, getMenuInputBlink)
 	}
 	fillWindow(menu, ' ', 3)
 	destroyWindow(w, true)
@@ -148,7 +148,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 			printMessage(609, menu, 18)
 		}
 		setRegion(4, mx+x, my+2, mx+x, my+2)
-		k := wpcvwGetMenuInput()
+		k := getMenuInputBlink()
 		if menuClicked == 1 && k >= 0 && k < 5 {
 			k = [5]int{1, 3, 2, 4, 5}[k]
 		}
@@ -643,7 +643,7 @@ func doChangeClass(sheet, menu *Window, m int) {
 	printMessage(660, menu, 18)
 	setCursor(menu, 6, 2)
 	printMessage(661, menu, 18)
-	c := wpcvwRunMenu(w, 119, enabled, 1, 1, 10, 11, 5, 0)
+	c := menuSelect(w, 119, enabled, 1, 1, 10, 11, 5, 0, getMenuInputBlink)
 	destroyWindow(w, false)
 	if c <= 0 {
 		return
@@ -705,7 +705,7 @@ func doChoosePortrait(w *Window, m int) {
 			shown = int(p.Portrait)
 		}
 		drawPortrait(pw, int(memberPortrait[m]), 8, 6)
-		k := wpcvwGetMenuInput()
+		k := getMenuInputBlink()
 		if menuClicked == 1 && k >= 0 && k < 3 {
 			k = [3]int{1, 3, 5}[k]
 		}
@@ -730,7 +730,7 @@ func doModifyMenu(sheet, menu *Window, m int) {
 		refreshAllWindows()
 		// Entry 3 is off: the C's enabled array overlaps a local it zeroes.
 		enabled := []int{1, 1, 1, 0, 1, -1}
-		k := wpcvwRunMenu(menu, 650, enabled, 2, 1, 18, 2, 5, wpcvwCountEnabledBefore(enabled, 4))
+		k := menuSelect(menu, 650, enabled, 2, 1, 18, 2, 5, countEnabledItems(enabled, 4), getMenuInputBlink)
 		switch k {
 		case 0:
 			doRename(menu, m)

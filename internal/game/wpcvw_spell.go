@@ -194,7 +194,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 				pvSetBlink(pvBlinkWin, pvBlinkX, pvBlinkY, string(rune(realm+35)), 17, "c", 5)
 				redraw = false
 			}
-			k := wpcvwGetMenuInput()
+			k := getMenuInputBlink()
 			if menuClicked == 1 {
 				switch {
 				case k == realm:
@@ -267,7 +267,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 			} else {
 				printInt(book, cost, 3, realmColors[realm])
 			}
-			k = wpcvwGetMenuInput()
+			k = getMenuInputBlink()
 			if menuClicked == 1 {
 				switch {
 				case k < 6:
@@ -344,7 +344,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					}
 				}
 			}
-			k := wpcvwGetMenuInput()
+			k := getMenuInputBlink()
 			if menuClicked == 1 {
 				if k+1 == power {
 					k = 5

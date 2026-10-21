@@ -63,10 +63,10 @@ func viewAnimStep() {
 
 // get_menu_choice_blink (WDOPT 4728) waits for a key of keys (its index) or a click
 // region (its index, menuClicked set), blinking the cursor and animating the view.
-func wdoptGetMenuChoice(keys string) int {
+func getMenuChoiceView(keys string) int {
 	phase := animPhase
 	if pvBlinkState != -1 {
-		wpcvwBlinkCursor()
+		blinkCursor()
 	}
 	menuClicked = 0
 	for {
@@ -85,7 +85,7 @@ func wdoptGetMenuChoice(keys string) int {
 			animPhase = (animPhase + 1) % 2
 			redrawMazeView()
 			if pvBlinkState != -1 && animPhase == phase {
-				wpcvwBlinkCursor()
+				blinkCursor()
 			}
 		} else {
 			wmazeF4655()
@@ -148,7 +148,7 @@ func wdoptChooseTarget(msg int) int {
 				printString(win, memberName(sel), -5)
 			}
 		}
-		c := wdoptGetMenuChoice(dpKeys)
+		c := getMenuChoiceView(dpKeys)
 		if menuClicked == 1 {
 			sel = -1
 			if c < partyCount {
@@ -752,7 +752,7 @@ func wdoptDoUseItem(m int) {
 			printStringHi(win, cancel, 3)
 		}
 		drawSlotItemList(list, m, sel, !onCancel)
-		c := wdoptGetMenuChoice(dpKeys)
+		c := getMenuChoiceView(dpKeys)
 		if menuClicked == 1 {
 			switch c {
 			case 0:
@@ -846,7 +846,7 @@ func wdoptDoCastSpell(m int) {
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
 	fillWindow(win, ' ', 3)
-	s := chooseSpellBook(m, func() int { return wdoptGetMenuChoice(dpKeys) }, func(msg int) int { dpTarget = wdoptChooseTarget(msg); return dpTarget })
+	s := chooseSpellBook(m, func() int { return getMenuChoiceView(dpKeys) }, func(msg int) int { dpTarget = wdoptChooseTarget(msg); return dpTarget })
 	pvBlinkState = -1
 	if s != -1 {
 		level, spell := s/256, s%256

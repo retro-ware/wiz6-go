@@ -494,20 +494,6 @@ func npcGiveGold(win *Window, m int) int {
 	return npcReact(m, 1, id, 0, 0)
 }
 
-// npcCountEnabled (WMNPC ae76) is how many of the first n entries are enabled.
-func npcCountEnabled(enabled []int, n int) int {
-	c := 0
-	for _, e := range enabled[:n] {
-		if e == -1 {
-			return 0
-		}
-		if e == 1 {
-			c++
-		}
-	}
-	return c
-}
-
 // npcTrade (WMNPC aeb5): member m buys, sells or gives until done, the panels showing gold.
 func npcTrade(m int) {
 	enabled := []int{1, 1, 1, 1, -1}
@@ -526,7 +512,7 @@ func npcTrade(m int) {
 		fillWindow(win, ' ', 3)
 		npcPrompt(title, 0)
 		refreshAllWindows()
-		choice = npcMenuSelect(win, 1520, enabled, 4, 1, 7, 2, 5, 0, npcCountEnabled(enabled, choice))
+		choice = npcMenuSelect(win, 1520, enabled, 4, 1, 7, 2, 5, 0, countEnabledItems(enabled, choice))
 		switch choice {
 		case 0:
 			npcShop(m)

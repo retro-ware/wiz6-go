@@ -313,7 +313,7 @@ func getCombatInput() int {
 	flushKeys()
 	phase := animPhase
 	if pvBlinkState != -1 {
-		wpcvwBlinkCursor()
+		blinkCursor()
 	}
 	menuClicked = 0
 	for {
@@ -330,78 +330,9 @@ func getCombatInput() int {
 		}
 		animateCombatStep()
 		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
-			wpcvwBlinkCursor()
+			blinkCursor()
 		}
 	}
-}
-
-// combatMenuSelect (WPOPS 5260) runs a menu of the messages firstMsg+i whose enabled[i]
-// is 1 (enabled ends at -1), in columns of rows lines; the item chosen.
-func combatMenuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colW, rows, color, sel int) int {
-	var labels []string
-	var items []int
-	cell := func(n int) (int, int) { return n/rows*colW + x0, n%rows + y0 }
-	for item := 0; enabled[item] != -1; item++ {
-		if enabled[item] != 1 {
-			continue
-		}
-		n := len(labels)
-		x, y := cell(n)
-		setCursor(win, x, y)
-		s := getMessage(firstMsg + item)
-		if !mousePresent && sel == n {
-			printString(win, s, -color)
-		} else {
-			printStringHi(win, s, 3)
-		}
-		labels, items = append(labels, s), append(items, item)
-		setClickRegion(n, win.X+byte(x), win.Y+byte(y), byte(len(s)+int(win.X)+x-1), win.Y+byte(y))
-	}
-	n := len(labels)
-	setClickRegion(n, 255, 0, 0, 0)
-	unhighlight := func() {
-		x, y := cell(sel)
-		setCursor(win, x, y)
-		printStringHi(win, labels[sel], 3)
-	}
-	for {
-		if !mousePresent {
-			x, y := cell(sel)
-			setCursor(win, x, y)
-			printString(win, labels[sel], -color)
-		}
-		k := getCombatInput()
-		if menuClicked == 1 {
-			sel = k
-			break
-		}
-		switch k {
-		case 1:
-			if sel-rows >= 0 {
-				unhighlight()
-				sel -= rows
-			}
-		case 2:
-			if sel%rows > 0 {
-				unhighlight()
-				sel--
-			}
-		case 3:
-			if sel+rows < n {
-				unhighlight()
-				sel += rows
-			}
-		case 4:
-			if sel%rows < rows-1 && sel+1 < n {
-				unhighlight()
-				sel++
-			}
-		}
-		if k == 5 {
-			break
-		}
-	}
-	return items[sel]
 }
 
 // selectMonsterGroup (WPOPS 55cd) asks for a target group within range (0, 1 the first
@@ -759,7 +690,7 @@ func choosePartyActions(win *Window) {
 				if n > 9 {
 					rows = 4
 				}
-				action = combatMenuSelect(win, 3000, enabled[:], 1, 1, 6, rows, 5, 0)
+				action = menuSelect(win, 3000, enabled[:], 1, 1, 6, rows, 5, 0, getCombatInput)
 				choice = -1
 				c.B31, c.B32 = -1, 0
 				retry := false
@@ -787,7 +718,7 @@ func choosePartyActions(win *Window) {
 					}
 					if kinds > 1 {
 						refreshAllWindows()
-						choice = combatMenuSelect(win, 3050, attacks[:], 3, 1, 8, 3, 5, 0)
+						choice = menuSelect(win, 3050, attacks[:], 3, 1, 8, 3, 5, 0, getCombatInput)
 					}
 					if choice != -1 {
 						rng := int(p.Hands[0].B0D)
@@ -816,7 +747,7 @@ func choosePartyActions(win *Window) {
 						enabled[0] = 0
 					}
 					enabled[4] = -1 // the C leaves it so: a retry shows only four actions
-					if choice = combatMenuSelect(win, 3100, enabled[:], 3, 1, 9, 2, 5, 0); choice == -1 {
+					if choice = menuSelect(win, 3100, enabled[:], 3, 1, 9, 2, 5, 0, getCombatInput); choice == -1 {
 						retry = true
 					}
 				case 3: // spell
@@ -897,7 +828,7 @@ func choosePartyActions(win *Window) {
 			if done == 0 {
 				ok[1], ok[2] = 0, 0
 			}
-			switch combatMenuSelect(win, 3507, ok, 3, 1, 14, 4, 5, 0) {
+			switch menuSelect(win, 3507, ok, 3, 1, 14, 4, 5, 0, getCombatInput) {
 			case 2:
 				clearTargets()
 				member, done = 0, 0

@@ -544,7 +544,7 @@ func doGameConfiguration() {
 		prev := sel
 		var choice int
 		if returnCmd == 25 {
-			choice = getMenuInput(menuKeys, clickRegions[:])
+			choice = menuInput()
 		} else {
 			choice = getMenuChoiceAnimated(menuKeys, clickRegions[:])
 		}

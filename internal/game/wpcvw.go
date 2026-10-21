@@ -119,107 +119,21 @@ func staminaPct(p *PC) int {
 
 // --------------------------------------------------------------- menus and input
 
-// wpcvwUnhighlightMenuItem (WPCVW 4595) reprints menu entry i plain.
-func wpcvwUnhighlightMenuItem(w *Window, i, colW, rows, x0, y0 int, s string) {
-	setCursor(w, i/rows*colW+x0, i%rows+y0)
-	printStringHi(w, s, 3)
-}
-
-// wpcvwRunMenu (run_menu, WPCVW 45d0) shows messages firstMsg+i for each enabled[i] == 1
-// (-1 ends the list) in columns of rows entries colW apart from (x0, y0), sel highlighted
-// in colour color, and returns the chosen entry's index into enabled.
-func wpcvwRunMenu(w *Window, firstMsg int, enabled []int, x0, y0, colW, rows, color, sel int) int {
-	var texts []string
-	var items []int
-	for item := 0; enabled[item] != -1; item++ {
-		if enabled[item] != 1 {
-			continue
-		}
-		n := len(texts)
-		x, y := n/rows*colW+x0, n%rows+y0
-		setCursor(w, x, y)
-		s := getMessage(firstMsg + item)
-		if !mousePresent && sel == n {
-			printString(w, s, -color)
-		} else {
-			printStringHi(w, s, 3)
-		}
-		texts = append(texts, s)
-		items = append(items, item)
-		setRegion(n, int(w.X)+x, int(w.Y)+y, len(s)+int(w.X)+x-1, int(w.Y)+y)
-	}
-	n := len(texts)
-	endRegions(n)
-	for {
-		if !mousePresent {
-			setCursor(w, sel/rows*colW+x0, sel%rows+y0)
-			printString(w, texts[sel], -color)
-		}
-		k := wpcvwGetMenuInput()
-		if menuClicked == 1 {
-			sel = k
-			break
-		}
-		unhl := func() { wpcvwUnhighlightMenuItem(w, sel, colW, rows, x0, y0, texts[sel]) }
-		switch k {
-		case 1:
-			if sel-rows >= 0 {
-				unhl()
-				sel -= rows
-			}
-		case 2:
-			if sel%rows > 0 {
-				unhl()
-				sel--
-			}
-		case 3:
-			if sel+rows < n {
-				unhl()
-				sel += rows
-			}
-		case 4:
-			if sel%rows < rows-1 && sel+1 < n {
-				unhl()
-				sel++
-			}
-		}
-		if k == 5 {
-			break
-		}
-	}
-	return items[sel]
-}
-
-// wpcvwCountEnabledBefore (WPCVW 5be5) is how many of the first n entries of enabled are
-// enabled (0 if the list ends first): the menu index of entry n.
-func wpcvwCountEnabledBefore(enabled []int, n int) int {
-	c := 0
-	for i := 0; i < n; i++ {
-		switch enabled[i] {
-		case -1:
-			return 0
-		case 1:
-			c++
-		}
-	}
-	return c
-}
-
-// wpcvwBlinkCursor (WPCVW 8817) prints the next phase of the blinking cursor.
-func wpcvwBlinkCursor() {
+// blinkCursor (WPCVW 8817) prints the next phase of the blinking cursor.
+func blinkCursor() {
 	setCursor(pvBlinkWin, pvBlinkX, pvBlinkY)
 	printColored(pvBlinkWin, pvBlinkText[pvBlinkState], pvBlinkColor[pvBlinkState])
 	pvBlinkState = (pvBlinkState + 1) % 2
 }
 
-// wpcvwGetMenuInput (get_menu_input, WPCVW 8891) waits for a key of menuKeys (its index)
+// getMenuInputBlink (get_menu_input, WPCVW 8891) waits for a key of menuKeys (its index)
 // or a click on a click region (its index, with menuClicked set), blinking the cursor
 // meanwhile.
-func wpcvwGetMenuInput() int {
+func getMenuInputBlink() int {
 	idle := 0
 	phase := animPhase
 	if pvBlinkState != -1 {
-		wpcvwBlinkCursor()
+		blinkCursor()
 	}
 	menuClicked = 0
 	for {
@@ -237,7 +151,7 @@ func wpcvwGetMenuInput() int {
 		if idle == 0 {
 			animPhase = (animPhase + 1) % 2
 			if pvBlinkState != -1 && animPhase == phase {
-				wpcvwBlinkCursor()
+				blinkCursor()
 			}
 		} else {
 			delayTick()

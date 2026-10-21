@@ -140,7 +140,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 				printString(sheet, pvSwagNames[sel], -5)
 			}
 		}
-		k := wpcvwGetMenuInput()
+		k := getMenuInputBlink()
 		if menuClicked == 1 {
 			sel = -1
 			if k < count {
@@ -254,7 +254,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		}
 		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
-		switch wpcvwRunMenu(menu, 751, enabled, 2, 1, 8, 2, 5, wpcvwCountEnabledBefore(enabled, 3)) {
+		switch menuSelect(menu, 751, enabled, 2, 1, 8, 2, 5, countEnabledItems(enabled, 3), getMenuInputBlink) {
 		case 0:
 			deferWindowDraw(w)
 			fillWindow(menu, ' ', 3)

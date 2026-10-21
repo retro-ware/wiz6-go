@@ -296,7 +296,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 					printString(sheet, pvItemNames[cand[sel]], -5)
 				}
 			}
-			k := wpcvwGetMenuInput()
+			k := getMenuInputBlink()
 			if menuClicked == 1 {
 				sel = -1
 				if k < n {
@@ -380,7 +380,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		menu.CurX++
 		putCharHi(menu, '?', 3)
 		menu.CurX += 2
-		if wpcvwRunMenu(menu, 381, []int{1, 1, -1}, int(menu.CurX), 2, 3, 1, 5, 0) != 1 {
+		if menuSelect(menu, 381, []int{1, 1, -1}, int(menu.CurX), 2, 3, 1, 5, 0, getMenuInputBlink) != 1 {
 			continue
 		}
 		switch v := power[s]; {

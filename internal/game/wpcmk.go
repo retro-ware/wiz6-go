@@ -233,10 +233,11 @@ func drawStats() {
 	printInt(w, int(newPC.StaminaMax), 3, 6)
 }
 
-// menuSelect (WPCMK 4800) lays out the enabled messages firstMsg+i in columns of rows
+// menuSelect (run_menu: WPCMK 4800, WPCVW 45d0, WPOPS 5260) lays out the enabled messages firstMsg+i in columns of rows
 // entries colWidth apart from (x0, y0) and lets the player pick one from entry sel on; the
-// chosen message's index. enabled ends with -1.
-func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows, color, sel int) int {
+// chosen message's index. enabled ends with -1. input reads a menu key or click (the
+// overlays' copies differ only there).
+func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows, color, sel int, input func() int) int {
 	var labels []string
 	var items []int
 	for item := 0; enabled[item] != -1; item++ {
@@ -263,7 +264,7 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 			at()
 			printString(win, labels[sel], -color)
 		}
-		item := getMenuInput(menuKeys, clickRegions[:])
+		item := input()
 		if menuClicked == 1 {
 			sel = item
 			item = 5
@@ -414,7 +415,7 @@ func wpcmkWaitForKey() {
 
 // yesNo asks the yes/no menu after message msg in the prompt, from entry sel; true for yes.
 func yesNo(firstMsg, sel int) bool {
-	return menuSelect(promptWin, firstMsg, []int{1, 1, -1}, int(promptWin.CurX)+1, 1, 4, 1, 5, sel) == 0
+	return menuSelect(promptWin, firstMsg, []int{1, 1, -1}, int(promptWin.CurX)+1, 1, 4, 1, 5, sel, menuInput) == 0
 }
 
 // deleteCharacter (WPCMK 97e1) deletes roster character slot if the player says so.
@@ -541,7 +542,7 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 			printStringHi(win, cancel, 3)
 			drawRosterList(listWin, sel, 1)
 		}
-		k := getMenuInput(menuKeys, clickRegions[:])
+		k := menuInput()
 		if menuClicked == 1 {
 			switch k {
 			case 0:
@@ -603,7 +604,7 @@ func characterMenu() {
 			}
 		}
 		enabled[1], enabled[2], enabled[3], enabled[4] = any, any, any, any
-		choice := menuSelect(promptWin, 1130, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, 5))
+		choice := menuSelect(promptWin, 1130, enabled, 4, 1, 12, 2, 5, countEnabledItems(enabled, 5), menuInput)
 		pick := func(msg int, f func(int)) {
 			if sel := selectRosterCharacter(promptWin, menuWin, msg); sel != -1 {
 				f(rosterList[sel].slot)

@@ -146,7 +146,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 		}
 		printMessage(msg, win, 18)
 		setClickRegion(4, x+ex, y+3, x+ex, y+3)
-		key := getMenuInput(menuKeys, clickRegions[:])
+		key := menuInput()
 		if menuClicked == 1 && key >= 0 && key <= 4 {
 			key = [5]int{1, 3, 2, 4, 5}[key]
 		}
@@ -281,7 +281,7 @@ func chooseFromMenu(x, msg, status, first int, enabled []int) int {
 	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
 	printStatusCentered(status)
-	c := menuSelect(menuWin, first, enabled, 1, 1, 10, 11, 5, 0)
+	c := menuSelect(menuWin, first, enabled, 1, 1, 10, 11, 5, 0, menuInput)
 	clearStatusLine()
 	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
@@ -364,7 +364,7 @@ func distributeBonusPoints() {
 			}
 			setClickRegion(4, 255, 0, 0, 0)
 		}
-		key := getMenuInput(menuKeys, clickRegions[:])
+		key := menuInput()
 		if menuClicked == 1 && key >= 0 && key <= 4 {
 			key = [5]int{1, 3, 2, 4, 5}[key]
 		}
@@ -762,7 +762,7 @@ func choosePortrait() {
 			shown = int(newPC.Portrait)
 		}
 		drawPortrait(menuWin, 0, 8, 3)
-		k := getMenuInput(menuKeys, clickRegions[:])
+		k := menuInput()
 		if menuClicked == 1 && k >= 0 && k <= 2 {
 			k = [3]int{1, 3, 5}[k]
 		}
@@ -1019,7 +1019,7 @@ func selectSpell(sheet, win *Window) int {
 				}
 				redraw = false
 			}
-			key = getMenuInput(menuKeys, clickRegions[:])
+			key = menuInput()
 			if menuClicked == 1 {
 				switch {
 				case key == realm:
@@ -1086,7 +1086,7 @@ func selectSpell(sheet, win *Window) int {
 			} else {
 				printInt(w, cost, 3, realmColors[realm])
 			}
-			key = getMenuInput(menuKeys, clickRegions[:])
+			key = menuInput()
 			if menuClicked == 1 {
 				switch {
 				case key <= 5:

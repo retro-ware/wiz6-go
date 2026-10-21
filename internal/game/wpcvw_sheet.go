@@ -465,7 +465,7 @@ func wpcvwViewCharacter(m int) {
 			enabled[1], enabled[6] = 0, 0
 		}
 		flushKeys()
-		choice := wpcvwRunMenu(menu, 301, enabled, 2, 1, 6, 2, 5, wpcvwCountEnabledBefore(enabled, 11))
+		choice := menuSelect(menu, 301, enabled, 2, 1, 6, 2, 5, countEnabledItems(enabled, 11), getMenuInputBlink)
 		switch choice {
 		case 0:
 			doEquipItems(sheet, menu, m)
@@ -583,7 +583,7 @@ func chooseMember(w *Window, title, sel int) int {
 				printString(w, memberName(sel), -5)
 			}
 		}
-		k := wpcvwGetMenuInput()
+		k := getMenuInputBlink()
 		if menuClicked == 1 {
 			sel = -1
 			if k < partyCount {

@@ -330,7 +330,7 @@ func npcInputLine(win *Window, max, color, digits int) string {
 func npcMenuInput() int {
 	phase := animPhase
 	if pvBlinkState != -1 {
-		wpcvwBlinkCursor()
+		blinkCursor()
 	}
 	flushKeys()
 	menuClicked = 0
@@ -348,7 +348,7 @@ func npcMenuInput() int {
 		}
 		npcAnimStep()
 		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
-			wpcvwBlinkCursor()
+			blinkCursor()
 		}
 	}
 }
