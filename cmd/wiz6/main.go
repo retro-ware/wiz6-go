@@ -19,6 +19,9 @@ func main() {
 	shots := flag.String("shot", "", "write the game's frame to PNGs: SECONDS:FILE[,SECONDS:FILE...]")
 	input := flag.String("input", "", "replace the keyboard and mouse with a script: SECONDS:ACTION[,...], "+
 		"ACTION kHEX (tap a scan code), pHEX/rHEX (press/release a scan code), aX/Y (put the mouse at X, Y), mDX/DY (move the mouse), bN (click button N), dN/uN (button N down/up)")
+	steps := flag.String("steps", "", "testing: -input ACTIONs done one by one once the screen has settled (see -stepdir)")
+	stepDir := flag.String("stepdir", ".", "testing: with -steps, write DIR/NNN.png, the settled frame after step NNN")
+	stepWait := flag.Float64("stepwait", 8, "testing: with -steps, seconds before the first step at least")
 	maze := flag.Bool("maze", false, "testing: boot straight into NEWGAME.DBS's maze with the first six PCFILE.DBS characters")
 	pcview := flag.Int("pcview", -1, "testing: as -maze, but open the character view of party member N")
 	fight := flag.Int("fight", -1, "testing: as -maze, but start an encounter (with monster N when N > 0)")
@@ -53,8 +56,12 @@ func main() {
 		}
 		time.AfterFunc(d, func() { host.Screenshot(path) })
 	}
-	if *input != "" {
+	if *input != "" || *steps != "" {
 		host.Scripted = true
+		host.MouseTo(160, 100) // where the original's mouse driver reset puts the pointer
+	}
+	if *steps != "" {
+		go runSteps(strings.Split(*steps, ","), *stepDir, time.Duration(*stepWait*float64(time.Second)))
 	}
 	for _, s := range strings.Split(*input, ",") {
 		secs, act, ok := strings.Cut(s, ":")
@@ -126,4 +133,40 @@ func scriptAction(act string) {
 			time.AfterFunc(100*time.Millisecond, func() { host.MouseButton(b, false) })
 		}
 	}
+}
+
+// Settling for -steps: a step's frame is taken once the screen has not changed for settle,
+// or after settleMax for screens that keep animating.
+const (
+	settle    = 1500 * time.Millisecond
+	settleMax = 8 * time.Second
+)
+
+// runSteps does each action once the screen has settled, saving the settled frame before
+// the next action (and after the last), then quits.
+func runSteps(acts []string, dir string, first time.Duration) {
+	waitSettled := func(min time.Duration) {
+		t0 := time.Now()
+		for time.Since(t0) < min || host.Unchanged() < settle && time.Since(t0) < settleMax {
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
+	shot := func(i int) {
+		px, w, h := host.FrameRGBA()
+		if err := host.WritePNG(filepath.Join(dir, fmt.Sprintf("%03d.png", i)), px, w, h); err != nil {
+			fmt.Fprintln(os.Stderr, "wiz6:", err)
+		}
+	}
+	waitSettled(first)
+	for i, a := range acts {
+		if i > 0 {
+			waitSettled(500 * time.Millisecond)
+			shot(i - 1)
+		}
+		fmt.Fprintf(os.Stderr, "wiz6: step %d %s\n", i, a)
+		scriptAction(a)
+	}
+	waitSettled(500 * time.Millisecond)
+	shot(len(acts) - 1)
+	host.Quit()
 }

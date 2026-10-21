@@ -6,11 +6,15 @@ SCRIPT=$(cd "$(dirname "$1")" && pwd)/$(basename "$1"); OUT=$2
 HERE=$(cd "$(dirname "$0")" && pwd); GO=$(cd "$HERE/../.." && pwd)
 ORIG=${ORIG:-$HOME/Projects/wiz6-re/gog/x/app}
 WAIT=8; PACE=3; FUZZ=${FUZZ:-0}
-KEYS=()
+n=0; KEYS=(); SLOT=(); AT=() # SLOT[i]: key i's PACE slot (',' lines add an empty slot); AT: the autotype words
 while read -r a b; do
-  case "$a" in ''|'#'*) ;; WAIT|PACE) eval "$a=$b" ;; *) KEYS+=("$a") ;; esac
+  case "$a" in
+  ''|'#'*) ;; WAIT|PACE) eval "$a=$b" ;;
+  ,) AT+=(","); n=$((n+1)) ;;
+  *) KEYS+=("$a"); SLOT+=($((n+0))); AT+=("$a"); n=$((n+1)) ;;
+  esac
 done < "$SCRIPT"
-N=${#KEYS[@]}
+N=${#KEYS[@]}; SLOTS=$n
 mkdir -p "$OUT"; OUT=$(cd "$OUT" && pwd); rm -rf "$OUT"/{dos,go,diff,work}; mkdir -p "$OUT"/{dos,go,diff,work/cap}
 
 # PC set-1 scan code of an AUTOTYPE key name (the port's -input kXX).
@@ -22,12 +26,12 @@ scan() {
   down:50 pagedown:51 insert:52 delete:53 "
   local r=${s#* $1:}; [ "$r" != "$s" ] || { echo "parity: unknown key $1" >&2; exit 1; }; echo "${r%% *}"
 }
-# Step i's key goes in at WAIT+i*PACE; its frame is taken just before key i+1 (step N: one PACE after).
-shot_t() { echo "$WAIT + ($1+1)*$PACE - 0.3" | bc; }
+# Step i's key goes in at WAIT+SLOT[i]*PACE; its frame is taken just before key i+1 (last: one PACE after).
+shot_t() { local s=$SLOTS; [ $(($1+1)) -lt $N ] && s=${SLOT[$(($1+1))]}; echo "$WAIT + $s*$PACE - 0.3" | bc; }
 
 # --- original: AUTOTYPE feeds keys inside DOSBox-X, DX-CAPTURE records a ZMBV AVI ---
 cp -R "$ORIG/" "$OUT/work/dos/"
-LIMIT=$(echo "$WAIT + ($N+1)*$PACE + 2" | bc | cut -d. -f1)
+LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
 cat > "$OUT/work/dos.conf" <<C
 [sdl]
 output=surface
@@ -41,7 +45,7 @@ cycles=${CYCLES:-fixed 20000}
 [autoexec]
 mount c "$OUT/work/dos"
 c:
-autotype -w $WAIT -p $PACE ${KEYS[*]}
+autotype -w $WAIT -p $PACE ${AT[*]}
 dx-capture /V wroot.exe
 exit
 C
@@ -49,34 +53,42 @@ SDL_VIDEODRIVER=dummy timeout -s KILL $((LIMIT+30)) dosbox-x -conf "$OUT/work/do
   -nogui -nomenu -exit -fastlaunch -time-limit $LIMIT >"$OUT/work/dos.log" 2>&1 || true
 # The capture splits into one AVI per video mode; walk them to map program time to file time.
 for i in $(seq 0 $((N-1))); do
-  t=$(shot_t $i); off=0
-  for f in "$OUT"/work/cap/*.avi; do
-    d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
-    if [ "$(echo "$t < $off + $d" | bc)" = 1 ]; then
-      ffmpeg -v error -y -ss "$(echo "$t - $off" | bc)" -i "$f" -frames:v 1 -vf scale=320:200:flags=neighbor \
-        "$OUT/dos/$(printf %03d $i).png"; break
-    fi
-    off=$(echo "$off + $d" | bc)
+  # The frame just before the next key, and one a second earlier: pixels that differ between
+  # the two (0.35 PACE apart) are animating (water, the camp scene) and are masked out of the diff.
+  for v in "0:$OUT/dos" "$(echo "$PACE*0.35" | bc):$OUT/work/dosb"; do
+    t=$(echo "$(shot_t $i) - ${v%%:*}" | bc); off=0; mkdir -p "${v#*:}"
+    for f in "$OUT"/work/cap/*.avi; do
+      d=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$f")
+      if [ "$(echo "$t < $off + $d" | bc)" = 1 ]; then
+        ffmpeg -v error -y -ss "$(echo "$t - $off" | bc)" -i "$f" -frames:v 1 -vf scale=320:200:flags=neighbor \
+          "${v#*:}/$(printf %03d $i).png"; break
+      fi
+      off=$(echo "$off + $d" | bc)
+    done
   done
 done
 
-# --- port: same keys and times through -input / -shot ---
+# --- port: same keys, each sent once the screen has settled (-steps), frames saved there ---
+[ -n "$DOSONLY" ] && exit 0
 (cd "$GO" && CGO_ENABLED=0 go build -tags nofakecgo -o "$OUT/work/wiz6" ./cmd/wiz6)
 cp -R "$ORIG/" "$OUT/work/godata/"
-in=""; sh=""
-for i in $(seq 0 $((N-1))); do
-  in+="$(echo "$WAIT + $i*$PACE" | bc):k$(scan "${KEYS[$i]}"),"
-  sh+="$(shot_t $i):$OUT/go/$(printf %03d $i).png,"
-done
-(cd "$OUT/work" && timeout -s KILL $((LIMIT+10)) ./wiz6 -data godata -input "${in%,}" -shot "${sh%,}" \
-  >go.log 2>&1) || true
+in=""
+for k in "${KEYS[@]}"; do in+="k$(scan "$k"),"; done
+(cd "$OUT/work" && timeout -s KILL $((WAIT + N*10 + 30)) ./wiz6 -data godata -steps "${in%,}" -stepdir "$OUT/go" \
+  -stepwait "$WAIT" >go.log 2>&1) || true
 
 # --- diff ---
-printf "step key pixels\n" > "$OUT/report.txt"
+printf "step key pixels still-pixels\n" > "$OUT/report.txt"
 for i in $(seq 0 $((N-1))); do
   p=$(printf %03d $i)
   [ -f "$OUT/dos/$p.png" ] && [ -f "$OUT/go/$p.png" ] || { echo "$p ${KEYS[$i]} missing" >> "$OUT/report.txt"; continue; }
   n=$(compare -metric AE -fuzz "$FUZZ%" "$OUT/dos/$p.png" "$OUT/go/$p.png" "$OUT/diff/$p.png" 2>&1 >/dev/null || true)
-  echo "$p ${KEYS[$i]} $n" >> "$OUT/report.txt"
+  m=$OUT/work/mask$p.png; s="-"
+  if [ -f "$OUT/work/dosb/$p.png" ]; then
+    magick "$OUT/dos/$p.png" "$OUT/work/dosb/$p.png" -compose difference -composite -threshold 0 -negate "$m"
+    for x in dos go; do magick "$OUT/$x/$p.png" "$m" -compose multiply -composite "$OUT/work/m$x$p.png"; done
+    s=$(compare -metric AE -fuzz "$FUZZ%" "$OUT/work/mdos$p.png" "$OUT/work/mgo$p.png" null: 2>&1 || true)
+  fi
+  echo "$p ${KEYS[$i]} ${n%% *} ${s%% *}" >> "$OUT/report.txt"
 done
 cat "$OUT/report.txt"

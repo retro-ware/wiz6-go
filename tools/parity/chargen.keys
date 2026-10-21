@@ -1,12 +1,126 @@
-# boot -> title -> master options -> character menu -> create character
+# Create a PC: master options -> character menu -> CREATE PC, name TEST, human male fighter,
+# spend the (random) bonus and skill points, first portrait, keep, exit. The rolls differ
+# between the two runs (random steps on every input poll), so stat/skill numbers may differ.
 WAIT 8
-PACE 3
+PACE 2
 enter
+,
+,
 down
 down
 enter
+,
+,
+# character menu starts on EXIT (mouse present: no highlight): up, left, left = CREATE PC
+up
+left
+left
+enter
+,
+t
+e
+s
+t
+enter
+,
+# race HUMAN, sex MALE, profession FIGHTER (the first of each)
+enter
+,
+enter
+,
+enter
+,
+# bonus points: six rights on each of STR..SPD (stops at 18 or when spent), then done
+right
+right
+right
+right
+right
+right
 down
+right
+right
+right
+right
+right
+right
+down
+right
+right
+right
+right
+right
+right
+down
+right
+right
+right
+right
+right
+right
+down
+right
+right
+right
+right
+right
+right
+down
+right
+right
+right
+right
+right
+right
+down
+right
+right
+right
+right
+right
+right
 enter
+,
+# portrait: the first
 enter
+,
+# skills: all on the first weapon skill
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
+right
 enter
+,
+# keep the character (saves PCFILE.DBS), back on the character menu, exit
 enter
+,
+,
+enter
+,
+,

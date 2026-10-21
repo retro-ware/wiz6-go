@@ -73,19 +73,21 @@ func PollClick(regions []byte) int {
 	return 0
 }
 
-// arrow is the pointer: 1 white, 2 black outline.
-// ponytail: a plain arrow; the driver's own pointer sprite is built at run time and not decoded yet.
-var arrow = [10]string{
-	"2.........",
-	"22........",
-	"212.......",
-	"2112......",
-	"21112.....",
-	"211112....",
-	"2111112...",
-	"2112222...",
-	"222.......",
-	"2.........",
+// arrow is the pointer as the original shows it (decoded from DOSBox-X captures): hex colour
+// indices (drv.Palette), '.' transparent; the hotspot is the top-left pixel.
+var arrow = [12]string{
+	"000000000...",
+	"055555550...",
+	"054ccc5d0...",
+	"0514c5d0....",
+	"05445500....",
+	"054555d00...",
+	"055d055d00..",
+	"05d00055d00.",
+	"000..0055d00",
+	"......0055d0",
+	".......00500",
+	"........000.",
 }
 
 // drawPointer puts the pointer into a frame being presented.
@@ -103,9 +105,9 @@ func drawPointer(f []byte) {
 			if c == '.' || px < 0 || py < 0 || px >= W || py >= H {
 				continue
 			}
-			v := byte(1)
-			if c == '2' {
-				v = 0
+			v := byte(c - '0')
+			if c >= 'a' {
+				v = byte(c-'a') + 10
 			}
 			f[py*W+px] = v
 		}

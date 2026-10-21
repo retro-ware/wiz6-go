@@ -41,6 +41,7 @@ var st struct {
 	lockUntil  time.Duration // the pointer stays locked until then (RequestPointerLock)
 	locked     bool          // the window has the pointer locked
 	frameSeq   uint64        // frames the window has shown (pace.go)
+	changed    time.Duration // when the frame or palette last changed (Now)
 }
 
 func init() { st.w, st.h, st.start = 320, 200, time.Now() }
@@ -53,6 +54,9 @@ var Scripted bool
 // Present shows a frame of w x h palette indices.
 func Present(px []byte, w, h int) {
 	st.mu.Lock()
+	if w != st.w || h != st.h || string(st.frame[:w*h]) != string(px[:w*h]) {
+		st.changed = Now()
+	}
 	st.w, st.h = w, h
 	copy(st.frame[:w*h], px)
 	st.mu.Unlock()
@@ -61,8 +65,20 @@ func Present(px []byte, w, h int) {
 // SetPalette sets DAC entries first.. from cs.
 func SetPalette(first int, cs []Color) {
 	st.mu.Lock()
+	for i, c := range cs {
+		if st.pal[first+i] != c {
+			st.changed = Now()
+		}
+	}
 	copy(st.pal[first:], cs)
 	st.mu.Unlock()
+}
+
+// Unchanged is how long the frame and palette have stayed the same.
+func Unchanged() time.Duration {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	return Now() - st.changed
 }
 
 // Palette returns the DAC.
