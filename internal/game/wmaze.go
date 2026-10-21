@@ -5,8 +5,6 @@ import "github.com/retro-ware/wiz6-go/internal/drv"
 // WMAZE: exploration, the maze view and the cell events (game states 5, 6, 23; main
 // turns 25 into 5).
 
-func init() { wmazeMain = wmazeOvmain }
-
 // ovmain (WMAZE 4572): flee (23), load the map game_state_arg (6), explore (5).
 func wmazeOvmain() {
 	if gameState == 23 {

@@ -1,47 +1,70 @@
 package game
 
-import (
-	"fmt"
-	"os"
+import "github.com/retro-ware/wiz6-go/internal/dbs"
 
-	"github.com/retro-ware/wiz6-go/internal/dbs"
-	"github.com/retro-ware/wiz6-go/internal/drv"
-)
+// The testing entries (the -maze, -fight, -pcview, -chest and -npc flags) boot like
+// WINIT without the title, start NEWGAME.DBS's map and position with the first six
+// characters of PCFILE.DBS, as WBASE's start_game would, and run main's game_state loop
+// from the state they set.
 
-// MainMaze is Main for testing the maze until WBASE's start_game is in (the -maze flag):
-// it boots like WINIT without the title, starts NEWGAME.DBS's map and position with the
-// first six characters of PCFILE.DBS and runs WMAZE until the game leaves the maze.
-func MainMaze(dir string) (code int) {
-	dataDir = dir
-	defer func() {
-		if r := recover(); r != nil {
-			c, ok := r.(exitCode)
-			if !ok {
-				panic(r)
-			}
-			code = int(c)
+// MainMaze starts in the maze (game state 6).
+func MainMaze(dir string) int {
+	return run(dir, startTestMaze)
+}
+
+// MainFight starts the map's encounter (monster mon instead when mon > 0) in the maze.
+func MainFight(dir string, mon int) int {
+	return run(dir, func() {
+		startTestView()
+		returnCmd = 5
+		startEncounter(0)
+		if mon > 0 {
+			g433a = mon
 		}
-	}()
-	drv.Init()
-	calibrateDelay()
-	seedRandom()
-	initGameData()
-	initMainScreen()
+	})
+}
+
+// PCView opens the character view of member m (game state 17).
+func PCView(dir string, m int) int {
+	return run(dir, func() {
+		startTestMaze()
+		menuKeys = getMessage(300)
+		curMember = int16(min(m, max(partyCount-1, 0)))
+		returnCmd, gameState = 5, 17
+	})
+}
+
+// MainChest opens treasure record id as a found chest (game state 21).
+func MainChest(dir string, id int) int {
+	return run(dir, func() {
+		startTestView()
+		treasureID = int16(id)
+		gameState = 21
+	})
+}
+
+// MainNPC meets NPC record npc (game state 18).
+func MainNPC(dir string, npc int) int {
+	return run(dir, func() {
+		startTestView()
+		g433a = npc
+		gameState = 18
+	})
+}
+
+// startTestView is startTestMaze with the maze screen drawn, for the entries that start
+// from inside the maze.
+func startTestView() {
 	startTestMaze()
-	for gameState == 5 || gameState == 6 || gameState == 23 || gameState == 25 {
-		if gameState == 25 {
-			gameState = 5
-		}
-		wmazeMain()
-		stopSound()
-	}
-	fmt.Fprintf(os.Stderr, "wiz6 -maze: left the maze for game_state %d\n", gameState)
-	shutdownGame(0)
-	return 0
+	loadMazeLevel(gameStateArg)
+	initMazeScreen()
+	refreshAllWindows()
 }
 
 // startTestMaze is load_game(0), the roster and setup_game_windows (WBASE), cut down.
 func startTestMaze() {
+	initGameData()
+	initMainScreen()
 	g, err := dbs.DecodeSaveGame(openData("NEWGAME.DBS", 9))
 	if err != nil {
 		exitGame(9)
@@ -62,9 +85,17 @@ func startTestMaze() {
 		if err != nil || pc.Name[0] == 0 {
 			break
 		}
+		memberPortrait[partyCount] = uint8(findFreePortraitSlot(partyCount))
 		party[partyCount] = pc
 		memberPcfileIndex[partyCount] = i
 		partyCount++
+	}
+	for i := 0; i < partyCount; i++ {
+		loadPortrait(int(party[i].Portrait), int(memberPortrait[i]))
+	}
+	g4fc8 = int16(hdr.Delay) // as load_game does
+	if g4fc8 == 0 {
+		g4fc8 = 5
 	}
 	g4f88 = 0
 	eraseWindow(mainWindow, false)

@@ -10,8 +10,6 @@ import (
 // WPCVW: the character sheet (game state 17: stats, inventory, equip, spells, trade,
 // swag, skills, modify) and the level up after combat (game state 22).
 
-func init() { wpcvwMain = wpcvwOvmain }
-
 // ovmain (WPCVW 4572).
 func wpcvwOvmain() {
 	pvBlinkState = -1

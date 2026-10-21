@@ -31,7 +31,11 @@ func shutdownGame(code int) {
 }
 
 // Main runs the game from dir until it quits; the exit code.
-func Main(dir string) (code int) {
+func Main(dir string) int { return run(dir, func() { gameState = 0 }) }
+
+// run boots the root, calls start (which sets gameState; the testing entries also set up
+// a game there) and runs main's game_state loop until the game quits; the exit code.
+func run(dir string, start func()) (code int) {
 	dataDir = dir
 	defer func() {
 		if r := recover(); r != nil {
@@ -48,7 +52,7 @@ func Main(dir string) (code int) {
 	drv.Init()
 	calibrateDelay()
 	seedRandom()
-	gameState = 0
+	start()
 	for {
 		switch gameState {
 		case 8:
@@ -64,13 +68,13 @@ func Main(dir string) (code int) {
 		case 25:
 			ensureDiskFor(2, gameStateArg)
 			gameState = 5
-			wmazeMain()
+			wmazeOvmain()
 		case 5, 6, 23:
-			wmazeMain()
+			wmazeOvmain()
 		case 16:
 			wpcmkMain()
 		case 17, 22:
-			wpcvwMain()
+			wpcvwOvmain()
 		case 15, 21:
 			wtreaOvmain()
 		case 10, 11, 14:
@@ -87,23 +91,11 @@ func Main(dir string) (code int) {
 			shutdownGame(0)
 			return 0
 		default:
-			overlayMissing()
+			fmt.Fprintf(os.Stderr, "wiz6: no game_state %d\n", gameState)
+			exitGame(1)
 		}
 		stopSound()
 	}
-}
-
-// The overlays not ported yet.
-var (
-	wmazeMain = overlayMissing
-	wpcvwMain = overlayMissing
-)
-
-func overlayMissing() {
-	fmt.Fprintf(os.Stderr, "wiz6: game_state %d: overlay not ported yet\n", gameState)
-	for !keyAvailable(0) && !checkScreenClick() {
-	}
-	exitGame(0)
 }
 
 // openData reads a data file (make_data_path and open); fatal error code if it is missing.
