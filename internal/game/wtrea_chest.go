@@ -836,7 +836,7 @@ func handleChest(chest *TreasureRec) int {
 		printChestPrompt(5200, 2)
 		fillWindow(win, ' ', 3)
 		refreshAllWindows()
-		switch chestMenuSelect(win, 5201, options, 2, 1, 10, 3, 5, 0) {
+		switch menuSelectCancel(win, 5201, options, 2, 1, 10, 3, 5, 0, 0, trInput) {
 		case 0: // inspect
 			if m := trChooseMember(5223, 0); m != -1 {
 				if inspected[m] {

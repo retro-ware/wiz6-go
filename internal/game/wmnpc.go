@@ -722,8 +722,9 @@ func npcDrawMemberStatus(m, gold int) {
 	}
 }
 
-// npcMenuSelect (WMNPC 5e0c) is WTREA's chestMenuSelect starting on entry sel.
-func npcMenuSelect(win *Window, firstMsg int, enabled []int, x0, y0, width, rows, color, withCancel, sel int) int {
+// menuSelectCancel (WMAZE 5ad8 maze_menu_select, WMNPC 5e0c, WTREA 5169) is menuSelect where
+// withCancel 1 adds the message line's exit first (chosen: -1); input reads the menu.
+func menuSelectCancel(win *Window, firstMsg int, enabled []int, x0, y0, width, rows, color, withCancel, sel int, input func() int) int {
 	var exitX, exitY int
 	var exitHi, exitLo string
 	if withCancel == 1 {
@@ -772,7 +773,7 @@ func npcMenuSelect(win *Window, firstMsg int, enabled []int, x0, y0, width, rows
 				printString(win, labels[sel], -color)
 			}
 		}
-		key := npcMenuInput()
+		key := input()
 		if menuClicked == 1 {
 			sel = -1
 			if key < n {
@@ -1011,7 +1012,7 @@ func npcMainMenu() {
 		npcPrompt(title, 0)
 		m = -1
 		refreshAllWindows()
-		choice := npcMenuSelect(win, 1530, enabled, 1, 1, 6, 3, 5, 0, 0)
+		choice := menuSelectCancel(win, 1530, enabled, 1, 1, 6, 3, 5, 0, 0, npcMenuInput)
 		// pick asks for a member under msg; able is whether one was picked and can act.
 		pick := func(msg int) bool {
 			m = npcChooseMember(msg, true)

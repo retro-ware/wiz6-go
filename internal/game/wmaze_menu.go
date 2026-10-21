@@ -236,8 +236,8 @@ func diskOptionsMenu() {
 	mzG503c = 1
 	showMazeMessage(2200)
 	// The C's l36[3] and l36[6] are its locals l30 (0) and l24 (-1, the end).
-	enabled := []int16{1, 1, 1, 0, 1, 1, -1}
-	choice := mazeMenuSelect(win, 2201, enabled, 1, 1, 20, 3, 5, 0)
+	enabled := []int{1, 1, 1, 0, 1, 1, -1}
+	choice := menuSelectCancel(win, 2201, enabled, 1, 1, 20, 3, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:
@@ -268,11 +268,11 @@ func mazePartyMenu() {
 	printMessage(2002, mainWindow, 18)
 	mainWindow.CurX++
 	// The C's l36[9] is its local l18, -1, which ends the list.
-	enabled := []int16{1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
+	enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
 	if partyCount < 2 {
 		enabled[5] = 0 // the C's l26 is enabled[5]
 	}
-	choice := mazeMenuSelect(win, 2005, enabled, 1, 1, 7, 3, 5, 0)
+	choice := menuSelectCancel(win, 2005, enabled, 1, 1, 7, 3, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:

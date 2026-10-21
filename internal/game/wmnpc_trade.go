@@ -416,7 +416,7 @@ func npcSellItem(win *Window, m, slot int) int {
 	refreshWindow(win)
 	setCursor(win, 10-(len(s)+1)/2, 1)
 	printStringHi(win, s, 3)
-	if npcMenuSelect(win, 1526, []int{1, 1, -1}, 6, 3, 5, 1, 5, 0, 1) != 0 {
+	if menuSelectCancel(win, 1526, []int{1, 1, -1}, 6, 3, 5, 1, 5, 0, 1, npcMenuInput) != 0 {
 		return 0
 	}
 	removeItem(m, slot)
@@ -512,7 +512,7 @@ func npcTrade(m int) {
 		fillWindow(win, ' ', 3)
 		npcPrompt(title, 0)
 		refreshAllWindows()
-		choice = npcMenuSelect(win, 1520, enabled, 4, 1, 7, 2, 5, 0, countEnabledItems(enabled, choice))
+		choice = menuSelectCancel(win, 1520, enabled, 4, 1, 7, 2, 5, 0, countEnabledItems(enabled, choice), npcMenuInput)
 		switch choice {
 		case 0:
 			npcShop(m)

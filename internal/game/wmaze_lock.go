@@ -211,14 +211,14 @@ func puzzleEvent() {
 	refreshAllWindows()
 	answer = getMessage(msg)
 	msg++
-	enabled := make([]int16, choices+1)
+	enabled := make([]int, choices+1)
 	for i := range choices {
 		enabled[i] = 1
 	}
 	enabled[choices] = -1
 	if single == 1 {
 		t := getMessage(msg)
-		c := mazeMenuSelect(textWin, msg, enabled, 20-(len(t)+1)/2, 1, 20, 4, 5, 0)
+		c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)+1)/2, 1, 20, 4, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
 		if f := byteAt(answer, c<<1)*10 + byteAt(answer, c<<1+1) - 528; f > 0 && f < 80 {
 			setBit(levelFlags[gameStateArg][:], f, false)
 		}
@@ -228,7 +228,7 @@ func puzzleEvent() {
 			fillWindow(textWin, 32, 3)
 			refreshWindow(textWin)
 			t := getMessage(msg)
-			c := mazeMenuSelect(textWin, msg, enabled, 20-(len(t)*2+4)/2, 1, len(t)+3, (choices-1)/2+1, 5, 0)
+			c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)*2+4)/2, 1, len(t)+3, (choices-1)/2+1, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
 			if once == 1 && c >= 0 {
 				enabled[c] = 0
 			}
@@ -804,7 +804,7 @@ func lockedDoorMenu(ev int) {
 	for i := range lockTumblers {
 		lockTumblers[i] = int16(random(diff * 5))
 	}
-	enabled := []int16{1, 1, 1, -1} // the C's l20 (-1) ends the list
+	enabled := []int{1, 1, 1, -1} // the C's l20 (-1) ends the list
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
 	for {
@@ -816,7 +816,7 @@ func lockedDoorMenu(ev int) {
 		printMessage(2002, mainWindow, 18)
 		resumeWindowDraw(mainWindow)
 		refreshAllWindows()
-		choice := mazeMenuSelect(win, 2100, enabled, 1, 1, 7, 1, 5, 0)
+		choice := menuSelectCancel(win, 2100, enabled, 1, 1, 7, 1, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
 		switch choice {
 		case 0, 1:
 			game := forceLock
