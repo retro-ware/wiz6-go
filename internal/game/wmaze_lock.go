@@ -675,7 +675,7 @@ func forceLock(member, ev int) int {
 	strength := 0
 	for {
 		deferWindowDraw(win)
-		power := int(int32(pc.Stamina) * 100 / int32(pc.StaminaMax) * int32(pc.Stats[0]) / 100)
+		power := int(int16(int32(pc.Stamina) * 100 / int32(pc.StaminaMax) * int32(pc.Stats[0]) / 100)) // (int) cast
 		if power <= 0 || random(50) == 0 {
 			pc.Stamina--
 			if power <= 0 || pc.Stamina <= 0 {

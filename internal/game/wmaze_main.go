@@ -164,7 +164,7 @@ func loadMazeLevel(m int) {
 // draw_vital_bar_m (WMAZE 4ac7) draws a three-cell vertical gauge of cur/max at (x, y) of
 // win from glyph base on (font 1).
 func drawVitalBar(win *Window, x, y, cur, max, base int) {
-	n := int(int32(cur)*100/int32(max)/10) + 1
+	n := int(int16(int32(cur)*100/int32(max)/10) + 1) // (int) cast, then a 16-bit +1
 	if n > 10 {
 		n = 10
 	}
