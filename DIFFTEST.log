@@ -36,3 +36,5 @@
 [widths] 10:47 WMNPC charm/mood wraps committed
 [widths] 10:47 inflictStatus resist wrap committed; audit done
 2026-10-21 10:54:53 [maze] harness: scripted input (case 'keys': key_available/get_key; Go dtKeys), real message texts per spec (texts=True; Go dtTexts), char_index runs real, state now includes preset fields written back unchanged (emu tracks writes). force_lock, pick_lock, locked_door_menu, handle_locked_door match
+2026-10-21 10:55:36 [char] done: 46 functions x300, 1 port bug (extractBits), 2 harness bugs (sentinel in DS, memberPortrait width)
+2026-10-21 10:56:57 [maze] puzzle_event, riddle_event match (wait_key_animating unstubbed; string_index real)

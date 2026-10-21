@@ -179,9 +179,6 @@ func swapLevelFlags(a, b int, swap bool) {
 // puzzleEvent (WMAZE bc93): event 12, a multiple-choice puzzle; the right sequence of
 // answers swaps two level flags.
 func puzzleEvent() {
-	if dtLog != nil { // stubbed in the difftest (input)
-		return
-	}
 	ev := int(cellEventIndex)
 	if mazeB.Param[ev] != 0 {
 		showMessageText(int(mazeB.Data[ev])+int(mazeB.Param[ev]), 0)
@@ -283,9 +280,6 @@ func checkPartyItemEvent() {
 // riddleEvent (WMAZE c182): event 13, ask for a word; a message starting with '$' is
 // accepted anywhere in the reply, others must match it whole.
 func riddleEvent() {
-	if dtLog != nil { // stubbed in the difftest (input)
-		return
-	}
 	ev := int(cellEventIndex)
 	bits := int(mazeB.DirBits[ev])
 	if extractBits(bits, 11, 1) == 1 {

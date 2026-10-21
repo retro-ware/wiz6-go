@@ -71,9 +71,6 @@ func mzAnimate() {
 
 // wait_key_animating (WMAZE 9a66) animates the view until a key of class comes.
 func waitKeyAnimating(class int) int {
-	if dtLog != nil { // stubbed in the difftest
-		return 0
-	}
 	for !keyAvailable(class) {
 		mzAnimate()
 	}

@@ -22,6 +22,8 @@ var mazeFuncs = map[string]func(a []int) int{
 	"fced8": func(a []int) int { mzWins(); return forceLock(a[0], a[1]) },
 	"fd3b3": func(a []int) int { mzWins(); return pickLock(a[0], a[1]) },
 	"fd8a9": func(a []int) int { mzWins(); mzPrompts(); lockedDoorMenu(a[0]); return 0 },
+	"fbc93": func(a []int) int { mzWins(); mzPrompts(); puzzleEvent(); return 0 },
+	"fc182": func(a []int) int { mzWins(); mzPrompts(); riddleEvent(); return 0 },
 	"fccd2": func(a []int) int { mzWins(); searchCell(); return 0 },
 }
 
@@ -52,7 +54,7 @@ var mazeRoots = map[string]any{
 	"mzG503c": &mzG503c, "mzG503e": &mzG503e, "eventScreenDirty": &eventScreenDirty, "mzG5232": &mzG5232,
 	"returnCmd": &returnCmd, "g363e": &g363e, "reachableCells": &reachableCells, "eventCells": &eventCells,
 	"g4338": &g4338, "g433a": &g433a, "treasureID": &treasureID,
-	"lockTumblers": &lockTumblers, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,
+	"lockTumblers": &lockTumblers, "msgNotFound": &msgNotFound, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,
 }
 
 func init() {
