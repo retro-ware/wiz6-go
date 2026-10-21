@@ -172,7 +172,3 @@ var maze *dbs.MazeData
 
 // LoadMaze takes the MAZEDATA tiles (driver 0731, drv_load_from_file).
 func LoadMaze(m *dbs.MazeData) { maze = m }
-
-// MazeTile draws maze wall tile draw into the working buffer (driver 0b93, drv_op_c6).
-// TODO: not ported yet; WMAZE's view needs it.
-func MazeTile(draw int) { _ = maze }
