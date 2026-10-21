@@ -227,7 +227,7 @@ func spendSkillPoints(menu *Window, m int) {
 // (random(r) + stat/div - level/3, none past 50) and returns the rise.
 func raiseSkill(m, stat, div, r, k int) int {
 	p := &party[m]
-	v := random(r) + stat/div - int(p.Level)/3
+	v := int(int16(random(r) + stat/div - int(p.Level)/3)) // C int wraps
 	if v < 0 || p.Skills[k] > 50 {
 		v = 0
 	}
