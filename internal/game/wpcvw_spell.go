@@ -34,7 +34,7 @@ func refreshCard(w *Window, m int) {
 func castSpell(m, s, power, t int, sheet, menu *Window) {
 	c := &partyCounters
 	q := &party[t]
-	lower := func(v *uint8, by int) { *v = uint8(max(int(*v)-by, 0)) }
+	lower := func(v *uint8, by int) { *v = uint8(max(int(int16(int(*v)-by)), 0)) } // C int wraps
 	switch s {
 	case 53:
 		c[2].A += int16(power * 50)
@@ -59,19 +59,19 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 		lower(&q.Status[3], power*25)
 		refreshCard(pvCardWin, t)
 	case 26:
-		if int(q.PoisonStr)-power <= 0 {
+		if int16(int(q.PoisonStr)-power) <= 0 { // C int wraps
 			q.PoisonStr, q.Status[5] = 0, 0
 		} else {
 			q.PoisonStr -= uint8(power)
 		}
-		if int(q.Status[5])-power*5 <= 0 {
+		if int16(int(q.Status[5])-power*5) <= 0 { // C int wraps
 			q.Status[5], q.PoisonStr = 0, 0
 		} else {
 			q.Status[5] -= uint8(power * 5)
 		}
 		refreshCard(pvCardWin, t)
 	case 46:
-		if q.Condition == 2 && power*3 > 21-int(q.Stats[3]) {
+		if q.Condition == 2 && int(int16(power*3)) > 21-int(q.Stats[3]) { // C int wraps
 			q.Stats[3]--
 			if random(21) > int(q.Stats[3]) {
 				q.Condition, q.HP, q.Stamina = 3, 0, 0
@@ -92,7 +92,7 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 		q.HP = min(q.HP+int16(rollDice(formatDice(power, 7, power))), q.HPMax)
 		refreshCard(pvCardWin, t)
 	case 77:
-		if q.Condition == 3 && power*3 > 18-int(q.Stats[3]) {
+		if q.Condition == 3 && int(int16(power*3)) > 18-int(q.Stats[3]) { // C int wraps
 			q.Stats[3]--
 			q.Condition, q.HP, q.Stamina = 0, 1, q.StaminaMax/10
 			q.Unk026++
