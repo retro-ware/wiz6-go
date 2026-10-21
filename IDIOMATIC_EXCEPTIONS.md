@@ -42,5 +42,4 @@ Fields shown as `[n]` are arrays whose elements mean different things. Splitting
 - pic.go:144 `UnRLE` loop bound `rleChunkSize-1`: copies op_ae's quirk of reading control bytes only while the chunk index is below 0xfff.
 - pic.go:158 `-int(int8(c))`: an RLE run length is the control byte read as a negative int8.
 - scenario.go:90 `offset`: indexes a flat `remapTables` byte slice (DISK.HDR from MapIndex on), not the typed `DiskHeader` arrays. The original reads past the end of a table into the next one (treasure indexes 256+ land in MonsterIndex), and the parity goldens rely on it. Table starts are derived from the array lengths.
-- internal/game/difftest_test.go:46 `renamedFields` / :227 `renamePaths`: the gzipped goldens still name the fields by their old names (Unk1AB, Bits1322, ...). They are mapped to the new names when the goldens load, so the goldens did not have to be rewritten. This can be removed when the goldens are regenerated with the new names.
 - Scenario.Hdr stays raw `[]byte` (typed by the game through Decode[ScenarioHeader]). This is unchanged.
