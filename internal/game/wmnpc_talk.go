@@ -111,8 +111,10 @@ func npcTopicMsg(k int) int {
 // npcSingular (WMNPC bbfa) is topic k's word.
 func npcSingular(k int) string {
 	w := npcVocab[k]
-	if i := strings.IndexAny(w, "%@^"); i >= 0 {
-		return w[:i]
+	for _, c := range "%@^" { // the C looks for each marker in turn
+		if i := strings.IndexRune(w, c); i >= 0 {
+			return w[:i]
+		}
 	}
 	return w
 }
@@ -513,7 +515,7 @@ func npcAnswer() {
 			return
 		}
 		if none {
-			ask[1] = true
+			ask[1], tk.ask[1] = true, true
 		}
 		switch {
 		case ask[0]:
@@ -620,7 +622,7 @@ func npcInputWord(m, msg, once int) int {
 			if j < 0 {
 				j = len(choices) - i - 1
 			}
-			if w := choices[i+1 : i+1+j]; strings.Contains(line, w) {
+			if w := choices[i+1 : i+1+j]; line != "" && strings.Contains(line, w) {
 				return int(choices[i])
 			}
 			i += j + 2
