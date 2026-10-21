@@ -223,7 +223,7 @@ func drawMemberStatus(m int) {
 	if g == 0 && pc.Status[statusAsleep] > 0 {
 		g = 1
 	}
-	if g < 2 && pc.Status[3] > 0 {
+	if g < 2 && pc.Status[statusParalyzed] > 0 {
 		g = 2
 	}
 	setCursor(win, x+3, y+3)
@@ -613,11 +613,11 @@ func moveParty(turn int) {
 	}
 	switch curEvent[dir] {
 	case 0:
-		if wall < 2 {
+		if wall < wallSolid {
 			if tryMove(dir) != 0 {
 				return
 			}
-		} else if wall == 3 && dir == int(partyFacing) {
+		} else if wall == wallDoor && dir == int(partyFacing) {
 			playSound(4)
 			doorOpenFrame = 1
 			redrawMazeView()
@@ -635,13 +635,13 @@ func moveParty(turn int) {
 			bump()
 		}
 	case 1, 2:
-		if wall == 3 && dir == int(partyFacing) {
+		if wall == wallDoor && dir == int(partyFacing) {
 			showMessageHeld(2021, 2, messageDelay/2)
 		} else {
 			showMessageHeld(int(mzBumpMessage), 2, 2)
 		}
 	case 3:
-		if wall == 2 {
+		if wall == wallSolid {
 			tryMove(dir)
 		} else {
 			showMessageHeld(int(mzBumpMessage), 2, 2)

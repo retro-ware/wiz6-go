@@ -152,11 +152,11 @@ func openTreasure() {
 				lootImportant[i] = 1
 			}
 			switch rec.Type {
-			case 12:
+			case itemTypePotion:
 				kind = getMessage(5006)
-			case 13:
+			case itemTypeScroll:
 				kind = getMessage(5007)
-			case 16:
+			case itemTypePowder:
 				kind = getMessage(5008)
 			}
 		}

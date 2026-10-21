@@ -172,7 +172,7 @@ func restParty() bool {
 // it beeps if not.
 func isMemberAble(m int) bool {
 	pc := &party[m]
-	ok := pc.Condition == conditionOK && pc.Status[statusAsleep] == 0 && pc.Status[3] == 0
+	ok := pc.Condition == conditionOK && pc.Status[statusAsleep] == 0 && pc.Status[statusParalyzed] == 0
 	if !ok {
 		playSound(soundBeep)
 	}
@@ -390,7 +390,7 @@ func mazeMainLoop() {
 			if party[m].Condition == conditionOK {
 				well++
 			}
-			if party[m].Status[statusAsleep] > 0 || party[m].Status[3] > 0 {
+			if party[m].Status[statusAsleep] > 0 || party[m].Status[statusParalyzed] > 0 {
 				asleep++
 			}
 		}

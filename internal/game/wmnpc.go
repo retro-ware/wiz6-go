@@ -1571,11 +1571,11 @@ func npcRunScript(m, n int) int {
 			if random(100) < arg && npcRunScript(m, param) == 1 {
 				return 1
 			}
-		case npcOpRaiseStatus7: // the well members gain status 7
+		case npcOpRaiseStatus7: // the well members gain status 7 (statusInsane)
 			for i := 0; i < partyCount; i++ {
 				if party[i].Condition == conditionOK {
 					npcNotice(replaceCharWithString(getMessage(1548), memberName(i), '^'), true)
-					party[i].Status[7]++
+					party[i].Status[statusInsane]++
 					npcDrawMemberStatus(i, npcShowGold)
 				}
 			}
@@ -1775,7 +1775,7 @@ func npcGiveItemToMember(member, id, qty int) int {
 	it.Weight = rec.Weight
 	it.Qty += uint8(qty)
 	it.Flags = 0
-	for _, f := range [][2]uint8{{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}} {
+	for _, f := range [][2]uint8{{recItemOffHand, itemOffHand}, {recItemTwoHanded, itemTwoHanded}, {16, 16}, {32, 32}, {itemImportant, itemKept}} {
 		if rec.Flags&f[0] != 0 {
 			it.Flags |= f[1]
 		}

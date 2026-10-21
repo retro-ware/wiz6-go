@@ -41,7 +41,7 @@ func TestWdoptScreens(t *testing.T) {
 				}
 			}
 			wdoptOvmain()
-			if gameState != 5 {
+			if gameState != stateExplore {
 				t.Errorf("game_state %d after WDOPT", gameState)
 			}
 		}
@@ -52,7 +52,7 @@ func TestWdoptScreens(t *testing.T) {
 	<-ready
 	tap := func(code byte) {
 		host.PushKey(code)
-		host.PushKey(code | 0x80)
+		host.PushKey(code | host.KeyBreakBit)
 		time.Sleep(400 * time.Millisecond)
 	}
 	shot := func(name string) {

@@ -621,19 +621,19 @@ func showItemInfo(menu *Window, m, i, power int) {
 	)
 	masks = true
 	switch rec.Type {
-	case 0, 1, 2, 3:
+	case itemTypeWeaponS, itemTypeWeaponE, itemTypeWeaponT, itemTypeLauncher:
 		primary, hands, skill, attackFlags, damage, specials, regen = true, true, true, true, true, true, true
 	case itemTypeMissile:
 		secondary, damage, specials = true, true, true
 	case itemTypeMisc:
 		acLine, acColor, resists, regen = true, 3, true, true
-	case 6, 7, 8, 9, 10:
+	case itemTypeHelmet, itemTypeBodyArmor, itemTypeLegArmor, itemTypeGauntlets, itemTypeBoots:
 		acLine, typeName, resists, regen = true, true, true, true
 	case itemTypeShield:
 		acLine, resists, regen = true, true, true
-	case 12, 16:
+	case itemTypePotion, itemTypePowder:
 		masks, primary, spell, attackFlags = false, true, true, true
-	case 13:
+	case itemTypeScroll:
 		masks, secondary, spell = false, true, true
 	case 14, 15:
 		secondary, attackFlags, regen = true, true, true

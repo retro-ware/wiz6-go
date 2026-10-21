@@ -58,21 +58,21 @@ func TestWpopsScreens(t *testing.T) {
 		combatActionWin = createWindow(0, 19, 19, 5, 8, -1, 0, false)
 		monsterListWin = createWindow(20, 19, 20, 5, 8, -1, 0, false)
 		close(ready)
-		gameState = 12
+		gameState = stateStartCombatRound
 		wpopsOvmain()
-		if gameState != 13 {
+		if gameState != stateRunCombatRound {
 			t.Errorf("game_state %d after WPOPS", gameState)
 		}
 		for m := 0; m < partyCount; m++ {
 			c := monsterGroups[0].Members[m]
-			t.Logf("member %d: action %d choice %d target %d/%d", m, c.Plan[6], c.Choice, c.TargetGroup, c.TargetMember)
+			t.Logf("member %d: action %d choice %d target %d/%d", m, c.Plan[planAction], c.Choice, c.TargetGroup, c.TargetMember)
 		}
-		t.Logf("monster 0: action %d choice %d target %d/%d", g.Members[0].Plan[6], g.Members[0].Choice, g.Members[0].TargetGroup, g.Members[0].TargetMember)
+		t.Logf("monster 0: action %d choice %d target %d/%d", g.Members[0].Plan[planAction], g.Members[0].Choice, g.Members[0].TargetGroup, g.Members[0].TargetMember)
 	}()
 	<-ready
 	tap := func(code byte) {
 		host.PushKey(code)
-		host.PushKey(code | 0x80)
+		host.PushKey(code | host.KeyBreakBit)
 		time.Sleep(400 * time.Millisecond)
 	}
 	shot := func(name string) {

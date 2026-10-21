@@ -546,25 +546,25 @@ func doAttack(c *Combatant, slot, kind int) {
 		p := &party[actMember]
 		skill := skillUnarmed
 		if kind == 4 {
-			skill = 5
+			skill = skillThrowing
 		} else if e := p.Equipped[slot]; e != noEquippedItem {
 			switch p.Items[e].Icon {
 			case 1, 14, 15, 16, 51, 53, 55, 58, 59:
-				skill = 1
+				skill = skillSword
 			case 2, 3, 20:
-				skill = 2
+				skill = skillAxe
 			case 4, 5, 6, 52, 54, 56, 98:
-				skill = 3
+				skill = skillMaceFlail
 			case 7, 8, 9, 10, 17, 19, 57, 90:
-				skill = 4
+				skill = skillPoleStaff
 			case 11, 12:
-				skill = 7
+				skill = skillBows
 			case 13:
-				skill = 6
+				skill = skillSling
 			case 24, 38:
 				skill = skillShield
 			default:
-				skill = 0
+				skill = skillWandDagger
 			}
 		}
 		if skill != skillUnarmed || p.Skills[skillUnarmed] > 0 || p.Class == classMonk || p.Class == classNinja {
@@ -581,7 +581,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		fx = handFx(&p.Hands[slot])
 		item := int(p.Equipped[slot])
 		if kind == 8 {
-			if sh := int(p.Equipped[1]); sh != noEquippedItem && p.Items[sh].Type == 4 {
+			if sh := int(p.Equipped[1]); sh != noEquippedItem && p.Items[sh].Type == itemTypeMissile {
 				dice = p.Hands[1].Damage
 				fx = handFx(&p.Hands[1])
 				toHit += int(p.Hands[1].ToHit)
@@ -589,7 +589,7 @@ func doAttack(c *Combatant, slot, kind int) {
 				useActorItemCharge(sh)
 			}
 		} else if kind == 4 && item != noEquippedItem {
-			if ty := p.Items[item].Type; ty == 14 || ty < 12 && ty != 2 {
+			if ty := p.Items[item].Type; ty == 14 || ty < 12 && ty != itemTypeWeaponT {
 				p.Items[item].Qty = 1
 			}
 			bonus = 0
@@ -629,18 +629,18 @@ func doAttack(c *Combatant, slot, kind int) {
 		ac = max(ac, 10)
 		mult = 2
 	}
-	if c.Status[4] > 0 {
+	if c.Status[statusBlinded] > 0 {
 		toHit = max(toHit, 90)
 		ac = min(ac, 0)
 	}
-	if c.Status[8] > 0 || c.Status[1] > 0 || c.Status[9] > 0 {
+	if c.Status[statusNauseated] > 0 || c.Status[statusAfraid] > 0 || c.Status[9] > 0 {
 		toHit += 25
 	}
-	if t.Status[4] > 0 || t.Status[statusAsleep] > 0 || t.Status[3] > 0 || t.Condition == conditionDown {
+	if t.Status[statusBlinded] > 0 || t.Status[statusAsleep] > 0 || t.Status[statusParalyzed] > 0 || t.Condition == conditionDown {
 		ac = 15
 		mult = 2
 	}
-	if t.Status[8] > 0 || t.Status[1] > 0 {
+	if t.Status[statusNauseated] > 0 || t.Status[statusAfraid] > 0 {
 		ac += 4
 	}
 	strength := 0
@@ -686,7 +686,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		ac = max(ac, 10)
 		mult = 2
 	}
-	if t.Status[4] == 0 && t.Status[statusAsleep] == 0 && t.Status[3] == 0 && t.Condition == conditionOK {
+	if t.Status[statusBlinded] == 0 && t.Status[statusAsleep] == 0 && t.Status[statusParalyzed] == 0 && t.Condition == conditionOK {
 		if t.Plan[planAction] == actionDefend {
 			switch t.Choice {
 			case 0:
@@ -713,7 +713,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			case defendRest:
 				ac = 15
 			}
-		} else if tg == 0 && party[ti].Equipped[1] != noEquippedItem && party[ti].Items[party[ti].Equipped[1]].Type == 11 {
+		} else if tg == 0 && party[ti].Equipped[1] != noEquippedItem && party[ti].Items[party[ti].Equipped[1]].Type == itemTypeShield {
 			mexeRaiseSkill(ti, skillShield, 0)
 		}
 	}
@@ -788,7 +788,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			printCombatLine(mexeName, mexeVerb, mexeText, 4, 5, 5)
 			t.HP -= int16(dmg)
 			t.Status[statusAsleep] = 0
-			t.Status[3] = uint8(min(max(int(t.Status[3])-(random(3)+2), 0), 255))
+			t.Status[statusParalyzed] = uint8(min(max(int(t.Status[statusParalyzed])-(random(3)+2), 0), 255))
 			if t.HP <= 0 {
 				combatDelay(int(delaySetting) / 4)
 				damageEffect(tg, ti, 3486, 0, conditionDead, 0, 0)
@@ -830,9 +830,9 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 		case handSleep:
 			statusEffect(g, i, 3474, 9, statusAsleep, mod, pow, 2, pow, 0)
 		case handParalyze:
-			statusEffect(g, i, 3475, 4, 3, mod, pow*pow*2, 5, pow, 0)
+			statusEffect(g, i, 3475, 4, statusParalyzed, mod, pow*pow*2, 5, pow, 0)
 		case handPoison:
-			statusEffect(g, i, 3477, 6, statusPoisoned, mod, pow*10, 2, int(fx[hitPoisonStr]), 0)
+			statusEffect(g, i, 3477, resistPoison, statusPoisoned, mod, pow*10, 2, int(fx[hitPoisonStr]), 0)
 		case handStone:
 			damageEffect(g, i, 3485, 11, conditionDown, mod, 0)
 		case handDrain:

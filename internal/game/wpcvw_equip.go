@@ -14,7 +14,7 @@ func canEquipItem(m, pos int, out *[10]int) int {
 		it := &p.Items[i]
 		slot := -1
 		switch it.Type {
-		case 0, 1, 2, 3, 12, 16:
+		case itemTypeWeaponS, itemTypeWeaponE, itemTypeWeaponT, itemTypeLauncher, itemTypePotion, itemTypePowder:
 			if pos == equipPrimary {
 				slot = equipPrimary
 			} else if pos == equipSecondary && it.Flags&itemOffHand != 0 {
@@ -22,9 +22,9 @@ func canEquipItem(m, pos int, out *[10]int) int {
 			}
 		case itemTypeMissile, itemTypeShield:
 			slot = equipSecondary
-		case itemTypeMisc, 6, 7, 8, 9, 10:
+		case itemTypeMisc, itemTypeHelmet, itemTypeBodyArmor, itemTypeLegArmor, itemTypeGauntlets, itemTypeBoots:
 			slot = int(it.Type) - itemTypeMisc + equipMisc
-		case 13, 14, 15:
+		case itemTypeScroll, 14, 15:
 			if it.Flags&itemOffHand != 0 {
 				slot = equipSecondary
 			}

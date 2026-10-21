@@ -98,17 +98,35 @@ const (
 	animFrameSteps = 10 // idle steps between animation frames (mzAnimCounter)
 )
 
+// Cell codes: mazeA.Floor's 4-bit floor features and the 2-bit wall codes.
+const (
+	floorNone = 0
+	floorDoor = 7 // a closed door, facing its Feature direction
+	wallOpen  = 0
+	wallSolid = 2
+	wallDoor  = 3 // opens with the door animation
+)
+
 // PC fields as WMAZE, WMELE and WMEXE read them.
 const (
-	conditionOK       = 0
-	conditionDown     = 2 // and worse: cannot act
-	conditionStoned   = 2 // cured by spell 46 (CURE STONE)
-	conditionDead     = 3 // and worse
-	statusAsleep      = 2
-	statusParalyzed   = 3 // cured by spell 15 (CURE PARALYSIS)
-	statusPoisoned    = 5 // with PoisonStr
-	statusInsane      = 7 // cured by spell 57 (SANE MIND)
-	statusForever     = 255
+	conditionOK     = 0
+	conditionDown   = 2 // and worse: cannot act
+	conditionStoned = 2 // cured by spell 46 (CURE STONE)
+	conditionDead   = 3 // and worse
+	statusSilenced  = 0
+	statusAfraid    = 1
+	statusAsleep    = 2
+	statusParalyzed = 3 // cured by spell 15 (CURE PARALYSIS)
+	statusPoisoned  = 5 // with PoisonStr
+	statusBlinded   = 4
+	statusInsane    = 7 // cured by spell 57 (SANE MIND)
+	statusNauseated = 8
+	statusForever   = 255
+	// Resist indexes (PC/Combatant.Resist, the r argument of hitDamage/hitEffect).
+	resistFire        = 1
+	resistCold        = 3
+	resistPoison      = 6
+	resistMental      = 10
 	statStrength      = 0
 	statIntelligence  = 1
 	statPiety         = 2
@@ -118,17 +136,25 @@ const (
 	statPersonality   = 6
 	statKarma         = 7
 	statCount         = 8
+	skillWandDagger   = 0
 	skillSword        = 1
+	skillAxe          = 2
+	skillMaceFlail    = 3
 	skillPoleStaff    = 4
+	skillThrowing     = 5
+	skillSling        = 6
 	skillBows         = 7
 	skillNoticeSecret = 11 // check_secret_detect's skill
 	skillPickLock     = 15
 	skillShield       = 8  // trained by blocking and shield bashes
 	skillUnarmed      = 9  // the skill of an empty hand
 	skillInstrument   = 12 // a bard's skill with an item's spell
+	skillOratory      = 13 // sets the cast chance
 	skillHide         = 16
 	skillPilfer       = 14 // npcPilfer's skill
+	skillArtifacts    = 22 // invoking an item's spell
 	skillSpotMonsters = 23 // identifies monster groups
+	skillScribe       = 24 // reading a scroll
 	skillAlchemy      = 25
 	skillTheology     = 26
 	skillTheosophy    = 27

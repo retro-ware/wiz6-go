@@ -725,7 +725,7 @@ func choosePartyActions(win *Window) {
 					if choice == -1 {
 						for i := range 8 {
 							attacks[i] = b2i(testBit([]byte{p.Hands[0].Flags}, i))
-							if i != 4 && member >= 3 && weapon != noEquippedItem && p.Items[weapon].Type == 2 {
+							if i != 4 && member >= 3 && weapon != noEquippedItem && p.Items[weapon].Type == itemTypeWeaponT {
 								attacks[i] = 0
 							}
 							if attacks[i] == 1 {
@@ -818,7 +818,7 @@ func choosePartyActions(win *Window) {
 						c.SecondAttack = int16(pickRandomSetBit(p.Hands[0].Flags))
 					} else if ammo != noEquippedItem {
 						switch t := p.Items[ammo].Type; {
-						case t == 2 || t == 12 || t == 16:
+						case t == itemTypeWeaponT || t == itemTypePotion || t == itemTypePowder:
 							c.SecondAttack = 4
 						case t < 2 && (p.Hands[1].Range == 1 || member < 3 && target < 3):
 							var b int
@@ -863,7 +863,7 @@ func choosePartyActions(win *Window) {
 	}
 	for m := 0; m < partyCount; m++ {
 		c := &monsterGroups[0].Members[m]
-		if c.Status[1] > 0 && random(100) > int(party[m].Stats[statPersonality])+80 {
+		if c.Status[statusAfraid] > 0 && random(100) > int(party[m].Stats[statPersonality])+80 {
 			c.Plan[planAction] = actionRun
 		}
 		if c.Plan[planAction] == actionDefend || c.Plan[planAction] == actionMove {

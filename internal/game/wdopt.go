@@ -388,7 +388,7 @@ func wdoptMapCell(x, y, col, row int) {
 	case 3:
 		g = dpGlN3
 	}
-	if floor == 7 && feat == 0 {
+	if floor == floorDoor && feat == 0 {
 		g = dpGlNDoor
 	}
 	if g != -1 {
@@ -403,7 +403,7 @@ func wdoptMapCell(x, y, col, row int) {
 	case 3:
 		g = dpGlW3
 	}
-	if floor == 7 && feat == 3 {
+	if floor == floorDoor && feat == 3 {
 		g = dpGlWDoor
 	}
 	if g != -1 {

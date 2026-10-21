@@ -259,10 +259,10 @@ func drawStatsPanel(w *Window, m int) {
 	if p.Status[9] > 0 {
 		putCharHi(w, byte(statusGlyph[9]+47), 1)
 	}
-	if p.Status[4] > 0 {
+	if p.Status[statusBlinded] > 0 {
 		putCharHi(w, byte(statusGlyph[4]+47), 1)
 	}
-	if p.Status[statusPoisoned] > 0 || p.Status[6] > 0 || p.Status[8] > 0 {
+	if p.Status[statusPoisoned] > 0 || p.Status[6] > 0 || p.Status[statusNauseated] > 0 {
 		putCharHi(w, byte(statusGlyph[statusPoisoned]+47), 1)
 	}
 	if w.CurX == x {

@@ -418,13 +418,13 @@ func runCombatRound() {
 				switch k {
 				case 0:
 					groupEffectMsg(3220, 4)
-					hitDamage(actGroup, -10, 2, 4, power, 1, chance)
+					hitDamage(actGroup, -10, 2, 4, power, resistFire, chance)
 				case 1:
 					groupEffectMsg(3221, 3)
-					hitDamageThen(actGroup, -10, 3477, 6, power, chance, 1, 4, 5, false, power*10, 2, power, 0, 0)
+					hitDamageThen(actGroup, -10, 3477, resistPoison, power, chance, 1, 4, statusPoisoned, false, power*10, 2, power, 0, 0)
 				case 2:
 					groupEffectMsg(3222, 6)
-					hitDamageThen(actGroup, -10, 3480, 5, power, chance, 2, 3, 8, false, power, 4, power, 0, 0)
+					hitDamageThen(actGroup, -10, 3480, 5, power, chance, 2, 3, statusNauseated, false, power, 4, power, 0, 0)
 				case 3:
 					groupEffectMsg(3223, 6)
 					hitDamage(actGroup, -10, 1, 6, power, 8, chance)
@@ -602,15 +602,15 @@ func performAction() {
 	mexeSpellSound = 6
 	mexeBackfire, mexeFizzle = 0, 0
 	c := actor()
-	if uint8(c.Condition) >= conditionDown || c.Status[3] > 0 || c.Status[statusAsleep] > 0 {
+	if uint8(c.Condition) >= conditionDown || c.Status[statusParalyzed] > 0 || c.Status[statusAsleep] > 0 {
 		return
 	}
 	clearWindow(partyPictureWin, true)
 	msg, turned, leave := 0, false, 0
-	if c.Status[1] > 0 && random(100) > 80 && c.Plan[planAction] != actionRun {
+	if c.Status[statusAfraid] > 0 && random(100) > 80 && c.Plan[planAction] != actionRun {
 		msg = 3209
 	}
-	if msg == 0 && c.Status[7] > 0 && random(100) > 40 {
+	if msg == 0 && c.Status[statusInsane] > 0 && random(100) > 40 {
 		msg = random(3) + 3205
 		if random(100) > 80 {
 			msg, turned = 3208, true
@@ -622,10 +622,10 @@ func performAction() {
 			turned = true
 		}
 	}
-	if msg == 0 && c.Status[4] > 0 && random(100) > 80 {
+	if msg == 0 && c.Status[statusBlinded] > 0 && random(100) > 80 {
 		msg, turned = 3204, false
 	}
-	if msg == 0 && c.Status[8] > 0 && random(100) > 75 {
+	if msg == 0 && c.Status[statusNauseated] > 0 && random(100) > 75 {
 		msg, turned = 3203, false
 	}
 	if groupMonsterRec[actGroup].Flags&4 != 0 && targetOf(c) != nil && targetOf(c).Status[6] > 0 {

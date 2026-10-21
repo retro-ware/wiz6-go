@@ -374,12 +374,12 @@ func drawFrontCell(row, wall, col, clipL, clipR int, t ...int) {
 	}
 	if row < 3 {
 		rp := viewRowParity != 0
-		if wall == 2 || wall >= 7 {
+		if wall == wallSolid || wall >= 7 {
 			pairTile(rp, p(2), p(3), 1)
 		}
 		switch wall {
 		case 1, 3, 4:
-			if wall == 3 {
+			if wall == wallDoor {
 				if col == 1 {
 					if row == 0 && doorOpenFrame > 0 {
 						addViewObject(2, 0, 0, uint8(doorOpenFrame+15), clipL, clipR, uint8(row))
@@ -466,7 +466,7 @@ func drawSideWall(row, wall, f1, f2 int, t ...int) {
 	switch wall {
 	case 1, 3, 4:
 		pairTile(fl, p(2), p(3), 1)
-		if wall == 3 {
+		if wall == wallDoor {
 			drvMazeTile(p(4), flag, -1)
 		} else if wall == 4 {
 			drvMazeTile(p(5), flag, -1)

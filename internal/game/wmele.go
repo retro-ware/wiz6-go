@@ -440,7 +440,7 @@ func advanceMonsterGroups() {
 		p := 0
 		for i := 0; int(grp.Count) > i; i++ {
 			c := &grp.Members[i]
-			if c.Condition != conditionOK || c.Status[statusAsleep] != 0 || c.Status[3] != 0 {
+			if c.Condition != conditionOK || c.Status[statusAsleep] != 0 || c.Status[statusParalyzed] != 0 {
 				continue
 			}
 			hurt := 0

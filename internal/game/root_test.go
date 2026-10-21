@@ -1,6 +1,10 @@
 package game
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/retro-ware/wiz6-go/internal/drv"
+)
 
 func TestBits(t *testing.T) {
 	a := make([]byte, 8)
@@ -33,11 +37,11 @@ func TestWindowsOwnCells(t *testing.T) {
 	windows, cellOwner = nil, [len(cellOwner)]uint8{}
 	low := createWindow(0, 0, 10, 5, 1, -1, 0, false)
 	high := createWindow(2, 2, 4, 2, 9, -1, 0, false)
-	if cellOwner[2*40+3]&0x3f != windowID(high) || cellOwner[0]&0x3f != windowID(low) {
+	if cellOwner[2*drv.Cols+3]&cellIDMask != windowID(high) || cellOwner[0]&cellIDMask != windowID(low) {
 		t.Fatal("ownership after link")
 	}
 	destroyWindow(high, false)
-	if cellOwner[2*40+3]&0x3f != windowID(low) {
+	if cellOwner[2*drv.Cols+3]&cellIDMask != windowID(low) {
 		t.Fatal("cells not handed back")
 	}
 }

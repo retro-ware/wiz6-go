@@ -43,8 +43,8 @@ func TestMessagesAndScenario(t *testing.T) {
 	if s.RecordSize(0) != 0x40 {
 		t.Errorf("size 0 = %d", s.RecordSize(0))
 	}
-	r, err := s.Record(9, 0) // sound 0: martydill reports phase 0x7e, level 0x49
-	if err != nil || len(r) != s.RecordSize(9) {
+	r, err := s.Record(RecSound, 0) // sound 0: martydill reports phase 0x7e, level 0x49
+	if err != nil || len(r) != s.RecordSize(RecSound) {
 		t.Fatal(err, len(r))
 	}
 	if r[8] != 0x7e || r[10] != 0x49 {

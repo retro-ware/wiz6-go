@@ -444,7 +444,7 @@ func checkSecretDetect() {
 		}
 		tried[m] = true
 		p := &party[m]
-		if p.Condition != conditionOK || p.Status[statusAsleep] != 0 || p.Status[3] != 0 {
+		if p.Condition != conditionOK || p.Status[statusAsleep] != 0 || p.Status[statusParalyzed] != 0 {
 			continue
 		}
 		if random(gameStateArg*10+110) < int(p.Skills[skillNoticeSecret]) {
@@ -727,7 +727,7 @@ func npcEvent() {
 	cellEventIndex++
 }
 
-// set_door_feature (WMAZE b2c6) closes (feature 7 with facing dir) or opens the door of
+// set_door_feature (WMAZE b2c6) closes (floorDoor with facing dir) or opens the door of
 // map cell (x, y); force overrides what is there.
 func setDoorFeature(x, y, dir, closed, force int) {
 	var cx, cy, blk int16
@@ -736,16 +736,16 @@ func setDoorFeature(x, y, dir, closed, force int) {
 	}
 	cell := int(blk)<<6 + int(cy)<<3 + int(cx)
 	if closed == 0 {
-		if force == 1 || getBitfield(mazeA.Floor[:], cell, 4) == 7 {
-			setBitfield(mazeA.Floor[:], cell, 4, 0)
+		if force == 1 || getBitfield(mazeA.Floor[:], cell, 4) == floorDoor {
+			setBitfield(mazeA.Floor[:], cell, 4, floorNone)
 			setBitfield(mazeA.Feature[:], cell, 2, 0)
 		}
 		return
 	}
-	if force != 1 && getBitfield(mazeA.Floor[:], cell, 4) != 0 {
+	if force != 1 && getBitfield(mazeA.Floor[:], cell, 4) != floorNone {
 		return
 	}
-	setBitfield(mazeA.Floor[:], cell, 4, 7)
+	setBitfield(mazeA.Floor[:], cell, 4, floorDoor)
 	setBitfield(mazeA.Feature[:], cell, 2, dir)
 }
 

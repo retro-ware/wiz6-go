@@ -85,7 +85,7 @@ func springTrap(trap, member int) {
 			case 0:
 				trTrapDamageMember(i, lvl+1, 8)
 			case 1:
-				trInflictStatus(i, 5254, 2, 4, 10, 10, 50)
+				trInflictStatus(i, 5254, 2, statusBlinded, 10, 10, 50)
 			case 2:
 				trInflictStatus(i, 5252, 9, statusAsleep, 10, 10, 50)
 			case 3:
@@ -139,7 +139,7 @@ func springTrap(trap, member int) {
 		showTrapEffect(0, 3)
 		for i := 0; i < partyCount; i++ {
 			trTrapDamageMember(i, lvl+1, 8)
-			trInflictStatus(i, 5275, 5, 8, 10, 10, 50)
+			trInflictStatus(i, 5275, 5, statusNauseated, 10, 10, 50)
 		}
 	case 14:
 		showTrapEffect(0, 0)

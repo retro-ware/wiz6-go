@@ -586,10 +586,10 @@ func drawMemberPanel(i int) {
 		}
 	}
 	state := conditionGlyph[p.Condition]
-	if state == 0 && p.Status[2] > 0 {
+	if state == 0 && p.Status[statusAsleep] > 0 {
 		state = 1
 	}
-	if state < 2 && p.Status[3] > 0 {
+	if state < 2 && p.Status[statusParalyzed] > 0 {
 		state = 2
 	}
 	setCursor(win, x+3, y+3)

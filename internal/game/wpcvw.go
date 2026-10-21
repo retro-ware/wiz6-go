@@ -73,10 +73,21 @@ const (
 	recItemOffHand   = 8
 
 	// Item types (ItemRec.Type, messages 1550+) that are tested one by one.
-	itemTypeLauncher = 3 // WEAPON (L): bows and slings
-	itemTypeMissile  = 4 // goes with its launcher
-	itemTypeMisc     = 5 // the first of the armour types, misc. item .. boots
-	itemTypeShield   = 11
+	itemTypeWeaponS   = 0 // WEAPON (S)
+	itemTypeWeaponE   = 1 // WEAPON (E)
+	itemTypeWeaponT   = 2 // WEAPON (T): thrown, stackable
+	itemTypeLauncher  = 3 // WEAPON (L): bows and slings
+	itemTypeMissile   = 4 // goes with its launcher
+	itemTypeMisc      = 5 // the first of the armour types, misc. item .. boots
+	itemTypeHelmet    = 6
+	itemTypeBodyArmor = 7
+	itemTypeLegArmor  = 8
+	itemTypeGauntlets = 9
+	itemTypeBoots     = 10
+	itemTypeShield    = 11
+	itemTypePotion    = 12
+	itemTypeScroll    = 13
+	itemTypePowder    = 16
 
 	// Hand.Flags attack kinds (bit b is message 3050+b) and the Hand.HitEffects
 	// powers (message 470+i; MonsterAttack.HitEffects too, [8] its poison strength).

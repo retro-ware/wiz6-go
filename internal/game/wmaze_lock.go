@@ -266,7 +266,7 @@ func checkPartyItemEvent() {
 	for m := 0; m < partyCount; m++ {
 		pc := &party[m]
 		for i := 0; i < int(pc.ItemCount); i++ {
-			if pc.Items[i].ID == id && pc.Items[i].Flags&1 != 0 {
+			if pc.Items[i].ID == id && pc.Items[i].Flags&itemEquipped != 0 {
 				missing = false
 			}
 		}
@@ -399,7 +399,7 @@ func applyMemberEffects() {
 					pc.PoisonStr = 0
 					pc.Status[statusPoisoned] = 0
 				case 4:
-					pc.Status[3] = 0
+					pc.Status[statusParalyzed] = 0
 				case 5:
 					if pc.Condition == 2 {
 						pc.Condition = conditionOK
@@ -434,8 +434,8 @@ func applyMemberEffects() {
 						pc.Status[statusPoisoned] = uint8(roll)
 					}
 				case 12:
-					if int(pc.Status[3]) < roll {
-						pc.Status[3] = uint8(roll)
+					if int(pc.Status[statusParalyzed]) < roll {
+						pc.Status[statusParalyzed] = uint8(roll)
 					}
 				case 13:
 					if pc.Condition < 2 {
