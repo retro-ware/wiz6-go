@@ -452,7 +452,7 @@ func actorLine(verb, text, color, silenced int) bool {
 
 // reduceStamina (reduce_field6, WMEXE 7254) takes n stamina from c.
 func reduceStamina(c *Combatant, n int) {
-	c.Stamina = int16(max(int(c.Stamina)-n, 0))
+	c.Stamina = max(int16(int(c.Stamina)-n), 0) // C int wraps
 }
 
 // clamp_toward_x (WMEXE 8861) is WPCVW's clampToward.

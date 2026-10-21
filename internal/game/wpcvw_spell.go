@@ -19,7 +19,7 @@ func clampToward(n, v, mode int) int {
 			v = n
 		}
 	}
-	return v
+	return int(int16(v)) // C int wraps
 }
 
 // refreshCard (WPCVW 6ac3) shows member m's changed card for a moment.

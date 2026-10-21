@@ -46,7 +46,7 @@ func loadSoundBank(n int) { loadSound(n) }
 // times difficulty, the likelier.
 func trySkillGain(m, skill, difficulty int) {
 	p := &party[m]
-	if p.Skills[skill] < 100 && random(int(p.Skills[skill]))-int(p.Level)*difficulty <= 0 {
+	if p.Skills[skill] < 100 && random(int(p.Skills[skill]))-int(int16(int(p.Level)*difficulty)) <= 0 { // the product wraps; the compare does not (sub; jg)
 		p.Skills[skill]++
 	}
 }

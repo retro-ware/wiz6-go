@@ -31,6 +31,13 @@ type diffCase struct {
 // diffFuncs runs the Go port of each tested original function.
 var diffFuncs = map[string]func(a []int) int{
 	"f7ddc": func(a []int) int { return damageRoll(a[0], a[1], a[2], a[3], a[4], a[5], a[6]) },
+	"f4572": func(a []int) int { return fatigueMod(a[0], a[1], a[2]) },
+	"f77d4": func(a []int) int { mexeRaiseSkill(a[0], a[1], a[2]); return 0 },
+	"f7254": func(a []int) int { reduceStamina(fighter(a[0], a[1]), a[2]); return 0 },
+	"f8861": func(a []int) int { return clampToward(a[0], a[1], a[2]) },
+	"fc4e7": func(a []int) int { return nextLivingMember(a[0]) },
+	"fc546": func(a []int) int { return nextTargetMonster(a[0], a[1]) },
+	"f7816": func(a []int) int { return spellPower(a[0], a[1]) },
 	"f7af7": func(a []int) int { return resistReduce(a[0], a[1], a[2], a[3]) },
 	"f7b59": func(a []int) int { damageEffect(a[0], a[1], a[2], a[3], a[4], a[5], a[9]); return 0 },
 	"f7c5a": func(a []int) int { statusEffect(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[10]); return 0 },
