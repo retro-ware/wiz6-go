@@ -363,7 +363,7 @@ func waitKeyAnimated(class int) int {
 	return getKey(class) & 0xff
 }
 
-// inputText (WBASE 7418, WPCMK 4654) reads a line of up to maxlen characters at win's
+// inputText (WBASE 7418, WPCMK 4654, WPCVW 9459) reads a line of up to maxlen characters at win's
 // cursor: mode 0 takes printable characters, mode 1 digits.
 func inputText(win *Window, maxlen, color, mode int) string {
 	return readLine(win, maxlen, color, mode, func() int { return getKey(1) & 0xff }, nil)
@@ -379,6 +379,8 @@ func inputTextAnimated(win *Window, maxlen, color, mode int) string {
 	})
 }
 
+// readLine is the input loop of inputText: next reads a key, typed (if any) is told the
+// length after each character.
 func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(int)) string {
 	x, y := int(win.CurX), int(win.CurY)
 	var buf []byte

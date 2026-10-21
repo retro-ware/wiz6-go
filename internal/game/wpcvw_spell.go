@@ -22,8 +22,8 @@ func clampToward(n, v, mode int) int {
 	return v
 }
 
-// wpcvwRefreshCard (WPCVW 6ac3) shows member m's changed card for a moment.
-func wpcvwRefreshCard(w *Window, m int) {
+// refreshCard (WPCVW 6ac3) shows member m's changed card for a moment.
+func refreshCard(w *Window, m int) {
 	resumeWindowDraw(w)
 	drawMemberCard(w, m)
 	waitSecondsOrEnter(4)
@@ -54,10 +54,10 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 		c[4].B = int16(clampToward(power*5, int(c[4].B), 0))
 	case 10:
 		q.Stamina = min(q.Stamina+int16(rollDice(formatDice(power<<1, 8, power))), q.StaminaMax)
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 15:
 		lower(&q.Status[3], power*25)
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 26:
 		if int(q.PoisonStr)-power <= 0 {
 			q.PoisonStr, q.Status[5] = 0, 0
@@ -69,7 +69,7 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 		} else {
 			q.Status[5] -= uint8(power * 5)
 		}
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 46:
 		if q.Condition == 2 && power*3 > 21-int(q.Stats[3]) {
 			q.Stats[3]--
@@ -78,25 +78,25 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 			} else {
 				q.Condition = 0
 			}
-			wpcvwRefreshCard(pvCardWin, t)
+			refreshCard(pvCardWin, t)
 		}
 	case 57:
 		lower(&q.Status[7], power*25)
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 51:
 		for _, k := range []int{1, 2, 4, 8, 9} {
 			lower(&q.Status[k], power<<1)
 		}
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 64:
 		q.HP = min(q.HP+int16(rollDice(formatDice(power, 7, power))), q.HPMax)
-		wpcvwRefreshCard(pvCardWin, t)
+		refreshCard(pvCardWin, t)
 	case 77:
 		if q.Condition == 3 && power*3 > 18-int(q.Stats[3]) {
 			q.Stats[3]--
 			q.Condition, q.HP, q.Stamina = 0, 1, q.StaminaMax/10
 			q.Unk026++
-			wpcvwRefreshCard(pvCardWin, t)
+			refreshCard(pvCardWin, t)
 		}
 	case 80:
 		p := &party[m]
@@ -124,8 +124,8 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 	}
 }
 
-// wpcvwCountKnownSpells (WPCVW 76ee) lists in out the spells of realm r member m knows.
-func wpcvwCountKnownSpells(m, r int, out []int) int {
+// countKnownSpells (WPCVW 76ee) lists in out the spells of realm r member m knows.
+func countKnownSpells(m, r int, out []int) int {
 	n := 0
 	for s := range spellTable {
 		if int(spellTable[s].Realm) == r && testBit(party[m].KnownSpells[:], s) {
@@ -144,11 +144,11 @@ func pvSetBlink(w *Window, x, y int, a string, ca int, b string, cb int) {
 	pvBlinkColor = [2]int{ca, cb}
 }
 
-// wpcvwChooseSpell (choose_spell, WPCVW 780a) opens member m's spell book: pick a realm,
+// chooseSheetSpell (choose_spell, WPCVW 780a) opens member m's spell book: pick a realm,
 // then a known spell, then with askPower a power level the member can pay. It returns
 // power<<8 + spell, the spell alone without askPower, or -1. A spell cast on a member
 // also asks for that member (pvSpellTarget).
-func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
+func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 	p := &party[m]
 	book := createWindow(20, 4, 20, 16, 22, -1, 0, false)
 	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
@@ -188,7 +188,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					pvBlinkWin, pvBlinkX, pvBlinkY = sheet, realm/3*10+1, realm%3<<1+14
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 6, 14, 8, 14)
-					n = wpcvwCountKnownSpells(m, realm, spells[:])
+					n = countKnownSpells(m, realm, spells[:])
 					drawSheetSpellList(list, realm, 0, false, spells[:n])
 				}
 				pvSetBlink(pvBlinkWin, pvBlinkX, pvBlinkY, string(rune(realm+35)), 17, "c", 5)
@@ -427,7 +427,7 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	}
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
-	wpcvwShowCenteredMsg(menu, replaceCharWithString(getMessage(702), getMessage(int(p.Class)+120), '$'), true)
+	showCenteredMsg(menu, replaceCharWithString(getMessage(702), getMessage(int(p.Class)+120), '$'), true)
 	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	setCursor(menu, 1, 1)
@@ -439,7 +439,7 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	}
 	s := -1
 	for s == -1 {
-		s = wpcvwChooseSpell(sheet, menu, m, false)
+		s = chooseSheetSpell(sheet, menu, m, false)
 	}
 	pvBlinkState = -1
 	p.KnownSpells = known
@@ -467,11 +467,11 @@ func doCastMenu(sheet, menu *Window, m int, canCast bool) {
 	printMessage(701, menu, 18)
 	resumeWindowDraw(menu)
 	if !canCast {
-		wpcvwChooseSpell(sheet, menu, m, false)
+		chooseSheetSpell(sheet, menu, m, false)
 		pvBlinkState = -1
 		return
 	}
-	v := wpcvwChooseSpell(sheet, menu, m, true)
+	v := chooseSheetSpell(sheet, menu, m, true)
 	if v == -1 {
 		return
 	}

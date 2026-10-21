@@ -45,7 +45,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
 					printMessage(realm+3950, win, realmColors[realm])
 					clearWindowArea(win, 18, 5, 20, 5)
-					count = wpcvwCountKnownSpells(m, realm, spells[:])
+					count = countKnownSpells(m, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				pvBlinkText = [2]string{string(rune(realm + 35)), "c"}

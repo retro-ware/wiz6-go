@@ -98,9 +98,9 @@ func addSkillBonus(m, r, v int) {
 	p.Resist[r] = uint8(min(max(int(p.Resist[r])+v, 0), 125))
 }
 
-// wpcvwLevelCap is member m's level capped at limit, or its level before a class
+// levelCap is member m's level capped at limit, or its level before a class
 // change (Unk1AF) when that was higher.
-func wpcvwLevelCap(p *PC, limit int, minus1 bool) int {
+func levelCap(p *PC, limit int, minus1 bool) int {
 	l := int(p.Level)
 	if l < int(p.Unk1AF) {
 		l = int(p.Unk1AF)
@@ -118,7 +118,7 @@ func wpcvwLevelCap(p *PC, limit int, minus1 bool) int {
 // base letter*4 plus growth digit per level.
 func setBaseResists(m int, t [2]string) {
 	p := &party[m]
-	lv := wpcvwLevelCap(p, 16, true)
+	lv := levelCap(p, 16, true)
 	for r := 0; r < 14; r++ {
 		p.Resist[r] = 0
 		addSkillBonus(m, r, int(t[1][r]-'0')*lv+int(t[0][r]-'A')*4)
@@ -129,7 +129,7 @@ func setBaseResists(m int, t [2]string) {
 // secondary, at most most) and Unk1AB.
 func setAttackCounts(m, most, a, b, c, d int) {
 	p := &party[m]
-	lv := wpcvwLevelCap(p, 20, false)
+	lv := levelCap(p, 20, false)
 	f := func(stat, x, y int) uint8 {
 		v := uint8(stat/6 + (lv+x-y)/x - 1)
 		if v < 1 {

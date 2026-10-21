@@ -199,11 +199,11 @@ func drawSpellPoints(w *Window, pc *PC) {
 func drawStatsPanel(w *Window, m int) {
 	p := &party[m]
 	drawPortrait(w, int(memberPortrait[m]), 1, 1)
-	wpcvwPrintAt(w, 4, 1, memberName(m), 5)
+	printAt(w, 4, 1, memberName(m), 5)
 	setCursor(w, 13, 1)
 	putChar(w, (getMessage(int(p.Sex)+140) + "\x00")[0], 1)
 	putChar(w, '-', 1)
-	wpcvwPrintMsg(int(p.Race)+100, w, 1)
+	printMsgColor(int(p.Race)+100, w, 1)
 	setCursor(w, 4, 2)
 	putChar(w, 30, 5)
 	printInt(w, int(p.AgeDays/365), 3, 14)
@@ -295,7 +295,7 @@ func drawInventoryPanel(w *Window, m int) {
 	p := &party[m]
 	mod := int(int8(p.AC[1])) + getLoadCategory(m).AC
 	setCursor(w, 21, 5)
-	wpcvwPrintMsg(217, w, 15)
+	printMsgColor(217, w, 15)
 	w.CurX++
 	printInt(w, int(int8(p.AC[0]))+mod, 2, 4)
 	printString(w, wpcvwACOpen, 15)
@@ -414,9 +414,9 @@ func isMemberAbleQuiet(m int) bool {
 	return p.Condition == 0 && p.Status[2] == 0 && p.Status[3] == 0
 }
 
-// wpcvwViewCharacter (view_character, WPCVW ad5a) runs member m's character sheet until
+// viewCharacter (view_character, WPCVW ad5a) runs member m's character sheet until
 // Exit; returnCmd says where from (4 the start menu, 13 combat, else the maze).
-func wpcvwViewCharacter(m int) {
+func viewCharacter(m int) {
 	gameState = int(returnCmd)
 	menuKeys = getMessage(300)
 	pvCardWin = createWindow(20, 4, 20, 16, 26, -1, 0, false)
@@ -487,7 +487,7 @@ func wpcvwViewCharacter(m int) {
 			}
 		case 6:
 			if pvChosenItem = chooseItem(sheet, menu, 400, m, false); pvChosenItem != -1 {
-				wpcvwDoUseItem(sheet, menu, m, pvChosenItem)
+				useItemOnSheet(sheet, menu, m, pvChosenItem)
 			}
 		case 5:
 			doMergeItems(sheet, menu, m)

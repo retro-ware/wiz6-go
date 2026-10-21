@@ -41,10 +41,10 @@ var (
 func wdoptOvmain() {
 	dpResultMsg, dpResultBeep, pvBlinkState = 0, 0, -1
 	if gameState == 19 {
-		wdoptDoCastSpell(int(curMember))
+		castSpellInMaze(int(curMember))
 	}
 	if gameState == 20 {
-		wdoptDoUseItem(int(curMember))
+		useItemInMaze(int(curMember))
 	}
 	gameState = 5
 }
@@ -555,7 +555,7 @@ func wdoptShowOverheadMap(power int) {
 
 // f6054 (WDOPT) applies spell s of the given power cast (or used from an item) by member
 // caster on target outside combat. Spells with no effect here do nothing.
-func wdoptApplySpell(caster, s, power, target int) {
+func applySpellOutsideCombat(caster, s, power, target int) {
 	t := &party[target]
 	pc := &partyCounters
 	sub := func(v uint8, n int) uint8 { // v - n, at least 0
@@ -702,7 +702,7 @@ func drawSlotItemList(win *Window, m, sel int, hi bool) {
 // do_use_item (WDOPT 7860): member m picks an item and uses it: an item event or lock
 // here, the spell it holds, a flag-swapping item of this map (kind 4) or the map 8 item
 // (kind 5); otherwise "nothing happens".
-func wdoptDoUseItem(m int) {
+func useItemInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
@@ -807,7 +807,7 @@ func wdoptDoUseItem(m int) {
 				}
 				if spell != -1 {
 					useItemCharge(m, slot)
-					wdoptApplySpell(m, spell, level, dpTarget)
+					applySpellOutsideCombat(m, spell, level, dpTarget)
 				}
 			case rec.Unk69 == 4 && gameStateArg == int(rec.Damage.Base):
 				// A flag item of this map: clear bit Count, set bit Sides.
@@ -840,7 +840,7 @@ func wdoptDoUseItem(m int) {
 
 // do_cast_spell (WDOPT 7f30): member m picks a spell and power, pays the spell points
 // and stamina (passing out at 0) and casts it.
-func wdoptDoCastSpell(m int) {
+func castSpellInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
@@ -853,7 +853,7 @@ func wdoptDoCastSpell(m int) {
 		p := &party[m]
 		sp := &spellTable[spell]
 		p.SP[sp.Realm].Cur -= int16(int(sp.Cost) * level)
-		wdoptApplySpell(m, spell, level, dpTarget)
+		applySpellOutsideCombat(m, spell, level, dpTarget)
 		if p.Stamina -= int16(random(level) + int(sp.Level) + level); p.Stamina < 0 {
 			p.Stamina = 0
 			p.Status[2] = uint8(random(6) + 6)

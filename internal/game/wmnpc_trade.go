@@ -30,7 +30,7 @@ func npcApplySpell(caster, s, power, target int) {
 		npcWait(messageDelay)
 		return
 	default:
-		wdoptApplySpell(caster, s, power, target)
+		applySpellOutsideCombat(caster, s, power, target)
 	}
 	switch s {
 	case 10, 15, 26, 46, 57, 51, 64, 77:

@@ -126,7 +126,7 @@ func printMsgAt(msg int, win *Window, x, y, color int) {
 	printString(win, t, color)
 }
 
-// printMsgColor (WPCMK 5058) prints message msg at the cursor.
+// printMsgColor (WPCMK 5058, WPCVW 5115) prints message msg at the cursor.
 func printMsgColor(msg int, win *Window, color int) {
 	printString(win, getMessage(msg), color)
 }
@@ -459,8 +459,8 @@ func changePortrait(slot int) {
 	}
 }
 
-// viewCharacterWpcmk (WPCMK 99c0 view_character) shows roster character slot.
-func viewCharacterWpcmk(slot int) {
+// viewRosterCharacter (WPCMK 99c0 view_character) shows roster character slot.
+func viewRosterCharacter(slot int) {
 	loadAndShowCharacter(slot)
 	wpcmkWaitForKey()
 }
@@ -614,7 +614,7 @@ func characterMenu() {
 		case 0:
 			doCreateCharacter()
 		case 1:
-			pick(1129, viewCharacterWpcmk)
+			pick(1129, viewRosterCharacter)
 		case 2:
 			pick(1121, deleteCharacter)
 		case 3:

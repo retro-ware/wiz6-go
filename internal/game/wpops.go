@@ -771,7 +771,7 @@ func choosePartyActions(win *Window) {
 				case 9: // back one member
 					clearTargets()
 					for i := 0; member-1 > i; i++ {
-						wpopsMarkTarget(i)
+						markTarget(i)
 					}
 					member = doneMembers[done-2] - 1
 					done -= 2
@@ -835,7 +835,7 @@ func choosePartyActions(win *Window) {
 			case 1:
 				clearTargets()
 				for i := 0; partyCount-1 > i; i++ {
-					wpopsMarkTarget(i)
+					markTarget(i)
 				}
 				member = doneMembers[done-1]
 				done--
@@ -860,9 +860,9 @@ func choosePartyActions(win *Window) {
 	}
 }
 
-// wpopsMarkTarget re-marks member m's target after a back command (at the C's g504c,
+// markTarget re-marks member m's target after a back command (at the C's g504c,
 // one group past where pickTargetMonster marks it).
-func wpopsMarkTarget(m int) {
+func markTarget(m int) {
 	c := &monsterGroups[0].Members[m]
 	if uint8(c.B31) > 0 {
 		wpopsTargetTaken[9+int(uint8(c.B31))*9+int(uint8(c.B32))] = 1

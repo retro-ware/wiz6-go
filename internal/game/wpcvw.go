@@ -14,7 +14,7 @@ import (
 func wpcvwOvmain() {
 	pvBlinkState = -1
 	if gameState == 17 {
-		wpcvwViewCharacter(int(curMember))
+		viewCharacter(int(curMember))
 	}
 	if gameState == 22 {
 		levelUpEntry()
@@ -161,18 +161,18 @@ func getMenuInputBlink() int {
 	}
 }
 
-// wpcvwWaitKeyOrClick (WPCVW 8d3a) shows message 409 in w and waits for Enter or a click.
-func wpcvwWaitKeyOrClick(w *Window) {
+// waitKeyOrClick (WPCVW 8d3a) shows message 409 in w and waits for Enter or a click.
+func waitKeyOrClick(w *Window) {
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	printCentered(w, getMessage(409), 2, 18)
-	wpcvwWaitEnterOrClick()
+	waitEnterOrClick()
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 }
 
-// wpcvwWaitEnterOrClick waits for Enter or a mouse click (the loops of WPCVW 8d3a and b6c4).
-func wpcvwWaitEnterOrClick() {
+// waitEnterOrClick waits for Enter or a mouse click (the loops of WPCVW 8d3a and b6c4).
+func waitEnterOrClick() {
 	for wait := true; wait; {
 		if checkScreenClick() {
 			wait = false
@@ -183,8 +183,8 @@ func wpcvwWaitEnterOrClick() {
 	}
 }
 
-// wpcvwShowCenteredMsg (WPCVW e8b6) shows s centred on row 1 of w, beeps if beep, and waits.
-func wpcvwShowCenteredMsg(w *Window, s string, beep bool) {
+// showCenteredMsg (WPCVW e8b6) shows s centred on row 1 of w, beeps if beep, and waits.
+func showCenteredMsg(w *Window, s string, beep bool) {
 	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	setCursor(w, 20-(len(s)+1)/2, 1)
@@ -195,48 +195,9 @@ func wpcvwShowCenteredMsg(w *Window, s string, beep bool) {
 	waitSecondsOrEnter(messageDelay)
 }
 
-// wpcvwInputLine (WPCVW 9459) reads up to max characters at w's cursor in colour color (only
-// digits with digits) until Enter.
-func wpcvwInputLine(w *Window, max, color int, digits bool) string {
-	x, y := int(w.CurX), int(w.CurY)
-	var buf []byte
-	putChar(w, 'a', 1)
-	for {
-		k := int(uint8(getKey(1)))
-		if k == 13 {
-			break
-		}
-		setCursor(w, x, y)
-		putChar(w, ' ', 1)
-		setCursor(w, x, y)
-		switch {
-		case k == 8:
-			if len(buf) > 0 {
-				buf = buf[:len(buf)-1]
-				x--
-				setCursor(w, x, y)
-				putChar(w, ' ', 1)
-				setCursor(w, x, y)
-			} else {
-				playSound(0)
-			}
-		case len(buf) >= max:
-			playSound(0)
-		case !digits && k >= 32 && k <= 127 || digits && k >= '0' && k <= '9':
-			buf = append(buf, byte(k))
-			putChar(w, byte(k), color)
-			x++
-		}
-		putChar(w, 'a', 1)
-	}
-	setCursor(w, x, y)
-	putChar(w, ' ', 1)
-	return string(buf)
-}
-
-// wpcvwInputNumber (WPCVW 95c6) asks with message msg for a number of up to max digits; 0 for
+// inputNumber (WPCVW 95c6) asks with message msg for a number of up to max digits; 0 for
 // none.
-func wpcvwInputNumber(w *Window, msg, max int) int32 {
+func inputNumber(w *Window, msg, max int) int32 {
 	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	setCursor(w, 2, 1)
@@ -246,13 +207,13 @@ func wpcvwInputNumber(w *Window, msg, max int) int32 {
 	resumeWindowDraw(w)
 	refreshAllWindows()
 	setCursor(w, x, y)
-	s := wpcvwInputLine(w, max, 5, true)
+	s := inputText(w, max, 5, 1)
 	n, _ := strconv.ParseInt(s, 10, 32) // atol: digits only, at most 8
 	return int32(n)
 }
 
-// wpcvwDrawTextFrame (WPCVW 8dd4) draws the text window's frame.
-func wpcvwDrawTextFrame(w *Window) {
+// drawTextFrame (WPCVW 8dd4) draws the text window's frame.
+func drawTextFrame(w *Window) {
 	fillWindow(w, 0, 1)
 	setFrameGlyph(w, 0, 0, 9)
 	setFrameGlyph(w, 39, 0, 10)
@@ -269,12 +230,12 @@ func wpcvwDrawTextFrame(w *Window) {
 	refreshWindow(w)
 }
 
-// wpcvwShowTextPages (WPCVW 8ea4) shows messages msg, msg+1, ... until one is missing, a line
+// showTextPages (WPCVW 8ea4) shows messages msg, msg+1, ... until one is missing, a line
 // each, centred unless it starts with '$' (left) or '^' (under the previous); '!' skips a
 // line and '@' starts a new page. menu shows the page prompt.
-func wpcvwShowTextPages(menu *Window, msg int) {
+func showTextPages(menu *Window, msg int) {
 	w := createWindow(0, 4, 40, 16, 31, -1, 0, false)
-	wpcvwDrawTextFrame(w)
+	drawTextFrame(w)
 	row, prevX := 1, 1
 	for {
 		s := getMessage(msg)
@@ -290,8 +251,8 @@ func wpcvwShowTextPages(menu *Window, msg int) {
 			row = 13
 		}
 		if row == 13 {
-			wpcvwWaitKeyOrClick(menu)
-			wpcvwDrawTextFrame(w)
+			waitKeyOrClick(menu)
+			drawTextFrame(w)
 			row = 1
 		}
 		row++
@@ -308,20 +269,17 @@ func wpcvwShowTextPages(menu *Window, msg int) {
 		prevX = x
 		msg++
 	}
-	wpcvwWaitKeyOrClick(menu)
+	waitKeyOrClick(menu)
 	destroyWindow(w, false)
 }
 
 // --------------------------------------------------------------------- printing
 
-// wpcvwPrintAt (WPCVW 50ba).
-func wpcvwPrintAt(w *Window, x, y int, s string, color int) {
+// printAt (WPCVW 50ba).
+func printAt(w *Window, x, y int, s string, color int) {
 	setCursor(w, x, y)
 	printString(w, s, color)
 }
-
-// wpcvwPrintMsg (WPCVW 5115, and b195) prints message msg in font 0.
-func wpcvwPrintMsg(msg int, w *Window, color int) { printString(w, getMessage(msg), color) }
 
 // putGlyphAtC1 (WPCVW 9f7f) puts glyph ch of font 1 at (x, y).
 func putGlyphAtC1(w *Window, x, y int, ch byte) {
@@ -329,8 +287,8 @@ func putGlyphAtC1(w *Window, x, y int, ch byte) {
 	putCharHi(w, ch, 1)
 }
 
-// wpcvwPrintNumberCol16 (WPCVW de9f) prints n in column 16 of row y.
-func wpcvwPrintNumberCol16(w *Window, y, n int) {
+// printNumberCol16 (WPCVW de9f) prints n in column 16 of row y.
+func printNumberCol16(w *Window, y, n int) {
 	setCursor(w, 16, y)
 	printInt(w, n, 3, 1)
 }

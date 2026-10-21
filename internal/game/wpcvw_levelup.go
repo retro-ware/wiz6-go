@@ -160,8 +160,8 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				added[row]--
 				left++
 				playSound(1)
-				wpcvwPrintNumberCol16(w, row+3, int(*sk))
-				wpcvwPrintNumberCol16(w, 14, left)
+				printNumberCol16(w, row+3, int(*sk))
+				printNumberCol16(w, 14, left)
 			} else {
 				playSound(0)
 			}
@@ -179,8 +179,8 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 				added[row]++
 				left--
 				playSound(1)
-				wpcvwPrintNumberCol16(w, row+3, int(*sk))
-				wpcvwPrintNumberCol16(w, 14, left)
+				printNumberCol16(w, row+3, int(*sk))
+				printNumberCol16(w, 14, left)
 			} else {
 				playSound(0)
 			}
@@ -206,7 +206,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 func spendSkillPoints(menu *Window, m int) {
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
-	wpcvwShowCenteredMsg(menu, getMessage(605), true)
+	showCenteredMsg(menu, getMessage(605), true)
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	academic := hasAcademicSkills(m)
 	var shown [10]int
@@ -309,7 +309,7 @@ func levelUpStats(sheet, menu *Window, m int) {
 			printMsgAt(s+204, sheet, 1, s+5, -5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, -1)
-			wpcvwShowCenteredMsg(menu, msg, true)
+			showCenteredMsg(menu, msg, true)
 			printMsgAt(s+204, sheet, 1, s+5, 5)
 			sheet.CurX++
 			printInt(sheet, int(p.Stats[s]), 2, 1)
@@ -366,7 +366,7 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 		pct = 1
 	}
 	printInt(sheet, pct, 3, -6)
-	wpcvwShowCenteredMsg(menu, getMessage(5013), true)
+	showCenteredMsg(menu, getMessage(5013), true)
 	setCursor(sheet, 15, 8)
 	printInt(sheet, pct, 3, 6)
 	msg := 5012
@@ -381,7 +381,7 @@ func levelUpHPStamina(sheet, menu *Window, m int) {
 		printInt(sheet, int(p.HPMax), 4, c)
 	}
 	showHP(-6)
-	wpcvwShowCenteredMsg(menu, s, true)
+	showCenteredMsg(menu, s, true)
 	showHP(6)
 }
 
@@ -527,7 +527,7 @@ func doLevelUp(sheet, menu *Window, m int) {
 	refreshWindow(menu)
 	s := replaceCharWithString(getMessage(5010), memberName(m), '^')
 	s = replaceCharWithString(s, getMessage(int(p.Class)+120), '$')
-	wpcvwShowCenteredMsg(menu, s, true)
+	showCenteredMsg(menu, s, true)
 	levelUpStats(sheet, menu, m)
 	levelUpHPStamina(sheet, menu, m)
 	levelUpCombat(m)
@@ -672,7 +672,7 @@ func doRename(w *Window, m int) {
 	x, y := int(w.CurX), int(w.CurY)
 	clearWindowArea(w, x, y, x+7, y)
 	setCursor(w, x, y)
-	if s := wpcvwInputLine(w, 7, 5, false); s != "" {
+	if s := inputText(w, 7, 5, 0); s != "" {
 		party[m].Name = [8]uint8{}
 		copy(party[m].Name[:7], s)
 	}

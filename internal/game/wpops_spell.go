@@ -151,7 +151,7 @@ func chooseCombatSpell(win *Window, m int) int {
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
-					count = wpcvwCountKnownSpells(m, realm, spells[:])
+					count = countKnownSpells(m, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				pvBlinkText = [2]string{string(rune(realm + 35)), "c"}

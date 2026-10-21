@@ -550,7 +550,7 @@ func chooseChestSpell(win *Window, member int) int {
 					trBlinkX, trBlinkY = realm/3*6+1, realm%3<<1+1
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
-					count = wpcvwCountKnownSpells(member, realm, spells[:])
+					count = countKnownSpells(member, realm, spells[:])
 					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				trBlinkText = [2]string{string(rune(realm + 35)), "c"}

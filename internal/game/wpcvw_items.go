@@ -307,7 +307,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 	p, q := &party[m], &party[to]
 	if p.Gold > 0 {
 		for {
-			n := wpcvwInputNumber(menu, 404, 8)
+			n := inputNumber(menu, 404, 8)
 			if n >= 0 && p.Gold >= n {
 				p.Gold -= n
 				q.Gold += n
@@ -330,7 +330,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 			playSound(0)
 		} else if stackable[it.Type] == 1 {
 			for {
-				n = int(int16(wpcvwInputNumber(menu, 405, 3)))
+				n = int(int16(inputNumber(menu, 405, 3)))
 				if int(it.Qty) < n {
 					n = -1
 					playSound(0)
@@ -473,9 +473,9 @@ func doMergeItems(sheet, menu *Window, m int) {
 	drawSheet(sheet, menu, m)
 }
 
-// wpcvwDoUseItem (do_use_item, WPCVW 8fbf) uses item i of member m: the item record's
+// useItemOnSheet (do_use_item, WPCVW 8fbf) uses item i of member m: the item record's
 // Unk69 picks a reading or key action, else Unk28 is a spell it casts.
-func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
+func useItemOnSheet(sheet, menu *Window, m, i int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
 	if rec.Unk69 > 0 {
@@ -487,24 +487,24 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 		case 1:
 			j := chooseItem(sheet, menu, 408, m, false)
 			if j >= 0 && p.Items[j].ID == 395 {
-				wpcvwShowTextPages(menu, 11350)
+				showTextPages(menu, 11350)
 			} else if j >= 0 && p.Items[j].ID == 403 {
-				wpcvwShowTextPages(menu, 12200)
+				showTextPages(menu, 12200)
 			}
 		case 2:
-			wpcvwShowTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
+			showTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
 		case 3: // a spell book: Unk28 is the spell
 			if testBit(mask16(rec.ClassMask), int(p.Class)) {
 				s := int(rec.Unk28) % 256
 				if int(spellTable[s].Level)<<1 > int(p.Level) {
-					wpcvwShowTextPages(menu, 725)
+					showTextPages(menu, 725)
 				} else {
 					setBit(p.KnownSpells[:], s, true)
-					wpcvwShowTextPages(menu, 720)
+					showTextPages(menu, 720)
 					removeItemShown(m, i)
 				}
 			} else {
-				wpcvwShowTextPages(menu, 730)
+				showTextPages(menu, 730)
 			}
 		case 4: // on map Damage.Base, clear event flag Damage.Count and set Damage.Sides
 			if mp := int(rec.Damage.Base); gameStateArg == mp {
@@ -520,7 +520,7 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 			}
 		case 6:
 			if pickedIs(388) {
-				wpcvwShowTextPages(menu, 18520)
+				showTextPages(menu, 18520)
 			}
 		}
 		return
@@ -789,7 +789,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 	resumeWindowDraw(menu)
 	refreshWindow(w)
 	refreshWindow(menu)
-	wpcvwWaitEnterOrClick()
+	waitEnterOrClick()
 	destroyWindow(w, false)
 }
 
