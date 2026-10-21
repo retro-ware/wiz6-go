@@ -117,7 +117,7 @@ func openTreasure() {
 		case 4:
 			exp += int32(e.A) * int32(e.B)
 		case 2:
-			if lootItem[lootCount] = random(int(e.B)) + int(e.A); lootItem[lootCount] > 0 {
+			if lootItem[lootCount] = int(int16(random(int(e.B)) + int(e.A))); lootItem[lootCount] > 0 { // C int sum wraps
 				lootCount++
 			}
 		}
@@ -288,6 +288,9 @@ func removeLootEntry(i int) {
 // distribute_loot (WTREA 8952) lets the player hand the found items out; important items
 // cannot be left.
 func distributeLoot() {
+	if dtLog != nil { // interactive: the difftest stubs it
+		return
+	}
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	eraseCursorMark(bottomLineWin, false)
