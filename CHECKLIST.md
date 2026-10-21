@@ -23,7 +23,7 @@
 - [x] WDOPT 69/69 (scripted-run tested)
 
 ## Parity
-- [ ] Title and menus match DOSBox-X screenshots
+- [x] Title and menus match DOSBox-X screenshots
 - [ ] Character creation, save/load round trip with the original's files
 - [ ] Exploration, combat, NPCs
 
@@ -31,4 +31,4 @@
 - [x] Merge duplicated/prefixed functions (wpcvw*/wpops* variants), TODO(merge) globals into state.go
 - [x] PC.Items is 22 slots (20 + 2 in Unk0E0); spriteList has 12 entries
 - [x] fillWindow hi flag misuse in WBASE / test hooks (attribute 0x30 vs 3)
-- [ ] DOSBox-X capture harness for side-by-side comparison
+- [x] DOSBox-X capture harness for side-by-side comparison
