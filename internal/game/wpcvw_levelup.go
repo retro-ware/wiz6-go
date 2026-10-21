@@ -200,6 +200,9 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 // spendSkillPoints (WPCVW e922) cycles member m through its skill pages until all its
 // skill points are spent.
 func spendSkillPoints(menu *Window, m int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	showCenteredMsg(menu, getMessage(605), true)

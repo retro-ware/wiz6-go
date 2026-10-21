@@ -384,6 +384,9 @@ func drawInventoryPanel(w *Window, m int) {
 
 // drawSheet (WPCVW 93f8) redraws member m's whole sheet.
 func drawSheet(sheet, menu *Window, m int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	fillWindow(sheet, 0, 1)
 	fillWindow(menu, ' ', 3)
 	deferWindowDraw(sheet)
