@@ -111,3 +111,59 @@ Skipped (UI, drawing, input, disk, dispatch): WMAZE view and panel drawing (4ac7
 b500), 9948 sound load; WDOPT ovmain, menus, map and spell-list drawing (4688..48e0 5273 5357..5be2
 6737..6bfd 76d5 80d3 8aa9 9531 95f3 9e83); all of WINIT (file loading, credits, title,
 graveyard, screen setup).
+
+## Character (WPCMK, WPCVW, WBASE, ROOT helpers)
+
+Specs in specs_char.py, Go in difftest_char_test.go; case names carry the overlay
+(`pcmk_`, `pcvw_`, `base_`, `root_`) since addresses repeat across overlays. Overlay BSS
+globals go in `OVL_GLOBALS[ovl]` in layout.py (overlays share DS addresses); `bool16` is
+a C int flag kept as a Go bool.
+
+| Overlay | Function | Go | Cases | Status |
+|---|---|---|---|---|
+| WPCMK | 9341 init_new_character (8aed 8786 8e47 8de0 83f0 837b) | initNewCharacter | 300 | match |
+| WPCMK | 7274 compute_eligible_classes (7212) | computeEligibleClasses | 300 | match |
+| WPCMK | 73e9 apply_class_minimums | checkClassEligible(apply) | 300 | match |
+| WPCMK | 7532 apply_race_base_stats (71df) | raiseStatsToMinimum | 300 | match |
+| WPCMK | 75d2 apply_sex_modifiers | applySexModifiers | 300 | match |
+| WPCMK | 7e92 (7e5f) | initNPCAttitudes | 300 | match |
+| WPCMK | 81ad give_class_items (815f 8050) | addStartingItem loop | 300 | match |
+| WPCMK | 55ad set_class_skill_masks | setClassSkillMasks | 300 | match |
+| WPCMK | 66ea list_realm_spells | listRealmSpells | 300 | match (after harness fix: sentinel) |
+| WPCVW | f8c6 check_level_up | checkLevelUp | 300 | match |
+| WPCVW | f784 do_level_up | doLevelUp | 300 | match |
+| WPCVW | f6e6 / f568 / ed21 / eff8 | updateRank / levelUpStats / levelUpHPStamina / levelUpCombat | 300 each | match (ed21: hp text via itoa for the num log) |
+| WPCVW | ea8d roll_skill_points / ea25 raise_skill | rollSkillPoints / raiseSkill | 300 each | match |
+| WPCVW | f201 | levelUpSpellPoints | 300 | match |
+| WPCVW | 8353 learn_new_spell | learnNewSpell | 300 | match (choose_spell stub: lowest offered spell) |
+| WPCVW | 6b3c cast_spell | castSpell | 300 | match |
+| WPCVW | 8fbf do_use_item | useItemOnSheet | 300 | match (choose_item, choose_member stubbed: 0) |
+| WPCVW | c8c2 can_equip_item | canEquipItem | 300 | match |
+| WPCVW | cdb3 (cc36 ccd2 cbf4) | resetCombatValues | 300 | match |
+| WPCVW | c726 | sortEquippedFirst | 300 | match |
+| WPCVW | 5370 calc_carried_weight (5311) | calcCarriedWeight | 300 | match |
+| WPCVW | a1f9 calc_allowed_classes (a1a7) | calcAllowedClasses | 300 | match |
+| WPCVW | a11b / a4b1 / a368 | limitStats (by string, race, class) | 300 each | match |
+| WPCVW | 76ee count_known_spells | countKnownSpells | 300 | match |
+| WPCVW | 5c24 / 5d5b / 5ec7 / 5f53 | clearHandAttack / removeItemShown / removeSwagItem / useItemChargeShown | 300 each | match |
+| WPCVW | 9c8e try_combine_recipe (9b3f) | tryCombineRecipe | 300 | match |
+| WPCVW | 6aec clamp_toward | clampToward | 300 | match |
+| WBASE | 6b30 / 6fd4 | removePartyMember / removeAllMembers | 300 each | match (after harness fix: memberPortrait is int[6]) |
+| WBASE | 5190 | findFreePortraitSlot | 300 | match |
+| ROOT | 09e2 random / 2556 random_word | random / randomWord | 300 each | match |
+| ROOT | 2881 set_bit / 28af test_bit / 28da set_bitfield / 2925 get_bitfield | setBit / testBit / setBitfield / getBitfield | 300 each | match |
+| ROOT | 2962 extract_bits | extractBits | 300 | fixed bug (C shifts the unsigned 16-bit word) |
+
+Harness bugs fixed: the fake return address (hlt at CS:FFF0) was DS:0270, i.e.
+spell_table[67].realm, now CS:FD70; layout `memberPortrait` was `[6]uint8`, the C has
+`int[6]`.
+
+Skipped (UI, input loops, disk, drawing): WPCMK create_character, roll_karma,
+distribute_bonus_points, choose_race/sex/class, choose_portrait, choose_starting_spell,
+select_spell, skill_points_screen, distribute_skill_points, menus, roster list/rename/delete,
+draw_*; WPCVW view_character, do_equip_items, do_swag_menu, do_trade_items,
+do_merge_items, do_cast_menu, choose_spell, do_change_class (its mechanics a4b1/a368 are
+tested), do_skills_menu, spend_skill_points, do_modify_menu, rename/portrait, get_load_category
+(struct return; covered by its callers' drawing only), draw_*; WBASE load_game, add_party_member
+(disk), start_game, choose_*, menus, camp scene, game configuration, check_magic_word;
+ROOT windows, text, sound, disk, video, keyboard.
