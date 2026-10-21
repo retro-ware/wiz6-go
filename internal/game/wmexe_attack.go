@@ -598,7 +598,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			def += int(partyCounters[3].B)
 		}
 		ac = int(int8(tRec.AC[0])) + def
-		acArea = int(int8(tRec.Unk198[kind])) + def
+		acArea = kindAC(tRec, kind) + def
 	} else {
 		a := &atkRec.Attacks[slot]
 		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(c.B39)*5 + int(a.ToHit) + statDiff
@@ -618,7 +618,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		ac = int(int8(tRec.AC[0])) + def + loadAC
 		acArea = def + loadAC
 		if tg != 0 {
-			acArea += int(int8(tRec.Unk198[kind]))
+			acArea += kindAC(tRec, kind)
 		}
 	}
 
@@ -893,4 +893,13 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			statusEffect(g, i, 3484, 9, 2, mod, pow*2, 3, pow, 0)
 		}
 	}
+}
+
+// kindAC is the target's armour against attack kind k (rec byte 198+k). A confused
+// fighter's second attack has kind -1 (W12), which the C reads as AC[7], the byte before.
+func kindAC(rec *MonsterRec, k int) int {
+	if k < 0 {
+		return int(int8(rec.AC[8+k]))
+	}
+	return int(int8(rec.Unk198[k]))
 }

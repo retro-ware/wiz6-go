@@ -22,3 +22,4 @@
 2026-10-21 10:36:08 [char] WPCVW: 19 functions x300 match (level up parts, equip, items, classes)
 [widths] 10:37 spell-effect status wraps (WDOPT 6054, WPCVW 6b3c, WTREA 6efd) committed
 2026-10-21 10:37:12 [maze] move_party, try_move, flee_party, run_cell_events (all 25 event kinds), check_secret_detect, search_cell: 300 each match (harness: input ranges, UI guards)
+2026-10-21 10:38:52 [combat] fc66e performAction, fd109 runCombatRound x300 match. PORT BUG fixed: confused fighter's 2nd attack kind -1 -> C reads AC[7] (Go panicked on Unk198[-1]); kindAC helper.
