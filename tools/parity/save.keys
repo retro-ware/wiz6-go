@@ -1,4 +1,4 @@
-# Add the six roster PCs, start (magic word: empty), dismiss the entry messages,
+# Add the six roster PCs, start, dismiss the entry messages,
 # party options -> DISK -> SAVE GAME & RESUME. parity.sh then compares the SAVEGAME.DBS files.
 WAIT 8
 PACE 3
@@ -14,8 +14,6 @@ enter
 enter
 enter
 enter
-enter
-,
 enter
 ,
 enter

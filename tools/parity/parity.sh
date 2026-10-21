@@ -67,6 +67,16 @@ for p in sys.argv[1:]:
         open(p, 'wb').write(n)
 P
 fi
+# Copy protection is cut from the port (check_magic_word, WBASE 543f): the copy jumps to
+# its "already passed" return 0.
+python3 - "$OUT/work/dos/WBASE.OVR" <<'P'
+import sys
+p = sys.argv[1]; b = bytearray(open(p, 'rb').read())
+off = 0xEE6
+assert b[off-11:off+2] == bytes.fromhex('558bec83c4a0833ec04f017507'), 'WBASE 543f'
+b[off] = 0xEB
+open(p, 'wb').write(b)
+P
 LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
 # Keys: KEYFEED.COM (keyfeed.asm), a TSR that puts each key in the BIOS buffer at its time on
 # the emulated clock (18.2 ticks/s), so key and frame times line up exactly. (DOSBox-X's
