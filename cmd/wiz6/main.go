@@ -20,6 +20,7 @@ func main() {
 	input := flag.String("input", "", "replace the keyboard and mouse with a script: SECONDS:ACTION[,...], "+
 		"ACTION kHEX (tap a scan code), pHEX/rHEX (press/release a scan code), aX/Y (put the mouse at X, Y), mDX/DY (move the mouse), bN (click button N), dN/uN (button N down/up)")
 	maze := flag.Bool("maze", false, "testing: boot straight into NEWGAME.DBS's maze with the first six PCFILE.DBS characters")
+	pcview := flag.Int("pcview", -1, "testing: as -maze, but open the character view of party member N")
 	flag.Parse()
 	if *imp != "" {
 		if *data == "" {
@@ -62,7 +63,9 @@ func main() {
 	}
 	code := 0
 	if err := host.Run("Wizardry VI", func() {
-		if *maze {
+		if *pcview >= 0 {
+			code = game.PCView(*data, *pcview)
+		} else if *maze {
 			code = game.MainMaze(*data)
 		} else {
 			code = game.Main(*data)
