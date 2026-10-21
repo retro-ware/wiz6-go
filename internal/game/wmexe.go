@@ -37,6 +37,16 @@ func wmexeOvmain() {
 // fighter is fighter i of group g.
 func fighter(g, i int) *Combatant { return &monsterGroups[g].Members[i] }
 
+// targetOf is fighter c's target, nil for none (B31 255: the C reads past
+// monster_groups then).
+func targetOf(c *Combatant) *Combatant {
+	g, i := int(uint8(c.B31)), int(uint8(c.B32))
+	if g >= len(monsterGroups) || i >= len(monsterGroups[g].Members) {
+		return nil
+	}
+	return fighter(g, i)
+}
+
 // actor is the acting fighter.
 func actor() *Combatant { return fighter(actGroup, actMember) }
 
@@ -553,7 +563,7 @@ func performAction() {
 	if msg == 0 && c.Status[8] > 0 && random(100) > 75 {
 		msg, turned = 3203, false
 	}
-	if groupMonsterRec[actGroup].Flags&4 != 0 && fighter(int(uint8(c.B31)), int(uint8(c.B32))).Status[6] > 0 {
+	if groupMonsterRec[actGroup].Flags&4 != 0 && targetOf(c) != nil && targetOf(c).Status[6] > 0 {
 		msg = 3218
 		leave = 1
 		if monsterGroups[actGroup].MonsterID == 151 {
@@ -601,7 +611,7 @@ func performAction() {
 		combatDelay(int(g4fc8) / 2)
 		clearWindow(partyPictureWin, true)
 	}
-	if t := fighter(int(uint8(c.B31)), int(uint8(c.B32))); uint8(t.Condition) >= 3 || t.Toggle != 0 {
+	if t := targetOf(c); t != nil && (uint8(t.Condition) >= 3 || t.Toggle != 0) {
 		if c.B31 == 0 {
 			c.B32 = int8(nextLivingMember(int(uint8(c.B32))))
 		} else {
@@ -619,8 +629,8 @@ func performAction() {
 	}
 	switch uint8(c.B24[6]) {
 	case 0:
-		t := fighter(int(uint8(c.B31)), int(uint8(c.B32)))
-		if uint8(t.Condition) >= 3 || t.Toggle != 0 {
+		t := targetOf(c)
+		if t == nil || uint8(t.Condition) >= 3 || t.Toggle != 0 {
 			break
 		}
 		slot := int(uint8(c.B24[4+int(uint8(c.B33))%2]))

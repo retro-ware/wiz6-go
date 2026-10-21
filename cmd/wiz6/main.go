@@ -21,6 +21,7 @@ func main() {
 		"ACTION kHEX (tap a scan code), pHEX/rHEX (press/release a scan code), aX/Y (put the mouse at X, Y), mDX/DY (move the mouse), bN (click button N), dN/uN (button N down/up)")
 	maze := flag.Bool("maze", false, "testing: boot straight into NEWGAME.DBS's maze with the first six PCFILE.DBS characters")
 	pcview := flag.Int("pcview", -1, "testing: as -maze, but open the character view of party member N")
+	fight := flag.Int("fight", -1, "testing: as -maze, but start an encounter (with monster N when N > 0)")
 	chest := flag.Int("chest", -1, "testing: as -maze, but open treasure record N as a found chest")
 	flag.Parse()
 	if *imp != "" {
@@ -64,7 +65,9 @@ func main() {
 	}
 	code := 0
 	if err := host.Run("Wizardry VI", func() {
-		if *chest >= 0 {
+		if *fight >= 0 {
+			code = game.MainFight(*data, *fight)
+		} else if *chest >= 0 {
 			code = game.MainChest(*data, *chest)
 		} else if *pcview >= 0 {
 			code = game.PCView(*data, *pcview)
