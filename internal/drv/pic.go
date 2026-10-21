@@ -106,7 +106,7 @@ func DrawFrames(n, x, y, clipL, clipR, flags int, toScreen bool, frames []byte) 
 			break
 		}
 		r := rec(f)
-		src := base + int(slots[r]) | int(slots[r+1])<<8
+		src := base + (int(slots[r]) | int(slots[r+1])<<8)
 		bit := 0
 		for ty := range th {
 			for tx := range tw {
