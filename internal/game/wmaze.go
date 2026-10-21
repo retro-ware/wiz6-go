@@ -97,18 +97,29 @@ const (
 	animFrameSteps = 10 // idle steps between animation frames (mzAnimCounter)
 )
 
-// PC fields as WMAZE reads them.
+// PC fields as WMAZE, WMELE and WMEXE read them.
 const (
 	conditionOK       = 0
+	conditionDown     = 2 // and worse: cannot act
 	conditionDead     = 3 // and worse
 	statusAsleep      = 2
 	statusPoisoned    = 5 // with PoisonStr
 	statusForever     = 255
 	statStrength      = 0
+	statIntelligence  = 1
 	statDexterity     = 4
+	statSpeed         = 5
+	statKarma         = 7
 	skillNoticeSecret = 11 // check_secret_detect's skill
 	skillPickLock     = 15
+	skillShield       = 8  // trained by blocking and shield bashes
+	skillUnarmed      = 9  // the skill of an empty hand
+	skillInstrument   = 12 // a bard's skill with an item's spell
+	skillHide         = 16
+	skillSpotMonsters = 23 // identifies monster groups
 	classThief        = 3
+	classRanger       = 4
+	classAlchemist    = 5
 	classBard         = 6
 	soundBeep         = 0
 	soundDeathBase    = 8 // plus Sex

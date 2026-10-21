@@ -33,7 +33,7 @@ func spellAnimation(g, i, kind int, flash bool) {
 		return
 	}
 	row := 1
-	if g == 0 || g == 6 {
+	if g == 0 || g == allyGroup {
 		if c := actor(); c.Pos == -1 {
 			row = b2i(actGroup != 1)
 		} else {
@@ -58,7 +58,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 	if dtLog != nil {
 		return
 	}
-	if g == 0 && fighter(g, i).B31 == 0 {
+	if g == 0 && fighter(g, i).TargetGroup == 0 {
 		return
 	}
 	resetAnimation()
@@ -73,7 +73,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 	var step [3]int
 	var side, mirror, start int
 	symmetric := kind == 6 || kind == 8 || kind >= 10 && kind <= 13 || kind == 15
-	if g == 0 || g == 6 {
+	if g == 0 || g == allyGroup {
 		side, start = 0, 0
 		step = [3]int{2, 1, 0}
 		mirror = i % 2
@@ -115,15 +115,15 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 // spellPower (calc_spell_level_value, WMEXE 7816).
 func spellPower(spell, power int) int { return int(spellTable[spell].Level)*3 + power*3 - 6 }
 
-// sideOf is 1 when the acting fighter is on the party's side (spells at "the other
+// partySide is true when the acting fighter is on the party's side (spells at "the other
 // side" hit the monsters).
-func partySide() bool { return actGroup == 0 || actGroup == 6 }
+func partySide() bool { return actGroup == 0 || actGroup == allyGroup }
 
-// doCastAction (do_cast_action, WMEXE b03c) casts the acting fighter's spell (W10: power
+// doCastAction (do_cast_action, WMEXE b03c) casts the acting fighter's spell (Choice: power
 // <<8 | spell): it may fizzle, backfire or be silenced; the stamina it costs.
 func doCastAction(c *Combatant) int {
 	monsterGroups[0].Count = uint8(partyCount)
-	power, spell := int(c.W10)/256, int(c.W10)%256
+	power, spell := int(c.Choice)/256, int(c.Choice)%256
 	sp := &spellTable[spell]
 	mexeName = combatantName(actGroup, actMember)
 	mexeVerb = getMessage(3308)
@@ -131,20 +131,20 @@ func doCastAction(c *Combatant) int {
 	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, realmColors[sp.Realm])
 	mexeBackfire, mexeFizzle = 0, 0
 	grp := monsterGroups[actGroup]
-	if random(int(uint8(grp.B396[5]))+int(c.Level)+1) < int(uint8(grp.B396[5])) {
+	if random(int(uint8(grp.Wards[5]))+int(c.Level)+1) < int(uint8(grp.Wards[5])) {
 		mexeFizzle = 1
 	}
 	if actGroup == 0 {
 		p := &party[actMember]
 		var chance int
-		if p.Class == 5 || p.Class == 4 || p.Class == 13 {
+		if p.Class == classAlchemist || p.Class == classRanger || p.Class == classNinja {
 			chance = int(p.Skills[25])/3 + 90 - int(sp.Level)*power
 		} else {
 			chance = int(p.Skills[13])/3 + 90 - int(sp.Level)*power
 			mexeRaiseSkill(actMember, 13, 2)
 		}
 		if random(100) > chance {
-			if scenarioHdr.Level == 1 || random(36) <= int(p.Stats[7])+18 {
+			if scenarioHdr.Level == 1 || random(36) <= int(p.Stats[statKarma])+18 {
 				mexeFizzle = 1
 			} else {
 				mexeFizzle, mexeBackfire = 0, 1
@@ -163,7 +163,7 @@ func doCastAction(c *Combatant) int {
 	silenceable := true
 	if actGroup == 0 {
 		cl := party[actMember].Class
-		silenceable = !(cl == 5 || cl == 4 || cl == 13)
+		silenceable = !(cl == classAlchemist || cl == classRanger || cl == classNinja)
 	} else {
 		k := groupMonsterRec[actGroup].Unk208
 		silenceable = !(k == 5 || k == 4 || k == 13)
@@ -205,18 +205,18 @@ func backfire(c *Combatant) {
 		combatDelay(2)
 		printMsgCentered(3202, 4, 2)
 		combatDelay(int(delaySetting) / 2)
-		c.B31, c.B32 = int8(actGroup), int8(actMember)
+		c.TargetGroup, c.TargetMember = int8(actGroup), int8(actMember)
 	}
 }
 
-// doUseItemAction (do_use_item_action, WMEXE b44d) uses the acting member's item W10:
+// doUseItemAction (do_use_item_action, WMEXE b44d) uses the acting member's item Choice:
 // its spell, if it has one.
 func doUseItemAction(c *Combatant) {
 	mexeName = combatantName(actGroup, actMember)
 	power, spell, skill := 0, 0, -1
 	if actGroup == 0 {
 		p := &party[actMember]
-		item := int(c.W10)
+		item := int(c.Choice)
 		rec := itemRec(int(p.Items[item].ID))
 		mexeText = cstr(rec.Name[:])
 		if rec.Spell != 0 {
@@ -237,9 +237,9 @@ func doUseItemAction(c *Combatant) {
 					mexeVerb = getMessage(3312)
 					skill = 22
 				default:
-					if p.Class == 6 {
-						power = int(p.Skills[12])/15 + 2 - int(spellTable[spell].Level)
-						mexeRaiseSkill(actMember, 12, 1)
+					if p.Class == classBard {
+						power = int(p.Skills[skillInstrument])/15 + 2 - int(spellTable[spell].Level)
+						mexeRaiseSkill(actMember, skillInstrument, 1)
 						power = min(max(power, 0), 6)
 					}
 					if power == 0 {
@@ -272,7 +272,7 @@ func doUseItemAction(c *Combatant) {
 		if skill != -1 {
 			mexeRaiseSkill(actMember, skill, 3)
 			if int(party[actMember].Skills[skill]) < roll {
-				if scenarioHdr.Level == 1 || random(36) <= int(party[actMember].Stats[7])+18 {
+				if scenarioHdr.Level == 1 || random(36) <= int(party[actMember].Stats[statKarma])+18 {
 					mexeFizzle = 1
 				} else {
 					mexeBackfire = 1
@@ -297,11 +297,11 @@ func doUseItemAction(c *Combatant) {
 	doCastSpell(c, spell, power)
 }
 
-// doBreath (fb934, WMEXE) is a monster's breath (W10: its kind) at its target group,
+// doBreath (fb934, WMEXE) is a monster's breath (Choice: its kind) at its target group,
 // as strong as it is healthy; the stamina it costs.
 func doBreath(c *Combatant) int {
 	mexeDelayed = 0
-	g, i := int(uint8(c.B31)), int(uint8(c.B32))
+	g, i := int(uint8(c.TargetGroup)), int(uint8(c.TargetMember))
 	pow, hp := 1, 25
 	for range 6 {
 		if int(c.HP) > hp {
@@ -317,7 +317,7 @@ func doBreath(c *Combatant) int {
 	}
 	cost := 0
 	smax := int(c.StaminaMax)
-	switch c.W10 {
+	switch c.Choice {
 	case 1:
 		actorLine(3340, 3700, 12, 0)
 		spellAnimation(g, 0, 0, true)
@@ -393,7 +393,7 @@ func doBreath(c *Combatant) int {
 func weakenGroup(g, who, mod, power int, weak bool) {
 	targetRun(g, who, func(i int) {
 		c := fighter(g, i)
-		if uint8(c.Condition) >= 3 || c.Toggle != 0 {
+		if uint8(c.Condition) >= conditionDead || c.Stance != stanceNone {
 			return
 		}
 		clearWindowArea(partyPictureWin, 0, 2, 39, 4)
@@ -416,11 +416,11 @@ func weakenGroup(g, who, mod, power int, weak bool) {
 		} else {
 			c.B41 = int8(clampToward(n*3, int(c.B41), 1))
 			for k := range 4 {
-				c.B24[k] = int8(uint8(c.B24[k]) / 2)
+				c.Plan[k] = int8(uint8(c.Plan[k]) / 2)
 			}
 			if c.B41 < 0 {
 				for k := min(mexeAbs(int(c.B41))/10, 3); k > 0; k-- {
-					c.B24[4-k] = 0
+					c.Plan[4-k] = 0
 				}
 			}
 		}
@@ -445,7 +445,7 @@ func chaosStrike(g, who, power, mod int) {
 	targetRun(g, who, func(i int) {
 		if random(100) <= int(groupMonsterRec[g].Resist[2])-mod {
 			c := fighter(g, i)
-			if uint8(c.Condition) >= 3 || c.Toggle != 0 {
+			if uint8(c.Condition) >= conditionDead || c.Stance != stanceNone {
 				return
 			}
 			clearWindowArea(partyPictureWin, 0, 2, 39, 4)
@@ -490,8 +490,8 @@ func summonGroup(mons [6]int, power int) {
 	var g int
 	switch {
 	case partySide():
-		g = 6
-		if monsterGroups[6].Count > 0 {
+		g = allyGroup
+		if monsterGroups[allyGroup].Count > 0 {
 			printMsgCentered(3217, 6, 2)
 			return
 		}
@@ -523,9 +523,9 @@ func summonGroup(mons [6]int, power int) {
 	rec.GroupSize.Count = uint8(size)
 	rec.GroupSize.Base = int16(size - 1)
 	grp.Count = uint8(min(max(rollDice(rec.GroupSize), 1), 9))
-	grp.B396 = [6]int8{}
-	grp.B402 = [4]uint8{}
-	grp.B412 = 0
+	grp.Wards = [6]int8{}
+	grp.CloudPower = [4]uint8{}
+	grp.Unidentified = 0
 	for i := 0; int(grp.Count) > i; i++ {
 		c := &grp.Members[i]
 		c.Level = int16(rec.HP.Count)
@@ -534,9 +534,9 @@ func summonGroup(mons [6]int, power int) {
 		c.StaminaMax = int16(rollDice(rec.Stamina))
 		c.Stamina = c.StaminaMax
 		c.Pos = -1
-		c.B24[6] = 10
-		c.B33 = 0
-		c.B24[0] = 0
+		c.Plan[planAction] = actionNone
+		c.Swing = 0
+		c.Plan[0] = 0
 	}
 	mexeName = itoa(int(grp.Count))
 	mexeVerb = cstr(rec.Names[b2i(grp.Count != 1)][:])
@@ -549,21 +549,21 @@ func summonGroup(mons [6]int, power int) {
 	printCombatLine(mexeName, mexeVerb, mexeText, 1, 6, 6)
 }
 
-// raiseGroupField sets group byte v (a ward or a cloud's strength) toward power.
+// raiseWard raises ward w toward step.
 func raiseWard(w *int8, step int) { *w = int8(clampToward(step, int(uint8(*w)), 0)) }
 
 // startCloud (cases 7, 25, 31, 43 of do_cast_spell) gives group g a cloud k of at least
 // power that strikes at the next initiative count.
 func startCloud(g, k, power int) {
 	grp := monsterGroups[g]
-	grp.B402[k] = uint8(max(int(grp.B402[k]), power) + 1)
-	setGroupB406(grp, k, uint8(initiative+1))
+	grp.CloudPower[k] = uint8(max(int(grp.CloudPower[k]), power) + 1)
+	setCloudStrike(grp, k, uint8(initiative+1))
 }
 
 // doCastSpell (do_cast_spell, WMEXE 9405) works spell at power from fighter c on its
-// target (B31, B32).
+// target (TargetGroup, TargetMember).
 func doCastSpell(c *Combatant, spell, power int) {
-	tg, ti := int(uint8(c.B31)), int(uint8(c.B32))
+	tg, ti := int(uint8(c.TargetGroup)), int(uint8(c.TargetMember))
 	mexeDelayed = 0
 	mod := spellPower(spell, power)
 	if tg != 255 {
@@ -583,7 +583,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		spellAnimation(tg, 0, 0, true)
 		hitDamage(tg, -(power + 3), 2, 5, power, 1, mod)
 	case 3:
-		raiseWard(&own.B396[0], power*15)
+		raiseWard(&own.Wards[0], power*15)
 	case 4:
 		spellAnimation(tg, 0, 0, true)
 		hitDamage(tg, -(power + 4), 3, 3, power, 1, mod)
@@ -614,12 +614,12 @@ func doCastSpell(c *Combatant, spell, power int) {
 		weakenGroup(tg, -(power + 3), mod, power, false)
 	case 14:
 		for i := 0; int(own.Count) > i; i++ {
-			if m := &own.Members[i]; uint8(m.Condition) < 3 {
+			if m := &own.Members[i]; uint8(m.Condition) < conditionDead {
 				m.B41 = int8(clampToward(power*2, int(m.B41), 0))
 			}
 		}
 	case 16:
-		raiseWard(&own.B396[1], power*15)
+		raiseWard(&own.Wards[1], power*15)
 	case 17:
 		spellAnimation(tg, 0, 1, true)
 		hitDamage(tg, -(power + 4), 3, 4, power, 3, mod)
@@ -633,12 +633,12 @@ func doCastSpell(c *Combatant, spell, power int) {
 		spellAnimation(tg, ti, 3, false)
 		hitDamageThen(tg, ti, 3477, 6, power, mod, 1, 5, 5, false, power*10, 2, power, 0, 0)
 	case 21:
-		raiseWard(&own.B396[2], power*15)
+		raiseWard(&own.Wards[2], power*15)
 	case 22:
 		spellAnimation(tg, 0, 3, true)
 		hitDamageThen(tg, -3, 3480, 5, power, mod, 1, 6, 8, false, power, 4, power, 0, 0)
 	case 23:
-		raiseWard(&own.B396[3], power*15)
+		raiseWard(&own.Wards[3], power*15)
 	case 24:
 		spellAnimation(tg, 0, 16, false)
 		hitEffect(tg, -(power + 3), 3472, 12, 0, mod, false, power, 2, 0)
@@ -653,12 +653,12 @@ func doCastSpell(c *Combatant, spell, power int) {
 		clearMsgLine(3)
 		printMsgCentered(3224, 3, 3)
 		combatDelay(int(delaySetting) / 2)
-		for k := range own.B402 {
-			own.B402[k] = uint8(max(int(own.B402[k])-power, 0))
+		for k := range own.CloudPower {
+			own.CloudPower[k] = uint8(max(int(own.CloudPower[k])-power, 0))
 		}
-		if v := int(uint8(own.B396[3])); v > 0 {
+		if v := int(uint8(own.Wards[3])); v > 0 {
 			v = max(v-power*10, 0)
-			own.B396[3] = int8(v)
+			own.Wards[3] = int8(v)
 			clearMsgLine(3)
 			if v == 0 {
 				printMsgCentered(3225, 3, 3)
@@ -744,7 +744,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 	case 54:
 		for g := 1; g <= monsterGroupCount; g++ {
 			if random(100) < power*10+80-gameStateArg*5 {
-				monsterGroups[g].B412 = 0
+				monsterGroups[g].Unidentified = 0
 			}
 		}
 	case 55:
@@ -817,7 +817,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 			summonGroup([6]int{}, 0)
 		}
 	case 72:
-		raiseWard(&monsterGroups[tg].B396[5], power*2)
+		raiseWard(&monsterGroups[tg].Wards[5], power*2)
 	case 76:
 		spellAnimation(tg, 0, 4, false)
 		sideGroups(other, func(g int) { hitDamage(g, -10, 4, 4, power, 11, mod) })
@@ -844,14 +844,14 @@ func doCastSpell(c *Combatant, spell, power int) {
 	case 26:
 		t := fighter(tg, ti)
 		if v := int(uint8(t.B35[0])) - power; v <= 0 {
-			t.B35[0], t.Status[5] = 0, 0
+			t.B35[0], t.Status[statusPoisoned] = 0, 0
 		} else {
 			t.B35[0] = int8(v)
 		}
-		if v := int(t.Status[5]) - power*5; v <= 0 {
-			t.Status[5], t.B35[0] = 0, 0
+		if v := int(t.Status[statusPoisoned]) - power*5; v <= 0 {
+			t.Status[statusPoisoned], t.B35[0] = 0, 0
 		} else {
-			t.Status[5] = uint8(v)
+			t.Status[statusPoisoned] = uint8(v)
 		}
 		if tg == 0 {
 			drawCardX(ti, false)
@@ -908,7 +908,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 	case 38:
 		partyCounters[0].A += int16(100 * power)
 	case 70:
-		raiseWard(&own.B396[4], power*10)
+		raiseWard(&own.Wards[4], power*10)
 		if actGroup == 0 {
 			partyCounters[4].A += int16(power * 50)
 			partyCounters[4].B = int16(clampToward(power*10, int(partyCounters[4].B), 0))

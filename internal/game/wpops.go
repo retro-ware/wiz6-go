@@ -38,7 +38,7 @@ func groupName(g int) string {
 	if grp.Count == 1 {
 		n = 0
 	}
-	return cstr(groupMonsterRec[g].Names[int(grp.B412)<<1+n][:])
+	return cstr(groupMonsterRec[g].Names[int(grp.Unidentified)<<1+n][:])
 }
 
 // drawCombatTitle (WPOPS 4580).
@@ -619,13 +619,13 @@ func choosePartyActions(win *Window) {
 		if uint8(c.B35[1]) > 0 {
 			c.B35[2] = int8(random(power/2) + random(20) + power/2)
 		}
-		c.B33, c.B24[4], c.B24[5] = 0, 0, 1
+		c.Swing, c.Plan[4], c.Plan[5] = 0, 0, 1
 		swings := min(max(int(p.SecondaryAttacks)+int(c.B41)/10, 1), 4)
 		for i := range 4 {
 			if i >= swings || p.Condition >= 2 || p.Status[3] > 0 || p.Status[2] > 0 {
-				c.B24[i] = 0
+				c.Plan[i] = 0
 			} else {
-				c.B24[i] = int8(power)
+				c.Plan[i] = int8(power)
 				power -= step
 			}
 		}
@@ -646,7 +646,7 @@ func choosePartyActions(win *Window) {
 			if p.Race != 7 {
 				enabled[8] = 0
 			}
-			if c.Toggle != 0 || p.Class != 3 && p.Class != 13 && p.Class != 4 && p.Class != 6 && p.Class != 12 && p.Skills[16] == 0 {
+			if c.Stance != 0 || p.Class != 3 && p.Class != 13 && p.Class != 4 && p.Class != 6 && p.Class != 12 && p.Skills[16] == 0 {
 				enabled[6] = 0
 			}
 			if p.ItemCount == 0 {
@@ -666,7 +666,7 @@ func choosePartyActions(win *Window) {
 					}
 				}
 			}
-			if member >= 3 && p.Hands[0].B0D == 0 && c.Toggle != 1 {
+			if member >= 3 && p.Hands[0].B0D == 0 && c.Stance != 1 {
 				enabled[0] = 0
 			}
 			enabled[11] = -1
@@ -693,7 +693,7 @@ func choosePartyActions(win *Window) {
 				}
 				action = menuSelect(win, 3000, enabled[:], 1, 1, 6, rows, 5, 0, getCombatInput)
 				choice = -1
-				c.B31, c.B32 = -1, 0
+				c.TargetGroup, c.TargetMember = -1, 0
 				retry := false
 				switch action {
 				case 0: // fight
@@ -726,7 +726,7 @@ func choosePartyActions(win *Window) {
 						if rng == 2 && choice != 4 {
 							rng = 0
 						}
-						if rng == 0 && member >= 3 && c.Toggle != 1 {
+						if rng == 0 && member >= 3 && c.Stance != 1 {
 							playSound(0)
 							target = -1
 						} else {
@@ -736,7 +736,7 @@ func choosePartyActions(win *Window) {
 					if choice == -1 || target == -1 {
 						retry = true
 					} else {
-						c.B31 = int8(target)
+						c.TargetGroup = int8(target)
 					}
 				case 1: // parry and the like
 					prompt(3502)
@@ -767,7 +767,7 @@ func choosePartyActions(win *Window) {
 					if target == -1 {
 						retry = true
 					} else {
-						c.B31 = int8(target)
+						c.TargetGroup = int8(target)
 					}
 				case 9: // back one member
 					clearTargets()
@@ -788,20 +788,20 @@ func choosePartyActions(win *Window) {
 				}
 			}
 			if !back {
-				c.W10 = int16(choice)
-				c.W12 = -1
-				c.B24[6] = int8(action)
-				if target = int(uint8(c.B31)); target >= 1 && target <= 5 {
-					c.B32 = int8(pickTargetMonster(member, target))
+				c.Choice = int16(choice)
+				c.SecondAttack = -1
+				c.Plan[6] = int8(action)
+				if target = int(uint8(c.TargetGroup)); target >= 1 && target <= 5 {
+					c.TargetMember = int8(pickTargetMonster(member, target))
 				}
 				ammo := int(p.Equipped[1])
 				if action == 0 {
 					if ammo == 255 && p.Equipped[0] == 255 {
-						c.W12 = int16(pickRandomSetBit(p.Hands[0].Flags))
+						c.SecondAttack = int16(pickRandomSetBit(p.Hands[0].Flags))
 					} else if ammo != 255 {
 						switch t := p.Items[ammo].Type; {
 						case t == 2 || t == 12 || t == 16:
-							c.W12 = 4
+							c.SecondAttack = 4
 						case t < 2 && (p.Hands[1].B0D == 1 || member < 3 && target < 3):
 							var b int
 							for tries := 0; ; {
@@ -812,7 +812,7 @@ func choosePartyActions(win *Window) {
 								}
 							}
 							if b != 4 {
-								c.W12 = int16(b)
+								c.SecondAttack = int16(b)
 							}
 						}
 					}
@@ -846,17 +846,17 @@ func choosePartyActions(win *Window) {
 	for m := 0; m < partyCount; m++ {
 		c := &monsterGroups[0].Members[m]
 		if c.Status[1] > 0 && random(100) > int(party[m].Stats[6])+80 {
-			c.B24[6] = 7
+			c.Plan[6] = 7
 		}
-		if c.B24[6] == 1 || c.B24[6] == 5 {
-			c.B24[0] = 1
+		if c.Plan[6] == 1 || c.Plan[6] == 5 {
+			c.Plan[0] = 1
 		}
-		if c.B24[6] == 0 {
-			if c.W12 == -1 {
-				c.B24[1], c.B24[3] = 0, 0
+		if c.Plan[6] == 0 {
+			if c.SecondAttack == -1 {
+				c.Plan[1], c.Plan[3] = 0, 0
 			}
 		} else {
-			c.B24[1], c.B24[2], c.B24[3] = 0, 0, 0
+			c.Plan[1], c.Plan[2], c.Plan[3] = 0, 0, 0
 		}
 	}
 }
@@ -865,8 +865,8 @@ func choosePartyActions(win *Window) {
 // one group past where pickTargetMonster marks it).
 func markTarget(m int) {
 	c := &monsterGroups[0].Members[m]
-	if uint8(c.B31) > 0 {
-		wpopsTargetTaken[9+int(uint8(c.B31))*9+int(uint8(c.B32))] = 1
+	if uint8(c.TargetGroup) > 0 {
+		wpopsTargetTaken[9+int(uint8(c.TargetGroup))*9+int(uint8(c.TargetMember))] = 1
 	}
 }
 
@@ -877,7 +877,7 @@ func findMostWounded(monster *Combatant, group int) int {
 	grp := monsterGroups[group]
 	for i := 0; i < int(grp.Count); i++ {
 		if d := int(grp.Members[i].HPMax - grp.Members[i].HP); d > best && random(2) == 0 {
-			monster.B31, monster.B32 = int8(group), int8(i)
+			monster.TargetGroup, monster.TargetMember = int8(group), int8(i)
 			best = d
 		}
 	}
@@ -918,34 +918,34 @@ func chooseGroupActions(group, targetGroup int) {
 		if uint8(m.B35[1]) > 0 {
 			m.B35[2] = int8(random(power/2) + random(20) + power/2)
 		}
-		m.B33 = 0
-		m.B24[4] = int8(pickRandomRow(group))
+		m.Swing = 0
+		m.Plan[4] = int8(pickRandomRow(group))
 		for n := 0; ; {
-			m.B24[5] = int8(pickRandomRow(group))
+			m.Plan[5] = int8(pickRandomRow(group))
 			n++
-			if m.B24[5] != m.B24[4] || n >= 3 {
+			if m.Plan[5] != m.Plan[4] || n >= 3 {
 				break
 			}
 		}
 		for s := range 4 {
 			if int(rec.Unk211[2]) <= s || uint8(m.Condition) >= 2 || m.Status[3] > 0 || m.Status[2] > 0 {
-				m.B24[s] = 0
+				m.Plan[s] = 0
 			} else {
-				m.B24[s] = int8(power)
+				m.Plan[s] = int8(power)
 				power -= step
 			}
 		}
 		act := -1
-		m.B31 = int8(targetGroup)
+		m.TargetGroup = int8(targetGroup)
 		for {
-			m.B32 = int8(random(int(monsterGroups[targetGroup].Count)))
-			if uint8(monsterGroups[uint8(m.B31)].Members[uint8(m.B32)].Condition) < 3 {
+			m.TargetMember = int8(random(int(monsterGroups[targetGroup].Count)))
+			if uint8(monsterGroups[uint8(m.TargetGroup)].Members[uint8(m.TargetMember)].Condition) < 3 {
 				break
 			}
 		}
 		if random(100) < int(rec.Unk168[0]) {
 			act = 3
-			m.B24[6] = 3
+			m.Plan[6] = 3
 			roll, limit, spell := random(100), 5, -1
 			for k := 0; spell == -1; k++ {
 				if roll < limit {
@@ -973,17 +973,17 @@ func chooseGroupActions(group, targetGroup int) {
 			for random(int(m.Level))+1 < lv {
 				lv--
 			}
-			m.W10 = int16(lv<<8 + spell)
+			m.Choice = int16(lv<<8 + spell)
 		}
 		if act == -1 && random(100) < int(rec.Unk168[2]) {
 			act = 8
-			m.B24[6] = 8
-			m.W10 = int16(rec.Unk211[5])
+			m.Plan[6] = 8
+			m.Choice = int16(rec.Unk211[5])
 		}
 		if act == -1 {
 			reach := 0
 			if uint8(m.Condition) < 2 && m.Status[3] == 0 && m.Status[2] == 0 {
-				a := int(uint8(m.B24[4]))
+				a := int(uint8(m.Plan[4]))
 				switch {
 				case group == 6:
 					reach = 9
@@ -1008,24 +1008,24 @@ func chooseGroupActions(group, targetGroup int) {
 				}
 			}
 			if alive > 0 {
-				m.B24[6] = 0
-				m.B31 = int8(targetGroup)
-				m.B32 = int8(random(alive))
-				m.W10 = attackBits(rec, int(uint8(m.B24[4])))
+				m.Plan[6] = 0
+				m.TargetGroup = int8(targetGroup)
+				m.TargetMember = int8(random(alive))
+				m.Choice = attackBits(rec, int(uint8(m.Plan[4])))
 			} else {
-				m.B24[0] = 0
+				m.Plan[0] = 0
 			}
 		}
-		m.W12 = -1
-		if m.B24[6] == 0 {
-			a := int(uint8(m.B24[5]))
+		m.SecondAttack = -1
+		if m.Plan[6] == 0 {
+			a := int(uint8(m.Plan[5]))
 			if group >= 3 && rec.Attacks[a].Range <= 1 {
-				m.B24[1], m.B24[3] = 0, 0
+				m.Plan[1], m.Plan[3] = 0, 0
 			} else {
-				m.W12 = attackBits(rec, a)
+				m.SecondAttack = attackBits(rec, a)
 			}
 		} else {
-			m.B24[1], m.B24[2], m.B24[3] = 0, 0, 0
+			m.Plan[1], m.Plan[2], m.Plan[3] = 0, 0, 0
 		}
 	}
 }

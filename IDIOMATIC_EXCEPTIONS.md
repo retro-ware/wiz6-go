@@ -188,3 +188,29 @@ New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall s
 - `encounterByte` reads past `Encounters` into `Walls0` as the C does; `jamLock`/`clearDirBits` mask DirBits directly.
 - `int16(...)`/`int32` casts in drawVitalBar, healMember, restParty, forceLock, inflictStatus, trySkillGain, clampValue, rollDice: the C's 16-bit int wrap, kept for parity.
 - addViewObject's endless `playSound` loop when the 30 objects overflow: the C hangs there.
+
+## internal/game: combat (wmexe, wmele)
+
+Renamed core fields (state.go, goldens rewritten): `Combatant.W10` -> `Choice` (the action's argument), `W12` -> `SecondAttack`, `B24` -> `Plan` (with index constants `planSlot`/`planAction`), `B31`/`B32` -> `TargetGroup`/`TargetMember`, `B33` -> `Swing`, `Toggle` -> `Stance`; `MonsterGroup.B396` -> `Wards`, `B402` -> `CloudPower`, `B406`/`B407` -> `Cloud0Strike`/`Cloud1to3Strike`, `B412` -> `Unidentified`; `groupB406`/`setGroupB406` -> `cloudStrike`/`setCloudStrike`. New names in wmexe.go: `allyGroup`/`combatGroups`, `action...` kinds, `defendParry`/`defendRest`, `stance...` values. Added to wmaze.go's PC set: `conditionDown`, `statIntelligence`/`statSpeed`/`statKarma`, `skillShield`/`skillUnarmed`/`skillInstrument`/`skillHide`/`skillSpotMonsters` (named by their use here), `classRanger`/`classAlchemist`. Game states, `keyClassMenu`/`keyEnter`, `noEquippedItem`, `statusAsleep`/`statusPoisoned`/`statusForever`, `soundBeep`/`soundDeathBase` replace literals. wpops.go/wpops_spell.go/wpops_test.go only got the forced renames and still use `Plan[6]`, `Plan[4]`, action and stance numbers.
+
+### Hex/binary literals in code
+
+- None.
+
+### Unclear names kept
+
+- state.go `Combatant.B35` ([0] poison strength, [1] a round count raised by spell 69 and run down each round, [2] the count at which a charge starts): mixed, not split since the goldens name the array.
+- state.go `Combatant.B38`, `B39`, `B40`, `B41` (difficulty and spell modifiers to armour, to-hit, damage and swing count by their use) and `MonsterGroup.B414` (WPOPS): meaning not certain.
+- `Plan[0..3]` swing initiatives and `Plan[4-k]` in weakenGroup: indexed by swing number, kept as numbers.
+- `actionDefend`'s Choice 0 and 1 (block with the shield skill, a plain -2 armour): left as numbers.
+- Status indexes other than 2 and 5 (`Status[0]` silence, `[1]`, `[3]`, `[4]`, `[6]`, `[7]`, `[8]`, `[9]`), `Resist[...]` element indexes, `Wards[k]` and cloud indexes `k`, Skills 13/22/24/25 (casting and item skills), weapon skill numbers 0..7 in doAttack's icon table: left as numbers.
+- Spell numbers in doCastSpell's switch, breath kinds in doBreath, spell animation kinds, `Spell.B3` flags (1 can fizzle, 2 can backfire), monster record fields `Unk134`/`Unk135`/`Unk168`/`Unk172`/`Unk198`/`Unk208`/`Unk211`, `MonsterPicRec.Unk306`/`Unk309`/`Unk114`, monster ids (128, 150, 151, 153, 211..223, item 458, picture 9..54 lists), `g4338`/`g4352`/`g4354`/`g433a`/`g4fb0`.
+- Message numbers (3200..3900, 4000+spell), sound numbers other than beep/death, colours, window positions, depths, the hit-flash frame/depth tables, `spellAnimXY`, view tables `viewAdvance`/`viewDepthBase`/`flashShift`, view clip 72/248, `actionNone = 10`, `250` status cap: the original's arguments and data.
+- Sprite `Depth: 255` (free) stays a literal, as in WPOPS.
+
+### Low-level code kept
+
+- `int16(...)`/`int32` casts in damageRoll, resistReduce, advanceMonsterGroups, reduceStamina, fatigueMod, doBreath: the C's 16-bit int wrap, kept for parity.
+- `cloudStrike`/`setCloudStrike` join the two fields of bytes 406..409 by index (the goldens name them separately).
+- `kindAC`: kind -1 reads `AC[7]`, the byte before `Unk198`, as the C does.
+- targetOf's bounds check stands in for the C reading past monster_groups with target 255.

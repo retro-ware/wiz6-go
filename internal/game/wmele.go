@@ -27,13 +27,13 @@ var (
 // combat screen (11), in that order, so state 10 runs on into 11.
 func wmeleOvmain() {
 	meleAnnounce, meleNPCFirst, meleNewFight = 0, 0, 0
-	if gameState == 10 {
+	if gameState == stateBeginCombat {
 		beginCombat()
 	}
-	if gameState == 14 {
+	if gameState == stateEndCombatRound {
 		endCombatRound()
 	}
-	if gameState == 11 {
+	if gameState == stateRedrawCombat {
 		redrawCombatScreen()
 	}
 }
@@ -65,7 +65,7 @@ func waitAnimatingView(tenths int) {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		paceViewCycle()
@@ -78,7 +78,7 @@ func waitAnimatingView(tenths int) {
 func clearCombatGroups() {
 	combatKeys = getMessage(3900)
 	viewPosGroup = [2][5]int16{}
-	for g := range 7 {
+	for g := range combatGroups {
 		*monsterGroups[g] = MonsterGroup{}
 	}
 	monsterGroupCount = 0
@@ -151,9 +151,9 @@ func generateMonsterGroup(mon, n int) {
 	}
 	grp.Count = uint8(rollDice(rec.GroupSize))
 	grp.Count = min(max(grp.Count, 1), 9)
-	grp.B412 = 1
-	grp.B396 = [6]int8{}
-	grp.B402 = [4]uint8{}
+	grp.Unidentified = 1
+	grp.Wards = [6]int8{}
+	grp.CloudPower = [4]uint8{}
 	if scenarioHdr.Level == 2 {
 		rec.HP.Count++
 	}
@@ -198,11 +198,11 @@ func generateMonsterGroup(mon, n int) {
 func fillPartyGroup() {
 	grp := monsterGroups[0]
 	grp.Count = uint8(partyCount)
-	grp.B396 = [6]int8{}
+	grp.Wards = [6]int8{}
 	if partyCounters[4].A > 0 {
-		grp.B396[4] = int8(partyCounters[4].B)
+		grp.Wards[4] = int8(partyCounters[4].B)
 	}
-	grp.B402 = [4]uint8{}
+	grp.CloudPower = [4]uint8{}
 	for i := 0; i < partyCount; i++ {
 		p, c := &party[i], &grp.Members[i]
 		c.Level = p.Level
@@ -287,7 +287,7 @@ func placeGroupSprites(g int) {
 func updateCombatant(g, i, regen, drain int) bool {
 	c := &monsterGroups[g].Members[i]
 	died := false
-	if c.Status[2] > 0 {
+	if c.Status[statusAsleep] > 0 {
 		c.Stamina += int16(random(int(int32(c.StaminaMax)*5/100)) + 1)
 		if c.Stamina > c.StaminaMax {
 			c.Stamina = c.StaminaMax
@@ -295,14 +295,14 @@ func updateCombatant(g, i, regen, drain int) bool {
 	}
 	if c.Stamina <= 0 {
 		c.Stamina = 0
-		c.Status[2] = uint8(random(6) + 6)
+		c.Status[statusAsleep] = uint8(random(6) + 6)
 	}
 	c.HP += int16(regen - drain - int(uint8(c.B35[0])))
 	if c.HP > c.HPMax {
 		c.HP = c.HPMax
 	}
 	if c.HP <= 0 {
-		c.HP, c.Stamina, c.Condition = 0, 0, 3
+		c.HP, c.Stamina, c.Condition = 0, 0, conditionDead
 		died = true
 		if g != 0 {
 			if c.Pos != -1 {
@@ -317,11 +317,11 @@ func updateCombatant(g, i, regen, drain int) bool {
 		}
 	}
 	for s := range c.Status {
-		if c.Status[s] > 0 && c.Status[s] != 255 {
+		if c.Status[s] > 0 && c.Status[s] != statusForever {
 			c.Status[s]--
 		}
 	}
-	if c.Status[5] == 0 {
+	if c.Status[statusPoisoned] == 0 {
 		c.B35[0] = 0
 	}
 	switch {
@@ -333,8 +333,8 @@ func updateCombatant(g, i, regen, drain int) bool {
 	if c.B35[1] != 0 {
 		c.B35[1]--
 	}
-	if c.Toggle == 3 {
-		c.Toggle = 0
+	if c.Stance == stanceCharging {
+		c.Stance = stanceNone
 	}
 	return died
 }
@@ -344,10 +344,10 @@ func updateGroup(g int) {
 	grp := monsterGroups[g]
 	n := 0
 	for i := 0; int(grp.Count) > i; i++ {
-		if uint8(grp.Members[i].Condition) < 3 {
+		if uint8(grp.Members[i].Condition) < conditionDead {
 			updateCombatant(g, i, int(groupMonsterRec[g].Unk211[4]), 0)
 		}
-		if uint8(grp.Members[i].Condition) < 3 {
+		if uint8(grp.Members[i].Condition) < conditionDead {
 			grp.Members[n] = grp.Members[i]
 			n++
 		}
@@ -361,9 +361,9 @@ func checkGroupSurprise() {
 	for g := 1; g <= monsterGroupCount; g++ {
 		for m := 0; m < partyCount; m++ {
 			roll := random(100)
-			if monsterGroups[g].B412 == 1 && (int(party[m].Skills[23])-gameStateArg*3 > roll || int(party[m].Stats[1]) > roll) {
-				monsterGroups[g].B412 = 0
-				trySkillGain(m, 23, 0) // maybe_raise_skill (5493) is the same
+			if monsterGroups[g].Unidentified == 1 && (int(party[m].Skills[skillSpotMonsters])-gameStateArg*3 > roll || int(party[m].Stats[statIntelligence]) > roll) {
+				monsterGroups[g].Unidentified = 0
+				trySkillGain(m, skillSpotMonsters, 0) // maybe_raise_skill (5493) is the same
 			}
 		}
 	}
@@ -420,8 +420,8 @@ func compactMonsterGroups() {
 	}
 	monsterGroupCount = count
 	if count == 0 {
-		if returnCmd != 8 {
-			returnCmd = 15
+		if returnCmd != int16(stateGraveyard) {
+			returnCmd = int16(stateTreasureAfterFight)
 		}
 		combatOver = 1
 	}
@@ -440,7 +440,7 @@ func advanceMonsterGroups() {
 		p := 0
 		for i := 0; int(grp.Count) > i; i++ {
 			c := &grp.Members[i]
-			if c.Condition != 0 || c.Status[2] != 0 || c.Status[3] != 0 {
+			if c.Condition != conditionOK || c.Status[statusAsleep] != 0 || c.Status[3] != 0 {
 				continue
 			}
 			hurt := 0
@@ -480,7 +480,7 @@ func advanceMonsterGroups() {
 		setCursor(partyPictureWin, 20-(len(name)+len(msg)+1)/2, 0)
 		printString(partyPictureWin, name, 6)
 		printString(partyPictureWin, msg, 14)
-		playSound(0)
+		playSound(soundBeep)
 		ahead := monsterGroups[g-1]
 		for i := 0; int(ahead.Count) > i; i++ {
 			if pos := ahead.Members[i].Pos; pos != -1 {
@@ -508,7 +508,7 @@ func advanceMonsterGroups() {
 
 // monsterName is group g's monster name, plural or not, as identified so far.
 func monsterName(g int, plural bool) string {
-	return cstr(groupMonsterRec[g].Names[b2i(plural)+int(monsterGroups[g].B412)<<1][:])
+	return cstr(groupMonsterRec[g].Names[b2i(plural)+int(monsterGroups[g].Unidentified)<<1][:])
 }
 
 // copyMemberToCombatant (copy_member_to_combatant, WMELE 5bf3; f5f19 in WMEXE) copies
@@ -526,9 +526,9 @@ func copyMemberToCombatant(i int) {
 // party, sorts it by condition and ends the combat if all are down or one ran away.
 func updatePartyAfterRound() {
 	for i := 0; i < partyCount; i++ {
-		if uint8(monsterGroups[0].Members[i].Condition) < 3 && updateCombatant(0, i, int(party[i].Regen), int(party[i].Drain)) {
+		if uint8(monsterGroups[0].Members[i].Condition) < conditionDead && updateCombatant(0, i, int(party[i].Regen), int(party[i].Drain)) {
 			drawCombatCard(i, false)
-			playSound(int(party[i].Sex) + 8)
+			playSound(int(party[i].Sex) + soundDeathBase)
 			setCursor(sidePanel(i), 0, i/2<<2)
 			printString(sidePanel(i), memberName(i), -4)
 		}
@@ -545,18 +545,18 @@ func updatePartyAfterRound() {
 	}
 	down, fled := 0, false
 	for i := 0; i < partyCount; i++ {
-		if party[i].Condition >= 2 {
+		if party[i].Condition >= conditionDown {
 			down++
 		}
-		if monsterGroups[0].Members[i].Toggle == 2 {
+		if monsterGroups[0].Members[i].Stance == stanceFled {
 			fled = true
 		}
 	}
 	if down == partyCount {
-		returnCmd = 8
+		returnCmd = int16(stateGraveyard)
 		combatOver = 1
 	} else if fled {
-		returnCmd = 23
+		returnCmd = int16(stateFlee)
 		combatOver = 1
 	}
 }
@@ -619,7 +619,7 @@ func endEncounter() {
 	}
 	resumeWindowDraw(partyPictureWin)
 	eraseCursorMark(bottomLineWin, false)
-	for g := range 7 {
+	for g := range combatGroups {
 		groupMonsterRec[g], monsterGroups[g] = nil, nil
 	}
 	clear(picSlotLoaded[4:7]) // g4326
@@ -638,16 +638,16 @@ func redrawCombatScreen() {
 		advanceMonsterGroups()
 	}
 	meleNewFight = 0
-	gameState = 12
+	gameState = stateStartCombatRound
 }
 
 // tickCombatEffects (tick_combat_effects, WMELE 7113) runs down the groups' timed
 // effects after a round.
 func tickCombatEffects() {
-	for g := range 7 {
+	for g := range combatGroups {
 		grp := monsterGroups[g]
 		for k := range 6 {
-			v := int(uint8(grp.B396[k]))
+			v := int(uint8(grp.Wards[k]))
 			if v <= 0 {
 				continue
 			}
@@ -663,16 +663,16 @@ func tickCombatEffects() {
 				d = 1
 			}
 			v -= max(d, 1)
-			grp.B396[k] = int8(max(v, 0))
+			grp.Wards[k] = int8(max(v, 0))
 		}
-		for k := range grp.B402 {
-			if grp.B402[k] > 0 {
-				grp.B402[k]--
+		for k := range grp.CloudPower {
+			if grp.CloudPower[k] > 0 {
+				grp.CloudPower[k]--
 			}
 		}
 	}
 	if partyCounters[4].A > 0 {
-		partyCounters[4].B = int16(uint8(monsterGroups[0].B396[4]))
+		partyCounters[4].B = int16(uint8(monsterGroups[0].Wards[4]))
 	}
 	if partyCounters[4].B <= 0 {
 		partyCounters[4].A, partyCounters[4].B = 0, 0
@@ -684,7 +684,7 @@ func tickCombatEffects() {
 func endCombatRound() {
 	updatePartyAfterRound()
 	compactMonsterGroups()
-	updateGroup(6)
+	updateGroup(allyGroup)
 	tickCombatEffects()
 	fillWindow(combatActionWin, 32, 3)
 	clearWindow(monsterListWin, false)
@@ -697,7 +697,7 @@ func endCombatRound() {
 		gameState = gameStateID(returnCmd)
 		return
 	}
-	gameState = 11
+	gameState = stateRedrawCombat
 	refreshAllWindows()
 }
 
@@ -706,7 +706,7 @@ func endCombatRound() {
 func beginCombat() {
 	meleNewFight = 1
 	g4352 = 0
-	for g := range 7 {
+	for g := range combatGroups {
 		groupMonsterRec[g] = new(MonsterRec)
 		monsterGroups[g] = new(MonsterGroup)
 	}
@@ -724,10 +724,10 @@ func beginCombat() {
 	clearWindow(partyPictureWin, false)
 	setUpEncounter()
 	meleAnnounce, meleNPCFirst = 1, 0
-	if returnCmd == 18 {
+	if returnCmd == int16(stateNPC) {
 		meleAnnounce, meleNPCFirst = 0, 1
 	}
-	if returnCmd == 18 && monsterGroupCount > 1 {
+	if returnCmd == int16(stateNPC) && monsterGroupCount > 1 {
 		deferWindowDraw(mainWindow)
 		deferWindowDraw(bottomLineWin)
 		clearWindow(partyPictureWin, false)
@@ -737,8 +737,8 @@ func beginCombat() {
 		setCursor(partyPictureWin, 20-(len(name)+len(msg)+1)/2, 0)
 		printString(partyPictureWin, name, 6)
 		printString(partyPictureWin, msg, 14)
-		playSound(0)
+		playSound(soundBeep)
 	}
 	updatePartyAfterRound()
-	gameState = 11
+	gameState = stateRedrawCombat
 }

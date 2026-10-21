@@ -21,6 +21,39 @@ var (
 	mexeFizzle     int16       // g5118: the spell fizzled
 )
 
+// Combat groups: 0 is the party, 1..5 the monster groups, allyGroup the party's
+// summoned allies.
+const (
+	allyGroup    = 6
+	combatGroups = 7
+)
+
+// Action kinds (Combatant.Plan[planAction]), as WPOPS sets them.
+const (
+	actionAttack  = 0
+	actionDefend  = 1 // Choice: 0 (shield skill), 1, defendParry or defendRest
+	actionEquip   = 2
+	actionCast    = 3
+	actionUseItem = 4
+	actionMove    = 5 // Choice: the new place
+	actionHide    = 6
+	actionRun     = 7
+	actionBreath  = 8
+	actionNone    = 10
+
+	defendParry = 2 // turns into a riposte when struck
+	defendRest  = 3 // wins back stamina
+)
+
+// Combatant.Stance values.
+const (
+	stanceHiddenStruck = -1 // hidden and striking from hiding (doAttack)
+	stanceNone         = 0
+	stanceHidden       = 1
+	stanceFled         = 2
+	stanceCharging     = 3 // set at Combatant.B35[2]'s count, lands at its swing
+)
+
 // ROOT data: where the hit flash goes at view row, col (g006a x, g007e y).
 var (
 	effectX = [2][5]int{{0, -32, 32, -16, 16}, {0, -20, 20, -10, 10}}
@@ -29,7 +62,7 @@ var (
 
 // ovmain (WMEXE 7230).
 func wmexeOvmain() {
-	if gameState == 13 {
+	if gameState == stateRunCombatRound {
 		runCombatRound()
 	}
 }
@@ -37,10 +70,10 @@ func wmexeOvmain() {
 // fighter is fighter i of group g.
 func fighter(g, i int) *Combatant { return &monsterGroups[g].Members[i] }
 
-// targetOf is fighter c's target, nil for none (B31 255: the C reads past
+// targetOf is fighter c's target, nil for none (TargetGroup 255: the C reads past
 // monster_groups then).
 func targetOf(c *Combatant) *Combatant {
-	g, i := int(uint8(c.B31)), int(uint8(c.B32))
+	g, i := int(uint8(c.TargetGroup)), int(uint8(c.TargetMember))
 	if g >= len(monsterGroups) || i >= len(monsterGroups[g].Members) {
 		return nil
 	}
@@ -56,7 +89,7 @@ func combatantName(g, i int) string {
 	if g == 0 {
 		return memberName(i)
 	}
-	return cstr(groupMonsterRec[g].Names[int(monsterGroups[g].B412)<<1][:])
+	return cstr(groupMonsterRec[g].Names[int(monsterGroups[g].Unidentified)<<1][:])
 }
 
 // nameColor is the colour of a name of group g: 1 party, 6 monsters.
@@ -145,7 +178,7 @@ func combatDelay(tenths int) {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		paceViewCycle()
@@ -304,7 +337,7 @@ func resetEffects() {
 	}
 }
 
-// flashGroup shows the hit flash at fighter c's place and takes it off the view.
+// flashOffView shows the hit flash at fighter c's place and takes it off the view.
 func flashOffView(c *Combatant, flash int16) {
 	if c.Pos != -1 {
 		r, col := c.Pos/10, c.Pos%10
@@ -321,7 +354,7 @@ func flashOffView(c *Combatant, flash int16) {
 // acting monster group's row.
 func groupEffectMsg(n, color int) {
 	printMsgCentered(n, color, 0)
-	if actGroup != 0 && actGroup != 6 {
+	if actGroup != 0 && actGroup != allyGroup {
 		animCycle = 0
 		mexeEffect[b2i(actGroup >= 3)][0] = 1
 		resetAnimation()
@@ -336,47 +369,47 @@ func runCombatRound() {
 	resetEffects()
 	refreshAllWindows()
 	for initiative = 100; initiative > 0; initiative-- {
-		for actGroup = 0; actGroup < 7; actGroup++ {
+		for actGroup = 0; actGroup < combatGroups; actGroup++ {
 			grp := monsterGroups[actGroup]
 			for actMember = 0; int(grp.Count) > actMember; actMember++ {
 				c := actor()
 				if uint8(c.B35[1]) > 0 && int(uint8(c.B35[2])) == initiative {
-					if c.Toggle == 0 {
-						if int(uint8(c.B24[c.B33])) != initiative {
-							c.Toggle = 3
+					if c.Stance == stanceNone {
+						if int(uint8(c.Plan[c.Swing])) != initiative {
+							c.Stance = stanceCharging
 							clearWindow(partyPictureWin, true)
 							combatDelay(2)
 							actorLine(3518, -1, 6, 0)
 							combatDelay(int(delaySetting) / 2)
 						}
 						c.B35[2] = int8(max(initiative-random(10)-5, 1))
-					} else if c.Toggle == 3 {
+					} else if c.Stance == stanceCharging {
 						landCharge(c)
 					}
 				}
 				switch {
-				case int(uint8(c.B24[c.B33])) == initiative:
-					if uint8(c.B35[1]) > 0 && c.Toggle == 3 {
+				case int(uint8(c.Plan[c.Swing])) == initiative:
+					if uint8(c.B35[1]) > 0 && c.Stance == stanceCharging {
 						landCharge(c)
 					}
 					performAction()
-					c.B33++
-					if gameState != 13 {
+					c.Swing++
+					if gameState != stateRunCombatRound {
 						return
 					}
-				case c.B24[c.B33] == 0:
-					c.B33++
+				case c.Plan[c.Swing] == 0:
+					c.Swing++
 				}
-				if uint8(c.B33) > 3 {
-					c.B33 = 3
+				if uint8(c.Swing) > 3 {
+					c.Swing = 3
 				}
 			}
 			if grp.Count == 0 {
 				continue
 			}
 			for k := range 4 {
-				power := int(grp.B402[k])
-				if int(groupB406(grp, k)) != initiative || power <= 0 {
+				power := int(grp.CloudPower[k])
+				if int(cloudStrike(grp, k)) != initiative || power <= 0 {
 					continue
 				}
 				clearWindow(partyPictureWin, true)
@@ -400,12 +433,12 @@ func runCombatRound() {
 		}
 	}
 	combatDelay(8)
-	gameState = 14
+	gameState = stateEndCombatRound
 }
 
 // landCharge ends fighter c's charge (message 3519).
 func landCharge(c *Combatant) {
-	c.Toggle = 0
+	c.Stance = stanceNone
 	c.B35[2] = 0
 	clearWindow(partyPictureWin, true)
 	combatDelay(2)
@@ -413,19 +446,19 @@ func landCharge(c *Combatant) {
 	combatDelay(int(delaySetting) / 2)
 }
 
-// groupB406 is MonsterGroup byte 406+k: the initiative at which cloud k strikes.
-func groupB406(grp *MonsterGroup, k int) uint8 {
+// cloudStrike is initiative at which cloud k strikes.
+func cloudStrike(grp *MonsterGroup, k int) uint8 {
 	if k == 0 {
-		return grp.B406
+		return grp.Cloud0Strike
 	}
-	return grp.B407[k-1]
+	return grp.Cloud1to3Strike[k-1]
 }
 
-func setGroupB406(grp *MonsterGroup, k int, v uint8) {
+func setCloudStrike(grp *MonsterGroup, k int, v uint8) {
 	if k == 0 {
-		grp.B406 = v
+		grp.Cloud0Strike = v
 	} else {
-		grp.B407[k-1] = v
+		grp.Cloud1to3Strike[k-1] = v
 	}
 }
 
@@ -481,8 +514,8 @@ func mexeSwapMembers(i, j int) {
 // (group_monster_rec[0]), which the attack code reads like a monster's.
 func fillPartyRecord(m int, acSum bool) {
 	r, p := groupMonsterRec[0], &party[m]
-	r.Unk134 = p.Stats[0]
-	r.Unk135 = [3]uint8{p.Stats[1], p.Stats[4], p.Stats[5]}
+	r.Unk134 = p.Stats[statStrength]
+	r.Unk135 = [3]uint8{p.Stats[statIntelligence], p.Stats[statDexterity], p.Stats[statSpeed]}
 	r.Resist = p.Resist
 	r.AC = p.AC
 	if acSum {
@@ -508,7 +541,7 @@ func nextLivingMember(i int) int {
 	}
 	for range 2 {
 		c := fighter(0, j)
-		if uint8(c.Condition) < 3 && c.Toggle == 0 {
+		if uint8(c.Condition) < conditionDead && c.Stance == stanceNone {
 			return j
 		}
 		if partyCount-1 > i {
@@ -537,7 +570,7 @@ func nextTargetMonster(g, i int) int {
 		}
 	}
 	for k := 0; int(grp.Count) > k; k++ {
-		if uint8(grp.Members[k].Condition) < 3 {
+		if uint8(grp.Members[k].Condition) < conditionDead {
 			return k
 		}
 	}
@@ -551,12 +584,12 @@ func performAction() {
 	mexeSpellSound = 6
 	mexeBackfire, mexeFizzle = 0, 0
 	c := actor()
-	if uint8(c.Condition) >= 2 || c.Status[3] > 0 || c.Status[2] > 0 {
+	if uint8(c.Condition) >= conditionDown || c.Status[3] > 0 || c.Status[statusAsleep] > 0 {
 		return
 	}
 	clearWindow(partyPictureWin, true)
 	msg, turned, leave := 0, false, 0
-	if c.Status[1] > 0 && random(100) > 80 && c.B24[6] != 7 {
+	if c.Status[1] > 0 && random(100) > 80 && c.Plan[planAction] != actionRun {
 		msg = 3209
 	}
 	if msg == 0 && c.Status[7] > 0 && random(100) > 40 {
@@ -581,7 +614,7 @@ func performAction() {
 		msg = 3218
 		leave = 1
 		if monsterGroups[actGroup].MonsterID == 151 {
-			c.Toggle = 3
+			c.Stance = stanceCharging
 			c.B35[1] = 1
 			leave = 2
 		}
@@ -595,65 +628,65 @@ func performAction() {
 		if leave > 0 {
 			flashOffView(c, 1)
 			if leave == 1 {
-				c.Condition = 3
+				c.Condition = conditionDead
 				c.HP = 0
 			}
 			for k := range 4 {
-				c.B24[k] = 0
+				c.Plan[k] = 0
 			}
 			combatDelay(int(delaySetting))
 			return
 		}
 		combatDelay(int(delaySetting) / 2)
 		if !turned {
-			c.Status[2]++
+			c.Status[statusAsleep]++
 			return
 		}
-		c.B24[6], c.B33 = 0, 0
-		c.W12 = -1
-		c.W10 = firstAttackMode(actGroup, actMember)
-		c.B24[4] = 0
-		c.B31 = int8(actGroup)
-		c.B32 = int8(random(int(monsterGroups[actGroup].Count)))
+		c.Plan[planAction], c.Swing = actionAttack, 0
+		c.SecondAttack = -1
+		c.Choice = firstAttackMode(actGroup, actMember)
+		c.Plan[planSlot] = 0
+		c.TargetGroup = int8(actGroup)
+		c.TargetMember = int8(random(int(monsterGroups[actGroup].Count)))
 		clearWindow(partyPictureWin, true)
 		combatDelay(2)
 		mexeName = combatantName(actGroup, actMember)
 		mexeVerb = getMessage(3211)
 		mexeText = ""
 		printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, 0)
-		playSound(0)
+		playSound(soundBeep)
 		combatDelay(int(delaySetting) / 2)
 		clearWindow(partyPictureWin, true)
 	}
-	if t := targetOf(c); t != nil && (uint8(t.Condition) >= 3 || t.Toggle != 0) {
-		if c.B31 == 0 {
-			c.B32 = int8(nextLivingMember(int(uint8(c.B32))))
+	if t := targetOf(c); t != nil && (uint8(t.Condition) >= conditionDead || t.Stance != stanceNone) {
+		if c.TargetGroup == 0 {
+			c.TargetMember = int8(nextLivingMember(int(uint8(c.TargetMember))))
 		} else {
-			c.B32 = int8(nextTargetMonster(int(uint8(c.B31)), int(uint8(c.B32))))
+			c.TargetMember = int8(nextTargetMonster(int(uint8(c.TargetGroup)), int(uint8(c.TargetMember))))
 		}
 	}
-	if turned && int(uint8(c.B32)) == actMember {
-		c.Status[2]++
+	if turned && int(uint8(c.TargetMember)) == actMember {
+		c.Status[statusAsleep]++
 		return
 	}
 	if actGroup == 0 {
 		fillPartyRecord(actMember, true)
-	} else if c.B31 == 0 {
-		fillPartyRecord(int(uint8(c.B32)), false)
+	} else if c.TargetGroup == 0 {
+		fillPartyRecord(int(uint8(c.TargetMember)), false)
 	}
-	switch uint8(c.B24[6]) {
-	case 0:
+	switch uint8(c.Plan[planAction]) {
+	case actionAttack:
 		t := targetOf(c)
-		if t == nil || uint8(t.Condition) >= 3 || t.Toggle != 0 {
+		if t == nil || uint8(t.Condition) >= conditionDead || t.Stance != stanceNone {
 			break
 		}
-		slot := int(uint8(c.B24[4+int(uint8(c.B33))%2]))
-		if actGroup == 0 && party[actMember].Equipped[slot] == 255 {
+		slot := int(uint8(c.Plan[planSlot+int(uint8(c.Swing))%2]))
+		if actGroup == 0 && party[actMember].Equipped[slot] == noEquippedItem {
 			slot = 0
 		}
-		kind := int(c.W10)
-		if uint8(c.B33)%2 == 1 {
-			kind = int(c.W12)
+		kind := int(c.Choice)
+		if uint8(c.Swing)%2 == 1 {
+			kind = int(c.SecondAttack)
 		}
 		combatDelay(2)
 		doAttack(c, slot, kind)
@@ -662,43 +695,43 @@ func performAction() {
 		} else {
 			reduceStamina(c, random(3)+2)
 		}
-	case 3:
+	case actionCast:
 		combatDelay(2)
 		reduceStamina(c, doCastAction(c))
-	case 8:
+	case actionBreath:
 		combatDelay(2)
 		reduceStamina(c, doBreath(c))
-	case 1:
-		if c.W10 == 3 {
+	case actionDefend:
+		if c.Choice == defendRest {
 			n := int(int32(c.StaminaMax) * 5 / 100)
 			c.Stamina += int16(random(n) + 1)
 			if c.Stamina > c.StaminaMax {
 				c.Stamina = c.StaminaMax
 			}
 		}
-	case 2:
+	case actionEquip:
 		combatDelay(2)
 		doChangeEquipment()
 		reduceStamina(c, random(4)+3)
 		resetAnimation()
 		clearWindow(partyPictureWin, false)
-		gameState = 17
-		returnCmd = 13
+		gameState = stateViewCharacter
+		returnCmd = int16(stateRunCombatRound)
 		curMember = int16(actMember)
 		return
-	case 4:
+	case actionUseItem:
 		combatDelay(2)
 		doUseItemAction(c)
 		reduceStamina(c, random(3)+1)
-	case 5:
+	case actionMove:
 		combatDelay(2)
-		doAdvanceRetreat(actMember, int(c.W10))
+		doAdvanceRetreat(actMember, int(c.Choice))
 		reduceStamina(c, random(4)+3)
-	case 6:
+	case actionHide:
 		combatDelay(2)
 		doHide(c)
 		reduceStamina(c, random(3)+1)
-	case 7:
+	case actionRun:
 		combatDelay(2)
 		doRunAway(c)
 		reduceStamina(c, random(5)+5)
@@ -737,21 +770,21 @@ func doChangeEquipment() {
 func doHide(c *Combatant) {
 	var chance int
 	if actGroup == 0 {
-		chance = int(party[actMember].Level) + int(party[actMember].Skills[16]) + 50
+		chance = int(party[actMember].Level) + int(party[actMember].Skills[skillHide]) + 50
 		for g := 1; g <= monsterGroupCount; g++ {
 			chance -= int(monsterGroups[g].Count) + int(groupMonsterRec[g].HP.Count) + int(groupMonsterRec[g].Unk135[0])
 		}
 	} else {
 		chance = int(c.Level)*5 + 50
 		for i := 0; i < min(partyCount, 3); i++ {
-			chance -= int(party[i].Level) + int(party[i].Stats[1])
+			chance -= int(party[i].Level) + int(party[i].Stats[statIntelligence])
 		}
 	}
 	actorFlavour(3515)
 	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
-		c.Toggle = 1
-		mexeRaiseSkill(actMember, 16, 1)
+		c.Stance = stanceHidden
+		mexeRaiseSkill(actMember, skillHide, 1)
 		printMsgCentered(3520, 6, 2)
 	} else {
 		printMsgCentered(3521, 6, 2)
@@ -780,7 +813,7 @@ func doRunAway(c *Combatant) {
 	actorFlavour(3517)
 	combatDelay(int(delaySetting) / 4)
 	if random(100) < chance {
-		c.Toggle = 2
+		c.Stance = stanceFled
 		printMsgCentered(3522, 6, 2)
 	} else {
 		printMsgCentered(3523, 6, 2)

@@ -45,7 +45,7 @@ func TestWpopsScreens(t *testing.T) {
 		}
 		loadMonsterPicSlot(int(rec.Pic), 3)
 		g := monsterGroups[1]
-		g.Count, g.PicSlot, g.B412 = 2, 3, 1
+		g.Count, g.PicSlot, g.Unidentified = 2, 3, 1
 		for i := range 2 {
 			g.Members[i] = Combatant{Level: 1, HP: 5, HPMax: 9, Pos: int8(i)}
 		}
@@ -65,9 +65,9 @@ func TestWpopsScreens(t *testing.T) {
 		}
 		for m := 0; m < partyCount; m++ {
 			c := monsterGroups[0].Members[m]
-			t.Logf("member %d: action %d choice %d target %d/%d", m, c.B24[6], c.W10, c.B31, c.B32)
+			t.Logf("member %d: action %d choice %d target %d/%d", m, c.Plan[6], c.Choice, c.TargetGroup, c.TargetMember)
 		}
-		t.Logf("monster 0: action %d W10 %d target %d/%d", g.Members[0].B24[6], g.Members[0].W10, g.Members[0].B31, g.Members[0].B32)
+		t.Logf("monster 0: action %d choice %d target %d/%d", g.Members[0].Plan[6], g.Members[0].Choice, g.Members[0].TargetGroup, g.Members[0].TargetMember)
 	}()
 	<-ready
 	tap := func(code byte) {

@@ -358,18 +358,18 @@ func chooseCombatSpell(win *Window, m int) int {
 	case 1:
 		fillWindow(win, 32, 3)
 		refreshAllWindows()
-		c.B31 = 0
+		c.TargetGroup = 0
 		t := selectPartyMember(3609)
 		if t == -1 {
 			return -1
 		}
-		c.B32 = int8(t)
+		c.TargetMember = int8(t)
 	case 2:
 		t := selectMonsterGroup(win, 3603, 3, 0)
 		if t == -1 {
 			return -1
 		}
-		c.B31 = int8(t)
+		c.TargetGroup = int8(t)
 	}
 	return level<<8 + spell
 }
@@ -493,18 +493,18 @@ func chooseCombatItem(win *Window, m int) int {
 		case 1:
 			fillWindow(win, 32, 3)
 			refreshAllWindows()
-			c.B31 = 0
+			c.TargetGroup = 0
 			t := selectPartyMember(3610)
 			if t == -1 {
 				return -1
 			}
-			c.B32 = int8(t)
+			c.TargetMember = int8(t)
 		case 2:
 			t := selectMonsterGroup(win, 3604, 3, 0)
 			if t == -1 {
 				return -1
 			}
-			c.B31 = int8(t)
+			c.TargetGroup = int8(t)
 		}
 	}
 	return pos

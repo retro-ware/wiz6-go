@@ -30,44 +30,50 @@ type (
 	PartyCounter  = dbs.PartyCounter
 )
 
+// Indexes into Combatant.Plan.
+const (
+	planSlot   = 4 // first of the two attack slots (rows)
+	planAction = 6 // the action kind
+)
+
 // Combatant is one fighter of a MonsterGroup (44 bytes; for group 0, the
 // party member with the same index).
 type Combatant struct {
-	Level      int16     // +0
-	HP         int16     // +2
-	HPMax      int16     // +4
-	Stamina    int16     // +6
-	StaminaMax int16     // +8
-	W10        int16     // +10
-	W12        int16     // +12
-	Status     [10]uint8 // +14 mirrors PC.Status
-	B24        [7]int8   // +24 indexed
-	B31        int8      // +31 target group
-	B32        int8      // +32 target index
-	B33        int8      // +33
-	Condition  int8      // +34
-	B35        [3]int8   // +35
-	B38        int8      // +38 difficulty mod
-	B39        int8      // +39 difficulty mod
-	B40        int8      // +40
-	B41        int8      // +41 difficulty mod
-	Pos        int8      // +42 -1 = none
-	Toggle     int8      // +43 toggled +-1
+	Level        int16     // +0
+	HP           int16     // +2
+	HPMax        int16     // +4
+	Stamina      int16     // +6
+	StaminaMax   int16     // +8
+	Choice       int16     // +10 the action's argument: attack mode, spell (power<<8 | spell), item, breath kind, direction
+	SecondAttack int16     // +12 attack mode of the second hand's swings, -1 none
+	Status       [10]uint8 // +14 mirrors PC.Status
+	Plan         [7]int8   // +24 [0..3] swing initiatives, [planSlot..planSlot+1] attack slots, [planAction] action kind
+	TargetGroup  int8      // +31
+	TargetMember int8      // +32 member in TargetGroup
+	Swing        int8      // +33 index of the next swing in Plan[0..3]
+	Condition    int8      // +34
+	B35          [3]int8   // +35
+	B38          int8      // +38 difficulty mod
+	B39          int8      // +39 difficulty mod
+	B40          int8      // +40
+	B41          int8      // +41 difficulty mod
+	Pos          int8      // +42 -1 = none
+	Stance       int8      // +43 stanceNone..stanceCharging (wmexe.go)
 }
 
 // MonsterGroup is one combat group (416 bytes, malloc'd; monster_groups[g]).
 type MonsterGroup struct {
-	Members   [9]Combatant // +0
-	B396      [6]int8      // +396
-	B402      [4]uint8     // +402
-	B406      uint8        // +406
-	B407      [3]uint8     // +407
-	MonsterID uint8        // +410
-	PicSlot   uint8        // +411
-	B412      uint8        // +412 =1
-	Count     uint8        // +413 1..9
-	B414      uint8        // +414
-	_         uint8        // +415
+	Members         [9]Combatant // +0
+	Wards           [6]int8      // +396 the group's ward strengths
+	CloudPower      [4]uint8     // +402 strength of lasting cloud k
+	Cloud0Strike    uint8        // +406 initiative at which cloud 0 strikes (see cloudStrike)
+	Cloud1to3Strike [3]uint8     // +407 the same for clouds 1..3
+	MonsterID       uint8        // +410
+	PicSlot         uint8        // +411
+	Unidentified    uint8        // +412 1 until the party identifies the group
+	Count           uint8        // +413 1..9
+	B414            uint8        // +414
+	_               uint8        // +415
 }
 
 // Sprite is one maze-view sprite (24 bytes; sprite_list[i]).

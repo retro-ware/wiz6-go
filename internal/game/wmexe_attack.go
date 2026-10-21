@@ -81,7 +81,7 @@ func useActorItemCharge(i int) {
 		default:
 			p.AC[s] = p.AC[0]
 		}
-		p.Equipped[s] = 255
+		p.Equipped[s] = noEquippedItem
 	}
 	p.Items[i].ID = 0
 	p.ItemCount--
@@ -102,9 +102,9 @@ func useActorItemCharge(i int) {
 func clearHandAttackX(h int) {
 	clearHandAttack(actMember, h)
 	c := fighter(0, actMember)
-	c.B24[6] = 10
+	c.Plan[planAction] = actionNone
 	for k := range 4 {
-		c.B24[k] = 0
+		c.Plan[k] = 0
 	}
 }
 
@@ -124,11 +124,11 @@ func killCombatant(g, i int) {
 		}
 	}
 	c.Pos = -1
-	c.Condition = 3
+	c.Condition = conditionDead
 	c.HP, c.Stamina = 0, 0
 	c.B35[1], c.B35[2] = 0, 0
 	for k := range 4 {
-		c.B24[k] = 0
+		c.Plan[k] = 0
 	}
 	if g >= 1 && g <= 5 {
 		rec := groupMonsterRec[g]
@@ -180,7 +180,7 @@ func resistReduce(g, n, r, mod int) int {
 // report is 1.
 func damageEffect(g, i, n, r, cond, mod, report int) {
 	c := fighter(g, i)
-	if int(uint8(c.Condition)) >= cond || c.Toggle != 0 {
+	if int(uint8(c.Condition)) >= cond || c.Stance != stanceNone {
 		return
 	}
 	loadPartyResist(g, i)
@@ -192,10 +192,10 @@ func damageEffect(g, i, n, r, cond, mod, report int) {
 	}
 	c.Condition = int8(cond)
 	sound := 0
-	if cond >= 3 {
+	if cond >= conditionDead {
 		killCombatant(g, i)
 		if g == 0 {
-			sound = int(party[i].Sex) + 8
+			sound = int(party[i].Sex) + soundDeathBase
 		}
 	}
 	effectMsg(g, i, n, 1, sound)
@@ -206,7 +206,7 @@ func damageEffect(g, i, n, r, cond, mod, report int) {
 // gets strength base.
 func statusEffect(g, i, n, r, s, mod, count, sides, base, report int) {
 	c := fighter(g, i)
-	if uint8(c.Condition) >= 2 || c.Toggle != 0 {
+	if uint8(c.Condition) >= conditionDown || c.Stance != stanceNone {
 		return
 	}
 	loadPartyResist(g, i)
@@ -219,14 +219,14 @@ func statusEffect(g, i, n, r, s, mod, count, sides, base, report int) {
 		return
 	}
 	switch {
-	case base == 255:
-		c.Status[s] = 255
+	case base == statusForever:
+		c.Status[s] = statusForever
 	case int(c.Status[s])+d > 250:
 		c.Status[s] = 250
 	default:
 		c.Status[s] += uint8(d)
 	}
-	if s == 5 {
+	if s == statusPoisoned {
 		c.B35[0] = int8(base)
 	}
 	effectMsg(g, i, n, 1, 0)
@@ -237,7 +237,7 @@ func statusEffect(g, i, n, r, s, mod, count, sides, base, report int) {
 func damageRoll(g, i, count, sides, times, r, mod int) int {
 	mexeMsgMode = 4
 	c := fighter(g, i)
-	if uint8(c.Condition) >= 3 || c.Toggle != 0 {
+	if uint8(c.Condition) >= conditionDead || c.Stance != stanceNone {
 		return 0
 	}
 	dmg := 0
@@ -270,7 +270,7 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 		c.HP -= int16(dmg)
 		if c.HP <= 0 {
 			combatDelay(int(delaySetting) / 4)
-			damageEffect(g, i, 3486, 0, 3, 0, 0)
+			damageEffect(g, i, 3486, 0, conditionDead, 0, 0)
 		} else {
 			if g == 0 {
 				playSound(2)
@@ -283,10 +283,10 @@ func damageRoll(g, i, count, sides, times, r, mod int) int {
 	return dmg
 }
 
-// groupWard (f8064, WMEXE) lessens n by group g's ward k (B396[k]) when it holds
+// groupWard (f8064, WMEXE) lessens n by group g's ward k (Wards[k]) when it holds
 // against a roll of chance.
 func groupWard(g, k, n, chance int) int {
-	ward := int(uint8(monsterGroups[g].B396[k]))
+	ward := int(uint8(monsterGroups[g].Wards[k]))
 	if random(chance) < ward {
 		for cut := int(int32(ward) * int32(n) / 100); cut > 0; cut-- {
 			n -= random(2)
@@ -407,7 +407,7 @@ func sideGroups(monsters bool, f func(g int)) {
 		return
 	}
 	f(0)
-	if monsterGroups[6].Count > 0 {
+	if monsterGroups[allyGroup].Count > 0 {
 		f(6)
 	}
 }
@@ -419,7 +419,7 @@ func groupStatus(g, n, r, s, mod int, isDamage bool, count, sides, base int) {
 	strong := 0
 	if s == 3 && isDamage {
 		if r == 5 {
-			if int(uint8(monsterGroups[g].B396[3]))/5 > count {
+			if int(uint8(monsterGroups[g].Wards[3]))/5 > count {
 				clearMsgLine(2)
 				printMsgCentered(3212, 5, 2)
 				combatDelay(int(delaySetting) / 2)
@@ -443,7 +443,7 @@ func groupStatus(g, n, r, s, mod int, isDamage bool, count, sides, base int) {
 // doAttack (do_attack, WMEXE 4c48) runs the acting fighter c's swings with hand or
 // attack slot of kind (0..8: 4 throw, 8 the shield or the second attack).
 func doAttack(c *Combatant, slot, kind int) {
-	tg, ti := int(uint8(c.B31)), int(uint8(c.B32))
+	tg, ti := int(uint8(c.TargetGroup)), int(uint8(c.TargetMember))
 	anim, spell, quiet := -1, -1, false
 	mexeMsgMode = 4
 	mexeName = combatantName(actGroup, actMember)
@@ -457,10 +457,10 @@ func doAttack(c *Combatant, slot, kind int) {
 		if kind == 8 {
 			item = int(p.Equipped[1])
 		}
-		if c.Toggle != 0 && !thrownOrBash {
+		if c.Stance != stanceNone && !thrownOrBash {
 			mexeVerb = getMessage(random(2) + 3385)
 		}
-		if item != 255 {
+		if item != noEquippedItem {
 			rec := itemRec(int(p.Items[item].ID))
 			mexeText = cstr(rec.Name[:])
 			if thrownOrBash {
@@ -494,7 +494,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		mexeVerb = getMessage(int(atkRec.AttackKind[slot]) + 3371)
 	} else {
 		mexeVerb = getMessage(kind + 3350)
-		if c.Toggle != 0 && !thrownOrBash {
+		if c.Stance != stanceNone && !thrownOrBash {
 			mexeVerb = getMessage(random(2) + 3385)
 		}
 		if thrownOrBash {
@@ -542,10 +542,10 @@ func doAttack(c *Combatant, slot, kind int) {
 	var fx attackFx
 	if actGroup == 0 {
 		p := &party[actMember]
-		skill := 9
+		skill := skillUnarmed
 		if kind == 4 {
 			skill = 5
-		} else if e := p.Equipped[slot]; e != 255 {
+		} else if e := p.Equipped[slot]; e != noEquippedItem {
 			switch p.Items[e].Icon {
 			case 1, 14, 15, 16, 51, 53, 55, 58, 59:
 				skill = 1
@@ -560,12 +560,12 @@ func doAttack(c *Combatant, slot, kind int) {
 			case 13:
 				skill = 6
 			case 24, 38:
-				skill = 8
+				skill = skillShield
 			default:
 				skill = 0
 			}
 		}
-		if skill != 9 || p.Skills[9] > 0 || p.Class == 12 || p.Class == 13 {
+		if skill != skillUnarmed || p.Skills[skillUnarmed] > 0 || p.Class == classMonk || p.Class == classNinja {
 			mexeRaiseSkill(actMember, skill, 2)
 		}
 		lc := getLoadCategory(actMember)
@@ -579,14 +579,14 @@ func doAttack(c *Combatant, slot, kind int) {
 		fx = handFx(&p.Hands[slot])
 		item := int(p.Equipped[slot])
 		if kind == 8 {
-			if sh := int(p.Equipped[1]); sh != 255 && p.Items[sh].Type == 4 {
+			if sh := int(p.Equipped[1]); sh != noEquippedItem && p.Items[sh].Type == 4 {
 				dice = p.Hands[1].Damage
 				fx = handFx(&p.Hands[1])
 				toHit += int(p.Hands[1].ToHit)
 				bonus = 0
 				useActorItemCharge(sh)
 			}
-		} else if kind == 4 && item != 255 {
+		} else if kind == 4 && item != noEquippedItem {
 			if ty := p.Items[item].Type; ty == 14 || ty < 12 && ty != 2 {
 				p.Items[item].Qty = 1
 			}
@@ -623,7 +623,7 @@ func doAttack(c *Combatant, slot, kind int) {
 	}
 
 	mult = 1
-	if c.Toggle != 0 {
+	if c.Stance != stanceNone {
 		ac = max(ac, 10)
 		mult = 2
 	}
@@ -634,7 +634,7 @@ func doAttack(c *Combatant, slot, kind int) {
 	if c.Status[8] > 0 || c.Status[1] > 0 || c.Status[9] > 0 {
 		toHit += 25
 	}
-	if t.Status[4] > 0 || t.Status[2] > 0 || t.Status[3] > 0 || t.Condition == 2 {
+	if t.Status[4] > 0 || t.Status[statusAsleep] > 0 || t.Status[3] > 0 || t.Condition == conditionDown {
 		ac = 15
 		mult = 2
 	}
@@ -680,17 +680,17 @@ func doAttack(c *Combatant, slot, kind int) {
 		swings, mult = 1, 1
 		acArea += 2
 	}
-	if t.B24[6] == 7 {
+	if t.Plan[planAction] == actionRun {
 		ac = max(ac, 10)
 		mult = 2
 	}
-	if t.Status[4] == 0 && t.Status[2] == 0 && t.Status[3] == 0 && t.Condition == 0 {
-		if t.B24[6] == 1 {
-			switch t.W10 {
+	if t.Status[4] == 0 && t.Status[statusAsleep] == 0 && t.Status[3] == 0 && t.Condition == conditionOK {
+		if t.Plan[planAction] == actionDefend {
+			switch t.Choice {
 			case 0:
 				if tg == 0 {
-					ac -= int(party[ti].Skills[8])/10 + 1
-					mexeRaiseSkill(ti, 8, 2)
+					ac -= int(party[ti].Skills[skillShield])/10 + 1
+					mexeRaiseSkill(ti, skillShield, 2)
 				} else {
 					ac -= int(t.Level)/4 + 1
 				}
@@ -698,21 +698,21 @@ func doAttack(c *Combatant, slot, kind int) {
 			case 1:
 				ac -= 2
 				mult = 1
-			case 2:
+			case defendParry:
 				if !thrownOrBash {
 					// The parry turns into a riposte at the next count.
-					t.B24[6], t.B33 = 0, 0
-					t.B24[0] = int8(initiative - 1)
-					t.B31, t.B32 = int8(actGroup), int8(actMember)
-					t.W12 = -1
-					t.W10 = firstAttackMode(tg, ti)
-					t.B24[4] = 0
+					t.Plan[planAction], t.Swing = actionAttack, 0
+					t.Plan[0] = int8(initiative - 1)
+					t.TargetGroup, t.TargetMember = int8(actGroup), int8(actMember)
+					t.SecondAttack = -1
+					t.Choice = firstAttackMode(tg, ti)
+					t.Plan[planSlot] = 0
 				}
-			case 3:
+			case defendRest:
 				ac = 15
 			}
-		} else if tg == 0 && party[ti].Equipped[1] != 255 && party[ti].Items[party[ti].Equipped[1]].Type == 11 {
-			mexeRaiseSkill(ti, 8, 0)
+		} else if tg == 0 && party[ti].Equipped[1] != noEquippedItem && party[ti].Items[party[ti].Equipped[1]].Type == 11 {
+			mexeRaiseSkill(ti, skillShield, 0)
 		}
 	}
 	if s := groupMonsterRec[1].Sound; actGroup != 0 && !quiet && s > 0 && s != 6 && atkRec.Sound == s {
@@ -720,7 +720,7 @@ func doAttack(c *Combatant, slot, kind int) {
 	}
 	combatDelay(int(delaySetting) / 4)
 
-	for n := 0; n < swings && uint8(t.Condition) < 3; n++ {
+	for n := 0; n < swings && uint8(t.Condition) < conditionDead; n++ {
 		roll := 0
 		if alwaysHit == 0 {
 			roll = random(100)
@@ -732,7 +732,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			area = pickWeighted(tRec.Unk172[2:10])
 		}
 		areaAC = int(int8(tRec.AC[area])) + acArea
-		if t.Condition == 2 {
+		if t.Condition == conditionDown {
 			areaAC = min(areaAC, 0)
 		}
 		clearWindowArea(partyPictureWin, 0, 3, 39, 4)
@@ -743,7 +743,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			// Only the right weapon (item 458) once g4352 is set touches this kind.
 			if actGroup == 0 {
 				e := party[actMember].Equipped[slot]
-				if e != 255 && party[actMember].Items[e].ID == 458 && g4352 != 0 {
+				if e != noEquippedItem && party[actMember].Items[e].ID == 458 && g4352 != 0 {
 					mult = 1
 				} else {
 					roll = 0
@@ -753,7 +753,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			}
 		}
 		switch {
-		case thrownOrBash && random(100) < int(uint8(monsterGroups[tg].B396[2])):
+		case thrownOrBash && random(100) < int(uint8(monsterGroups[tg].Wards[2])):
 			printMsgCentered(3214, 14, 3)
 			playSound(7)
 		case roll < 5 || roll < 95 && toHit-ac*5 >= roll && spell == -1:
@@ -769,8 +769,8 @@ func doAttack(c *Combatant, slot, kind int) {
 			} else {
 				mexeName = getMessage(area + 3320)
 			}
-			if c.Toggle == 1 {
-				c.Toggle = -1
+			if c.Stance == stanceHidden {
+				c.Stance = stanceHiddenStruck
 			}
 			dmg := (rollDice(dice) + bonus) * mult
 			if dmg <= 0 || roll < 95 && toHit-areaAC*5 >= roll {
@@ -785,13 +785,13 @@ func doAttack(c *Combatant, slot, kind int) {
 			setCursor(partyPictureWin, 0, 4)
 			printCombatLine(mexeName, mexeVerb, mexeText, 4, 5, 5)
 			t.HP -= int16(dmg)
-			t.Status[2] = 0
+			t.Status[statusAsleep] = 0
 			t.Status[3] = uint8(min(max(int(t.Status[3])-(random(3)+2), 0), 255))
 			if t.HP <= 0 {
 				combatDelay(int(delaySetting) / 4)
-				damageEffect(tg, ti, 3486, 0, 3, 0, 0)
-				if c.Toggle == -1 {
-					c.Toggle = 1
+				damageEffect(tg, ti, 3486, 0, conditionDead, 0, 0)
+				if c.Stance == stanceHiddenStruck {
+					c.Stance = stanceHidden
 				}
 			} else {
 				if tg == 0 {
@@ -806,8 +806,8 @@ func doAttack(c *Combatant, slot, kind int) {
 		}
 		combatDelay(int(delaySetting) / 4)
 	}
-	if c.Toggle == -1 {
-		c.Toggle = 0
+	if c.Stance == stanceHiddenStruck {
+		c.Stance = stanceNone
 	}
 	if tg == 0 {
 		drawCardX(ti, false)
@@ -826,13 +826,13 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 		pow := int(c.Level)/3 + 1
 		switch k {
 		case 0:
-			statusEffect(g, i, 3474, 9, 2, mod, pow, 2, pow, 0)
+			statusEffect(g, i, 3474, 9, statusAsleep, mod, pow, 2, pow, 0)
 		case 1:
 			statusEffect(g, i, 3475, 4, 3, mod, pow*pow*2, 5, pow, 0)
 		case 2:
-			statusEffect(g, i, 3477, 6, 5, mod, pow*10, 2, int(fx[8]), 0)
+			statusEffect(g, i, 3477, 6, statusPoisoned, mod, pow*10, 2, int(fx[8]), 0)
 		case 3:
-			damageEffect(g, i, 3485, 11, 2, mod, 0)
+			damageEffect(g, i, 3485, 11, conditionDown, mod, 0)
 		case 5:
 			if actGroup == 0 {
 				break
@@ -871,12 +871,12 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			}
 			printCombatLine(mexeName, mexeVerb, mexeText, drainColor, 5, 5)
 			if g == 0 {
-				playSound(int(party[i].Sex) + 8)
+				playSound(int(party[i].Sex) + soundDeathBase)
 				drawCardX(i, true)
 			}
 			combatDelay(int(delaySetting) / 2)
 			if fighter(g, i).HP <= 0 {
-				damageEffect(g, i, 3486, 0, 3, mod, 0)
+				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
 			}
 		case 6:
 			r := 13
@@ -887,16 +887,16 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 				clearMsgLine(4)
 				printMsgCentered(3495, 5, 4)
 				combatDelay(int(delaySetting) / 4)
-				damageEffect(g, i, 3486, 0, 3, mod, 0)
+				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
 			}
 		case 7:
-			statusEffect(g, i, 3484, 9, 2, mod, pow*2, 3, pow, 0)
+			statusEffect(g, i, 3484, 9, statusAsleep, mod, pow*2, 3, pow, 0)
 		}
 	}
 }
 
 // kindAC is the target's armour against attack kind k (rec byte 198+k). A confused
-// fighter's second attack has kind -1 (W12), which the C reads as AC[7], the byte before.
+// fighter's second attack has kind -1 (SecondAttack), which the C reads as AC[7], the byte before.
 func kindAC(rec *MonsterRec, k int) int {
 	if k < 0 {
 		return int(int8(rec.AC[8+k]))
