@@ -123,7 +123,12 @@ done
 (cd "$GO" && CGO_ENABLED=0 go build -tags nofakecgo -o "$OUT/work/wiz6" ./cmd/wiz6)
 cp -R "$ORIG/" "$OUT/work/godata/"; nosound "$OUT/work/godata"
 in=""
-for k in "${KEYS[@]}"; do in+="k$(scan "$k"),"; done
+# Each key waits at least as long after the previous one as in the original's run, then for
+# the screen to settle.
+for i in $(seq 0 $((N-1))); do
+  d=$PACE; [ $i -gt 0 ] && d=$(( (SLOT[i]-SLOT[i-1])*PACE ))
+  in+="k$(scan "${KEYS[$i]}")/$d,"
+done
 (cd "$OUT/work" && timeout -s KILL $((WAIT + N*10 + 30)) ./wiz6 -data godata -steps "${in%,}" -stepdir "$OUT/go" \
   -stepwait "$WAIT" $([ "$DET" = 1 ] && echo -detrng) >go.log 2>&1) || true
 

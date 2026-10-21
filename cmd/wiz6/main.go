@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +20,7 @@ func main() {
 	shots := flag.String("shot", "", "write the game's frame to PNGs: SECONDS:FILE[,SECONDS:FILE...]")
 	input := flag.String("input", "", "replace the keyboard and mouse with a script: SECONDS:ACTION[,...], "+
 		"ACTION kHEX (tap a scan code), pHEX/rHEX (press/release a scan code), aX/Y (put the mouse at X, Y), mDX/DY (move the mouse), bN (click button N), dN/uN (button N down/up)")
-	steps := flag.String("steps", "", "testing: -input ACTIONs done one by one once the screen has settled (see -stepdir)")
+	steps := flag.String("steps", "", "testing: -input ACTIONs done one by one once the screen has settled (see -stepdir); ACTION/SECS waits at least SECS after the previous one")
 	stepDir := flag.String("stepdir", ".", "testing: with -steps, write DIR/NNN.png, the settled frame after step NNN")
 	stepWait := flag.Float64("stepwait", 8, "testing: with -steps, seconds before the first step at least")
 	detRNG := flag.Bool("detrng", false, "testing: fixed random seed, no random step per key poll (matches tools/parity's patched WROOT.EXE)")
@@ -161,8 +162,16 @@ func runSteps(acts []string, dir string, first time.Duration) {
 	}
 	waitSettled(first)
 	for i, a := range acts {
+		// ACTION/SECS: at least SECS since the previous step (as the original gets in a parity run).
+		min := 500 * time.Millisecond
+		if a2, secs, ok := strings.Cut(a, "/"); ok {
+			a = a2
+			if f, err := strconv.ParseFloat(secs, 64); err == nil {
+				min = time.Duration(f * float64(time.Second))
+			}
+		}
 		if i > 0 {
-			waitSettled(500 * time.Millisecond)
+			waitSettled(min)
 			shot(i - 1)
 		}
 		fmt.Fprintf(os.Stderr, "wiz6: step %d %s\n", i, a)
