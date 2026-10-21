@@ -21,16 +21,78 @@ var (
 	menuKeys string
 )
 
-// wbaseMain (WBASE ovmain): 7 resets the party screen, 4 runs the master options menu,
-// 24 the game configuration.
+// The places of the keys in menuKeys, as the menu loops return them.
+const (
+	menuKeyEscape = iota
+	menuKeyLeft
+	menuKeyUp
+	menuKeyRight
+	menuKeyDown
+	menuKeyEnter
+)
+
+// The camp menu's entries (messages 1002 on).
+const (
+	campAdd       = iota // add a roster character
+	campReview           // view a member
+	campRemove           // dismiss a member
+	campStart            // start a new game
+	campResume           // resume the saved game
+	campCreate           // the character menu
+	campConfigure        // the game configuration
+	campTitle            // the title page
+	campQuit             // leave the game
+)
+
+// rosterSlotUsed values.
+const (
+	rosterSlotAvailable = 1 // a character that can join
+	rosterSlotInParty   = 2 // a character in the party
+)
+
+// inputText modes.
+const (
+	inputPrintable = 0 // ' '..maxInputChar
+	inputDigits    = 1 // '0'..'9'
+)
+
+const (
+	campAnimFrameSteps  = 10    // campAnimStep calls per camp scene frame
+	campStepsPerTick    = 5     // campAnimStep calls per waitAnimatedCamp tick
+	magicWordTypedValue = 17210 // what inputTextAnimated sets magicWordTyped to (the original's value)
+	textCursorGlyph     = 97    // font 1 glyph of readLine's cursor
+	maxInputChar        = 127   // the last character inputPrintable takes
+	noEquippedItem      = 255   // a PC.Equipped entry for an empty hand
+	panelNameWidth      = 7     // the member panel's name field, padded with spaces
+	stateGlyphBase      = 37    // font 1 glyph of conditionGlyph/statusGlyph 0
+	gaugeLevels         = 10    // drawGauge's full level
+	pclistSexColumn     = 10    // drawPcfileList's column after the name
+)
+
+// The portraits: WPORTn.EGA holds portraitsPerFile portraits of portraitGlyphs 8x8 glyphs,
+// each glyph four EGA planes of 8 rows, a row's leftmost pixel in the top bit. Slot n's
+// glyphs are font 2's portraitFirstGlyph+portraitGlyphs*n...
+const (
+	portraitsPerFile   = 14
+	portraitGlyphs     = 9
+	portraitFirstGlyph = 72
+	egaPlanes          = 4
+	glyphBytes         = egaPlanes * 8
+	portraitBytes      = portraitGlyphs * glyphBytes
+	leftmostPixelBit   = 0x80
+)
+
+// wbaseMain (WBASE ovmain): stateResetPartyScreen resets the party screen,
+// stateMasterOptions runs the master options menu, stateGameConfiguration the game
+// configuration.
 func wbaseMain() {
-	if gameState == 7 {
+	if gameState == stateResetPartyScreen {
 		resetPartyScreen()
 	}
-	if gameState == 4 {
+	if gameState == stateMasterOptions {
 		doMasterOptions()
 	}
-	if gameState == 24 {
+	if gameState == stateGameConfiguration {
 		doGameConfiguration()
 		gameState = gameStateID(returnCmd)
 	}
@@ -51,18 +113,18 @@ func campAnimStep() {
 		delayTick()
 		delayTick()
 	}
-	campAnimTick = (campAnimTick + 1) % 10
+	campAnimTick = (campAnimTick + 1) % campAnimFrameSteps
 }
 
 // waitAnimatedCamp (WBASE 4617) waits ticks*5 steps with the camp scene running; a click or
 // Enter ends it early.
 func waitAnimatedCamp(ticks int) {
 	flushKeys()
-	for ticks *= 5; ticks > 0; ticks-- {
+	for ticks *= campStepsPerTick; ticks > 0; ticks-- {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && byte(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && byte(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		campAnimStep()
@@ -75,8 +137,8 @@ func waitAnimatedCamp(ticks int) {
 func getMenuChoiceAnimated(keys string, regions []byte) int {
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if c := charIndex(keys, getKey(1)&0xff); c >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if c := charIndex(keys, int(byte(getKey(keyClassMenu)))); c >= 0 {
 				return c
 			}
 			continue
@@ -98,8 +160,8 @@ func menuInput() int { return getMenuInput(menuKeys, clickRegions[:]) }
 func getMenuInput(keys string, regions []byte) int {
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if c := charIndex(keys, getKey(1)&0xff); c >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if c := charIndex(keys, int(byte(getKey(keyClassMenu)))); c >= 0 {
 				return c
 			}
 			continue
@@ -148,7 +210,7 @@ func runCampMenu(win *Window, msgbase int, enabled []int, x0, y0, colWidth, rows
 		setClickRegion(n, win.X+byte(x), win.Y+byte(y), byte(len(t)+int(win.X)+x-1), win.Y+byte(y))
 	}
 	count := len(texts)
-	setClickRegion(count, 255, 0, 0, 0)
+	setClickRegion(count, clickRegionsEnd, 0, 0, 0)
 	resumeWindowDraw(win)
 	refreshAllWindows()
 	drvShowWindow(titleStripWin)
@@ -161,32 +223,32 @@ func runCampMenu(win *Window, msgbase int, enabled []int, x0, y0, colWidth, rows
 		item := getMenuChoiceAnimated(menuKeys, clickRegions[:])
 		if menuClicked == 1 {
 			sel = item
-			item = 5
+			item = menuKeyEnter
 		}
 		redraw := func() { redrawMenuItem(win, sel, colWidth, rows, x0, y0, texts[sel]) }
 		switch item {
-		case 1:
+		case menuKeyLeft:
 			if sel-rows >= 0 {
 				redraw()
 				sel -= rows
 			}
-		case 2:
+		case menuKeyUp:
 			if sel%rows > 0 {
 				redraw()
 				sel--
 			}
-		case 3:
+		case menuKeyRight:
 			if sel+rows < count {
 				redraw()
 				sel += rows
 			}
-		case 4:
+		case menuKeyDown:
 			if sel%rows < rows-1 && sel+1 < count {
 				redraw()
 				sel++
 			}
 		}
-		if item == 5 {
+		if item == menuKeyEnter {
 			return items[sel]
 		}
 	}
@@ -285,9 +347,9 @@ func animateAndShowTwoLines(line1, line2 string) {
 	}
 	waitAnimatedCamp(5)
 	eraseWindow(mainWindow, false)
-	win := createWindow(0, 19, 40, 5, 30, -1, 0, false)
+	win := createWindow(0, 19, 40, 5, 30, borderNone, 0, false)
 	deferWindowDraw(win)
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	printCentered(win, line1, 1, 18)
 	printCentered(win, line2, 2, 18)
 	resumeWindowDraw(win)
@@ -298,18 +360,18 @@ func animateAndShowTwoLines(line1, line2 string) {
 // loadPortrait (WBASE 5072, WPCMK 8ffe, WPCVW a78d) loads portrait number portrait
 // (WPORTn.EGA, 14 to a file) as glyphs 72+9*slot.. of font 2.
 func loadPortrait(portrait, slot int) {
-	if videoFlags&1 == 0 { // only the EGA files are ported
+	if videoFlags&videoEGA == 0 { // only the EGA files are ported
 		return
 	}
 	stopSound()
-	b := openData(fmt.Sprintf("WPORT%d.EGA", portrait/14+1), 14)
-	g := make([][8][8]uint8, 9)
-	if o := portrait % 14 * 32 * 9; o+32*9 <= len(b) {
+	b := openData(fmt.Sprintf("WPORT%d.EGA", portrait/portraitsPerFile+1), 14)
+	g := make([][8][8]uint8, portraitGlyphs)
+	if o := portrait % portraitsPerFile * portraitBytes; o+portraitBytes <= len(b) {
 		for t := range g {
 			for y := range 8 {
 				for x := range 8 {
-					for pl := range 4 {
-						if b[o+32*t+8*pl+y]&(0x80>>x) != 0 {
+					for pl := range egaPlanes {
+						if b[o+glyphBytes*t+8*pl+y]&(leftmostPixelBit>>x) != 0 {
 							g[t][y][x] |= 1 << pl
 						}
 					}
@@ -317,13 +379,13 @@ func loadPortrait(portrait, slot int) {
 			}
 		}
 	}
-	drv.SetGlyphs(2, slot*9+72, g)
+	drv.SetGlyphs(2, slot*portraitGlyphs+portraitFirstGlyph, g)
 }
 
 // findFreePortraitSlot (WBASE 5190) is the lowest portrait slot the first count members
 // do not use.
 func findFreePortraitSlot(count int) int {
-	for slot := 0; slot < 6; slot++ {
+	for slot := 0; slot < len(party); slot++ {
 		used := false
 		for i := 0; i < count; i++ {
 			if int(memberPortrait[i]) == slot {
@@ -361,21 +423,21 @@ func waitKeyAnimated(class int) int {
 	for !keyAvailable(class) {
 		campAnimStep()
 	}
-	return getKey(class) & 0xff
+	return int(byte(getKey(class)))
 }
 
 // inputText (WBASE 7418, WPCMK 4654, WPCVW 9459) reads a line of up to maxlen characters at win's
-// cursor: mode 0 takes printable characters, mode 1 digits.
+// cursor: mode inputPrintable takes printable characters, inputDigits digits.
 func inputText(win *Window, maxlen, color, mode int) string {
-	return readLine(win, maxlen, color, mode, func() int { return getKey(1) & 0xff }, nil)
+	return readLine(win, maxlen, color, mode, func() int { return int(byte(getKey(keyClassMenu))) }, nil)
 }
 
 // inputTextAnimated (WBASE 529e) is inputText with the camp scene running; from the
 // third character on it sets magicWordTyped.
 func inputTextAnimated(win *Window, maxlen, color, mode int) string {
-	return readLine(win, maxlen, color, mode, func() int { return waitKeyAnimated(1) }, func(n int) {
+	return readLine(win, maxlen, color, mode, func() int { return waitKeyAnimated(keyClassMenu) }, func(n int) {
 		if n > 2 {
-			magicWordTyped = 17210
+			magicWordTyped = magicWordTypedValue
 		}
 	})
 }
@@ -385,29 +447,29 @@ func inputTextAnimated(win *Window, maxlen, color, mode int) string {
 func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(int)) string {
 	x, y := int(win.CurX), int(win.CurY)
 	var buf []byte
-	putChar(win, 97, 1)
+	putChar(win, textCursorGlyph, 1)
 	for {
 		key := next()
-		if key == 13 {
+		if key == keyEnter {
 			break
 		}
 		setCursor(win, x, y)
-		putChar(win, 32, 1)
+		putChar(win, ' ', 1)
 		setCursor(win, x, y)
 		switch {
-		case key == 8:
+		case key == keyLeft: // Backspace
 			if len(buf) > 0 {
 				buf = buf[:len(buf)-1]
 				x--
 				setCursor(win, x, y)
-				putChar(win, 32, 1)
+				putChar(win, ' ', 1)
 				setCursor(win, x, y)
 			} else {
 				playSound(0)
 			}
 		case len(buf) >= maxlen:
 			playSound(0)
-		case mode == 0 && key >= 32 && key <= 127, mode == 1 && key >= '0' && key <= '9':
+		case mode == inputPrintable && key >= ' ' && key <= maxInputChar, mode == inputDigits && key >= '0' && key <= '9':
 			buf = append(buf, byte(key))
 			putChar(win, byte(key), color)
 			x++
@@ -415,10 +477,10 @@ func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(
 				typed(len(buf))
 			}
 		}
-		putChar(win, 97, 1)
+		putChar(win, textCursorGlyph, 1)
 	}
 	setCursor(win, x, y)
-	putChar(win, 32, 1)
+	putChar(win, ' ', 1)
 	return string(buf)
 }
 
@@ -434,8 +496,8 @@ func setupGameWindows() {
 	resumeWindowDraw(partyPictureWin)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
-	g4fb0 = createWindow(20, 19, 20, 5, 8, -1, 0, false)
-	fillWindow(g4fb0, 32, 3)
+	g4fb0 = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
+	fillWindow(g4fb0, ' ', 3)
 	deferWindowDraw(g4fb0)
 	// g4f88 is 0 here, so the C's other set of glyphs (for g4f88 != 0) is never drawn.
 	drawGlyph2x2(g4fb0, 13, 1, 5, 6, 7, 8)
@@ -463,7 +525,7 @@ func startGame(resume int) {
 	}
 	ensureDiskFor(0, gameStateArg)
 	setupGameWindows()
-	gameState = 6
+	gameState = stateLoadMap
 }
 
 // drawGauge (WBASE 5fb0, WPCVW 48e8) draws a 3-glyph vertical gauge of cur/max at (x, y),
@@ -473,8 +535,8 @@ func drawGauge(win *Window, x, y, cur, max, glyph int) {
 	if max != 0 {
 		level = int(int16(int32(cur)*100/int32(max)/10) + 1) // (int) cast, then a 16-bit +1
 	}
-	if level > 10 {
-		level = 10
+	if level > gaugeLevels {
+		level = gaugeLevels
 	}
 	if cur == 0 {
 		level = 0
@@ -512,10 +574,10 @@ func drawMemberPanel(i int) {
 	setCursor(win, x, y)
 	name := cstr(p.Name[:])
 	printStringHi(win, name, 3)
-	for n := len(name); n < 7; n++ {
-		putCharHi(win, 32, 3)
+	for n := len(name); n < panelNameWidth; n++ {
+		putCharHi(win, ' ', 3)
 	}
-	glyph := int(memberPortrait[i])*9 + 72
+	glyph := int(memberPortrait[i])*portraitGlyphs + portraitFirstGlyph
 	for r := range 3 {
 		setCursor(win, x, y+r+1)
 		for c := range 3 {
@@ -530,17 +592,17 @@ func drawMemberPanel(i int) {
 		state = 2
 	}
 	setCursor(win, x+3, y+3)
-	putCharHi(win, byte(state+37), 1)
+	putCharHi(win, byte(state+stateGlyphBase), 1)
 	state = -1
-	for s := range 10 {
+	for s := range len(statusGlyph) {
 		if p.Status[s] > 0 && statusGlyph[s] > state {
 			state = statusGlyph[s]
 		}
 	}
 	if state != -1 {
-		putCharHi(win, byte(state+37), 1)
+		putCharHi(win, byte(state+stateGlyphBase), 1)
 	} else {
-		putCharHi(win, 32, 3)
+		putCharHi(win, ' ', 3)
 	}
 	setCursor(win, x+3, y+2)
 	for k := range byte(2) {
@@ -548,7 +610,7 @@ func drawMemberPanel(i int) {
 	}
 	setCursor(win, x+3, y+1)
 	for h := range 2 {
-		if e := p.Equipped[h]; e != 255 && p.Items[e].ID > 0 {
+		if e := p.Equipped[h]; e != noEquippedItem && p.Items[e].ID > 0 {
 			putCharHi(win, p.Items[e].Icon+1, 4)
 		} else {
 			putCharHi(win, byte(h+37), 4)
@@ -571,7 +633,7 @@ func showTitleText(text string, x int) {
 
 // drawListFrame (WBASE 63f7, WTREA 7549, ...) draws the scroll bar of a list window.
 func drawListFrame(win *Window, show bool) {
-	fillWindow(win, 32, 3)
+	fillWindow(win, ' ', 3)
 	deferWindowDraw(win)
 	putGlyphAt(win, 1, 0, 69)
 	for y := 1; y < 4; y++ {
@@ -615,80 +677,80 @@ func doMasterOptions() {
 	resumeWindowDraw(rightPanelWin)
 	initCampScene()
 	sel := 0
-	if partyCount >= 6 {
-		sel = 3
+	if partyCount >= len(party) {
+		sel = campStart
 	}
 	for gameState = -1; gameState < 0; {
 		showMessageLine(1001)
 		eraseWindow(bottomLineWin, false)
-		win := createWindow(0, 19, 40, 5, 15, -1, 0, false)
-		fillWindow(win, 32, 3)
+		win := createWindow(0, 19, 40, 5, 15, borderNone, 0, false)
+		fillWindow(win, ' ', 3)
 		enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
 		if partyCount < 1 {
-			enabled[1], enabled[2] = 0, 0
+			enabled[campReview], enabled[campRemove] = 0, 0
 		}
 		if partyCount < 2 {
-			enabled[3] = 0
+			enabled[campStart] = 0
 		}
-		enabled[0] = 0
+		enabled[campAdd] = 0
 		for i := 0; i < int(pcfileHdr.Count); i++ {
-			if rosterSlotUsed[i] == 1 {
-				enabled[0] = 1
+			if rosterSlotUsed[i] == rosterSlotAvailable {
+				enabled[campAdd] = 1
 			}
 		}
-		if partyCount > 5 {
-			enabled[0] = 0
+		if partyCount >= len(party) {
+			enabled[campAdd] = 0
 		}
 		if partyCount > 0 {
-			enabled[4] = 0
+			enabled[campResume] = 0
 		}
 		sel = countEnabledItems(enabled, sel)
 		choice := runCampMenu(win, 1002, enabled, 2, 1, 19, 4, 5, sel)
 		destroyWindow(win, false)
 		sel = 0
-		if partyCount >= 6 {
-			sel = 3
+		if partyCount >= len(party) {
+			sel = campStart
 		}
 		switch choice {
-		case 0:
+		case campAdd:
 			addPartyMember()
-			if partyCount == 6 {
-				sel = 3
+			if partyCount == len(party) {
+				sel = campStart
 			}
-		case 1:
+		case campReview:
 			if curMember = int16(choosePartyMemberWbase(1202)); curMember != -1 {
-				gameState = 17
-				returnCmd = 4
+				gameState = stateViewCharacter
+				returnCmd = int16(stateMasterOptions)
 			}
-			sel = 1
-		case 2:
+			sel = campReview
+		case campRemove:
 			if curMember = int16(choosePartyMemberWbase(1203)); curMember != -1 {
 				removePartyMember(int(curMember))
 			}
 			if partyCount > 0 {
-				sel = 2
+				sel = campRemove
 			}
-		case 5:
+		case campCreate:
 			removeAllMembers()
-			gameState = 16
-		case 3:
+			gameState = stateCreateCharacter
+		case campStart:
 			for i := 0; i < partyCount; i++ {
-				rosterSlotUsed[memberPcfileIndex[i]] = 1
+				rosterSlotUsed[memberPcfileIndex[i]] = rosterSlotAvailable
 			}
 			startGame(0)
-		case 4:
+		case campResume:
 			startGame(1)
-		case 6:
-			returnCmd = 4
+		case campConfigure:
+			returnCmd = int16(stateMasterOptions)
 			doGameConfiguration()
-		case 7:
+		case campTitle:
 			removeAllMembers()
 			closeGameWindows()
-			gameState = 1
-		case 8:
+			gameState = stateTitle
+		case campQuit:
 			removeAllMembers()
 			closeGameWindows()
-			gameState = 3
+			gameState = stateQuit
 		}
 	}
 }
@@ -698,11 +760,11 @@ func doMasterOptions() {
 func resetPartyScreen() {
 	mazeA, mazeB = nil, nil
 	destroyWindow(g4fb0, false)
-	fillWindow(leftPanelWin, 32, 3)
-	fillWindow(rightPanelWin, 32, 3)
+	fillWindow(leftPanelWin, ' ', 3)
+	fillWindow(rightPanelWin, ' ', 3)
 	fillWindow(partyPictureWin, 26, 3)
 	partyCount = 0
-	gameState = 4
+	gameState = stateMasterOptions
 }
 
 // closeGameWindows (WBASE 6fe7) takes down the game's windows.

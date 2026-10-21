@@ -138,3 +138,27 @@ Shared names for the other groups: `gameStateID` and its `state...` constants (s
 - winit.go:46 `loadFontFile`: packs font 0's pixels into bytes MSB first (`<< (7 - x)`) for drv.SetMonoFont, the driver's glyph format.
 - root.go:253 `clickRegions`: a flat byte table of 4-byte entries (x1 `clickRegionsEnd` ends it), passed as `[]byte` to drv.PollClick and the overlays.
 - root_window.go `cellOwner` and `eachCell`: the ownership map is one 1000-byte line as in the C; a rectangle past the right edge wraps to the next row.
+
+## internal/game: wbase (wbase, wbase_party)
+
+New names in wbase.go: `menuKeyEscape`..`menuKeyEnter` (places in menuKeys, the menu loops' results), `campAdd`..`campQuit` (camp menu entries), `rosterSlotAvailable`/`rosterSlotInParty`, `inputPrintable`/`inputDigits` (inputText modes; wpcmk.go, wpcvw.go, wpcvw_levelup.go still pass 0/1), `noEquippedItem` (wdopt.go, wmaze_main.go still use 255), portrait layout constants and a few widths/glyph bases. Game states, key codes and classes, borders, `clickRegionsEnd`, `videoEGA`/`videoMouse` replace the literals.
+
+### Hex/binary literals in code
+
+- wbase.go `leftmostPixelBit = 0x80`: the top bit of a WPORTn.EGA glyph row byte is its leftmost pixel. File format.
+
+### Unclear names kept
+
+- `g4fb0`, `g4f88`, `g4f86` (set in setupGameWindows, resetPartyScreen): core state, meaning not clear.
+- `magicWordTypedValue = 17210`: the original's value; why that number is unknown.
+- Message numbers (1000, 1002, 1202, 2300, 2350, ...), sound numbers, window positions/priorities, colours, fonts, fill glyphs (26), glyph numbers of the camp/command window/list frame/gauges (69..71, 86, 99, drawGlyph2x2 arguments), the camp scene's maze tile and frame tables and clip columns, and the click region indexes in choosePcfileChar/doGameConfiguration stay literals: they are the original's arguments with no name of their own.
+- doGameConfiguration's setting indexes 0..7 (sound, delay, level, input, gmode, path 3, 0, 1), their rows/colours and the `% 6`, `% 3`, `% 2` value counts; scenarioHdr.Paths indexes 0, 1, 3; `scenarioHdr.Input == 1` (mouse): kept as numbers, the path slots' meaning is not checked.
+- `startGame(0/1)`, `loadGame(resume)` 0/1, `drawPcfileList` highlight 1, `menuClicked` 0/1: the original's int flags.
+- `openData(..., 14)`, `loadMonsterPic(mon, slot, 21)`, `loadMonsterPicSlot(8, 4)`, picture slots 2 and 4, `mapCacheA` limit 14, `exitGame(19)`: original arguments, not named.
+
+### Low-level code kept
+
+- wbase.go loadPortrait: decodes EGA bit planes from the WPORTn.EGA bytes by offset and bit mask (file format).
+- wbase.go drawGauge: `int16(int32(cur)*100/int32(max)/10) + 1`, the C's int casts and 16-bit wrap kept for parity.
+- `int(byte(getKey(...)))`: the C's `& 0xff` of the key word (low byte), kept as a byte conversion.
+- wbase_party.go loadGame: walks the save file's bytes record by record (`next`) and decodes them with dbs.Decode; pcfileRecordIO reads/writes a record at a byte offset of PCFILE.DBS.

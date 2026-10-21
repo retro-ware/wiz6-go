@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"os"
 	"strconv"
 
@@ -152,22 +153,22 @@ func drawPcfileList(win *Window, top, highlight int) {
 		setCursor(win, 2, row+2)
 		if highlight == 1 && row == 0 {
 			printString(win, e.name, 5)
-			for win.CurX < 10 {
-				putChar(win, 32, 1)
+			for win.CurX < pclistSexColumn {
+				putChar(win, ' ', 1)
 			}
 			putChar(win, getMessage(e.sex + 140)[0], 7)
-			putChar(win, 45, 9)
+			putChar(win, '-', 9)
 			printString(win, abbrev3(getMessage(e.race+100)), 6)
 			putChar(win, 32, 1)
 			printString(win, abbrev3(getMessage(e.class+120)), 3)
 			continue
 		}
 		printStringHi(win, e.name, 3)
-		for win.CurX < 10 {
-			putCharHi(win, 32, 3)
+		for win.CurX < pclistSexColumn {
+			putCharHi(win, ' ', 3)
 		}
 		putCharHi(win, getMessage(e.sex + 140)[0], 3)
-		putCharHi(win, 45, 3)
+		putCharHi(win, '-', 3)
 		printStringHi(win, abbrev3(getMessage(e.race+100)), 3)
 		win.CurX++
 		printStringHi(win, abbrev3(getMessage(e.class+120)), 3)
@@ -185,7 +186,7 @@ func abbrev3(s string) string { return s[:min(len(s), 3)] }
 func choosePcfileChar() int {
 	pclist = pclist[:0]
 	for i := 0; i < int(pcfileHdr.Count); i++ {
-		if rosterSlotUsed[i] == 1 {
+		if rosterSlotUsed[i] == rosterSlotAvailable {
 			var pc PC
 			pcfileRecordIO(&pc, i, false)
 			pclist = append(pclist, pclistEntry{cstr(pc.Name[:]), int(pc.Sex), int(pc.Race), int(pc.Class), i})
@@ -195,10 +196,10 @@ func choosePcfileChar() int {
 	if n == 0 {
 		return -1
 	}
-	titleWin := createWindow(0, 19, 19, 5, 10, -4, 0, false)
-	fillWindow(titleWin, 32, 3)
-	listWin := createWindow(20, 19, 20, 5, 20, -5, 0, false)
-	fillWindow(listWin, 32, 3)
+	titleWin := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
+	fillWindow(titleWin, ' ', 3)
+	listWin := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
+	fillWindow(listWin, ' ', 3)
 	title := getMessage(1201)
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
@@ -215,7 +216,7 @@ func choosePcfileChar() int {
 	setClickRegion(1, lx+1, ly, lx+1, ly)
 	setClickRegion(2, lx+1, ly+4, lx+1, ly+4)
 	setClickRegion(3, titleWin.X+7, titleWin.Y+3, byte(len(cancel)+int(titleWin.X)+6), titleWin.Y+3)
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 	for {
 		setCursor(titleWin, 7, 3)
 		if !mousePresent && onCancel {
@@ -228,36 +229,36 @@ func choosePcfileChar() int {
 		i := getMenuChoiceAnimated(menuKeys, clickRegions[:])
 		if menuClicked == 1 {
 			switch i {
-			case 0:
-				i = 5
-			case 1:
-				i = 2
-			case 2:
-				i = 4
-			case 3:
+			case 0: // the highlighted row
+				i = menuKeyEnter
+			case 1: // the scroll bar's top
+				i = menuKeyUp
+			case 2: // its bottom
+				i = menuKeyDown
+			case 3: // Cancel
 				onCancel = true
-				i = 5
+				i = menuKeyEnter
 			}
 		}
 		switch i {
-		case 1:
+		case menuKeyLeft:
 			onCancel = true
-		case 2:
+		case menuKeyUp:
 			if onCancel {
 				onCancel = false
 			} else if top > 0 {
 				top--
 			}
-		case 3:
+		case menuKeyRight:
 			onCancel = false
-		case 4:
+		case menuKeyDown:
 			if onCancel {
 				onCancel = false
 			} else if top+1 < n {
 				top++
 			}
 		}
-		if i == 5 {
+		if i == menuKeyEnter {
 			break
 		}
 	}
@@ -280,7 +281,7 @@ func addPartyMember() {
 	slot := pclist[pick].slot
 	var pc PC
 	pcfileRecordIO(&pc, slot, false)
-	rosterSlotUsed[slot] = 2
+	rosterSlotUsed[slot] = rosterSlotInParty
 	memberPcfileIndex[partyCount] = slot
 	memberPortrait[partyCount] = uint8(findFreePortraitSlot(partyCount))
 	loadPortrait(int(pc.Portrait), int(memberPortrait[partyCount]))
@@ -291,15 +292,15 @@ func addPartyMember() {
 
 // removePartyMember (WBASE 6b30) takes member i out of the party and redraws the panels.
 func removePartyMember(i int) {
-	rosterSlotUsed[memberPcfileIndex[i]] = 1
+	rosterSlotUsed[memberPcfileIndex[i]] = rosterSlotAvailable
 	partyCount--
 	for j := i; j < partyCount; j++ {
 		party[j] = party[j+1]
 		memberPcfileIndex[j] = memberPcfileIndex[j+1]
 		memberPortrait[j] = memberPortrait[j+1]
 	}
-	fillWindow(leftPanelWin, 32, 3)
-	fillWindow(rightPanelWin, 32, 3)
+	fillWindow(leftPanelWin, ' ', 3)
+	fillWindow(rightPanelWin, ' ', 3)
 	for j := 0; j < partyCount; j++ {
 		drawMemberPanel(j)
 	}
@@ -311,8 +312,8 @@ func choosePartyMemberWbase(msg int) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, 32, 3)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
+	fillWindow(win, ' ', 3)
 	cancelText := getMessage(2027)
 	cancelHilite := getMessage(2028)
 	title := getMessage(msg)
@@ -335,7 +336,7 @@ func choosePartyMemberWbase(msg int) int {
 	}
 	mx, my := mainWindow.X+byte(cx), mainWindow.Y+byte(cy)
 	setClickRegion(partyCount, mx, my, mx+byte(len(cancelHilite))-1, my)
-	setClickRegion(partyCount+1, 255, 0, 0, 0)
+	setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 	sel := -1
 	for {
 		if !mousePresent {
@@ -353,15 +354,15 @@ func choosePartyMemberWbase(msg int) int {
 			if choice < partyCount {
 				sel = choice
 			}
-			choice = 5
+			choice = menuKeyEnter
 		}
 		switch choice {
-		case 1:
+		case menuKeyLeft:
 			if sel != -1 && sel%2 > 0 {
 				drawMemberName(win, sel)
 				sel--
 			}
-		case 2:
+		case menuKeyUp:
 			if sel != -1 {
 				drawMemberName(win, sel)
 				if sel-2 >= 0 {
@@ -370,12 +371,12 @@ func choosePartyMemberWbase(msg int) int {
 					sel = -1
 				}
 			}
-		case 3:
+		case menuKeyRight:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
 				drawMemberName(win, sel)
 				sel++
 			}
-		case 4:
+		case menuKeyDown:
 			if sel == -1 {
 				setCursor(mainWindow, cx, cy)
 				printStringHi(mainWindow, cancelText, 3)
@@ -385,7 +386,7 @@ func choosePartyMemberWbase(msg int) int {
 				sel += 2
 			}
 		}
-		if choice == 5 {
+		if choice == menuKeyEnter {
 			break
 		}
 	}
@@ -477,8 +478,8 @@ func settingColor(sel int) int {
 func doGameConfiguration() {
 	menuKeys = getMessage(1000)
 	changed := false
-	win := createWindow(0, 19, 40, 5, 22, -1, 0, false)
-	fillWindow(win, 32, 3)
+	win := createWindow(0, 19, 40, 5, 22, borderNone, 0, false)
+	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
 	doneText := getMessage(2308)
@@ -514,7 +515,7 @@ func doGameConfiguration() {
 	region(8, wx+7, wy+1, wx+8, wy+1)
 	mx, my := int(mainWindow.X)+dx, int(mainWindow.Y)+dy
 	region(9, mx, my, mx+len(doneHilite)-1, my)
-	region(10, 255, 0, 0, 0)
+	region(10, clickRegionsEnd, 0, 0, 0)
 	resumeWindowDraw(win)
 	refreshAllWindows()
 	setCursor(mainWindow, dx, dy)
@@ -543,33 +544,33 @@ func doGameConfiguration() {
 		drawSel(sel, !mousePresent)
 		prev := sel
 		var choice int
-		if returnCmd == 25 {
+		if gameStateID(returnCmd) == stateEnterMap {
 			choice = menuInput()
 		} else {
 			choice = getMenuChoiceAnimated(menuKeys, clickRegions[:])
 		}
 		if menuClicked == 1 {
 			if choice == 8 {
-				sel, choice = 1, 1
+				sel, choice = 1, menuKeyLeft
 			} else {
 				sel = -1
 				if choice < 8 {
 					sel = choice
 				}
-				choice = 3
+				choice = menuKeyRight
 				if sel == -1 {
-					choice = 5
+					choice = menuKeyEnter
 				}
 			}
 		}
 		switch choice {
-		case 2:
+		case menuKeyUp:
 			if sel == -1 {
 				sel = 7
 			} else {
 				sel--
 			}
-		case 4:
+		case menuKeyDown:
 			switch {
 			case sel == -1:
 				sel = 0
@@ -578,17 +579,17 @@ func doGameConfiguration() {
 			default:
 				sel = -1
 			}
-		case 1, 3:
+		case menuKeyLeft, menuKeyRight:
 			changed = true
 			d := 1
-			if choice == 1 {
+			if choice == menuKeyLeft {
 				d = -1
 			}
 			switch sel {
 			case 0:
 				scenarioHdr.SoundMode = uint8((int(scenarioHdr.SoundMode) + d + 6) % 6)
 			case 1:
-				if v := int(scenarioHdr.Delay) + d; v >= 0 && v <= 255 {
+				if v := int(scenarioHdr.Delay) + d; v >= 0 && v <= math.MaxUint8 {
 					scenarioHdr.Delay = uint8(v)
 				} else {
 					playSound(0)
@@ -603,13 +604,13 @@ func doGameConfiguration() {
 			case 5:
 				clearWindowArea(win, 19, 1, 38, 1)
 				setCursor(win, 19, 1)
-				setPath(3, inputText(win, 19, 7, 0))
+				setPath(3, inputText(win, 19, 7, inputPrintable))
 			}
 		}
 		if !mousePresent && prev != sel {
 			drawSel(prev, false)
 		}
-		if choice == 5 && sel == -1 {
+		if choice == menuKeyEnter && sel == -1 {
 			break
 		}
 	}
@@ -626,7 +627,7 @@ func doGameConfiguration() {
 		f.Close()
 	}
 	delaySetting = int16(scenarioHdr.Delay)
-	if videoFlags&0x1000 != 0 && scenarioHdr.Input == 1 {
+	if videoFlags&videoMouse != 0 && scenarioHdr.Input == 1 {
 		if !mousePresent {
 			drv.MouseInit()
 		}
