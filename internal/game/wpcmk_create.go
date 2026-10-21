@@ -480,7 +480,7 @@ func addStartingItem(id int) {
 
 // addClassRating (WPCMK 837b) adds delta to resistance i, kept in 0..125.
 func addClassRating(i, delta int) {
-	newPC.Resist[i] = uint8(min(max(int(newPC.Resist[i])+delta, 0), 125))
+	newPC.Resist[i] = uint8(min(max(int(int16(int(newPC.Resist[i])+delta)), 0), 125)) // C int sum wraps
 }
 
 // initClassRaceModifiers (WPCMK 83f0) sets the resistances by class, race and stats, the
