@@ -15,7 +15,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 		destroyWindow(win, false)
 		destroyWindow(list, false)
 	}
-	wpopsDrawSpellWindow(win, m)
+	drawBookSpellWindow(win, m)
 	drawListFrame(list, true)
 	realm := 0
 	for i := range 6 {
@@ -46,7 +46,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 					printMessage(realm+3950, win, realmColors[realm])
 					clearWindowArea(win, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(m, realm, spells[:])
-					wpopsDrawSpellList(list, realm, 0, false, count, spells[:])
+					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				pvBlinkText = [2]string{string(rune(realm + 35)), "c"}
 				pvBlinkColor = [2]int{17, 5}
@@ -57,7 +57,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				if c == realm {
 					c = 5
 				} else {
-					wpopsUnhighlightRealm(win, realm)
+					unhighlightBookRealm(win, realm)
 					if c < 6 {
 						realm, c = c, 0
 					} else {
@@ -69,20 +69,20 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				switch c {
 				case 1:
 					if realm == -1 {
-						wpopsUnhighlightRealm(win, realm)
+						unhighlightBookRealm(win, realm)
 						realm, redraw = 4, true
 					} else if realm-3 >= 0 {
-						wpopsUnhighlightRealm(win, realm)
+						unhighlightBookRealm(win, realm)
 						realm, redraw = realm-3, true
 					}
 				case 2:
 					if realm != -1 && realm%3 > 0 {
-						wpopsUnhighlightRealm(win, realm)
+						unhighlightBookRealm(win, realm)
 						realm, redraw = realm-1, true
 					}
 				case 3:
 					if realm != -1 {
-						wpopsUnhighlightRealm(win, realm)
+						unhighlightBookRealm(win, realm)
 						redraw = true
 						if realm += 3; realm >= 6 {
 							realm = -1
@@ -90,7 +90,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 					}
 				case 4:
 					if realm != -1 && realm%3+1 < 3 {
-						wpopsUnhighlightRealm(win, realm)
+						unhighlightBookRealm(win, realm)
 						realm, redraw = realm+1, true
 					}
 				}
@@ -104,7 +104,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 			return -1
 		}
 		// The spell.
-		wpopsUnhighlightRealm(win, realm)
+		unhighlightBookRealm(win, realm)
 		sel = 0
 		back := false
 		pvBlinkWin, pvBlinkX, pvBlinkY = list, 2, 2
@@ -118,7 +118,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[sel] + 4000)
 			pvBlinkColor[1] = realmColors[realm]
-			wpopsDrawSpellList(list, realm, sel, true, count, spells[:])
+			drawBookSpellList(list, realm, sel, true, count, spells[:])
 			cost := int(spellTable[spells[sel]].Cost)
 			setCursor(win, 18, 5)
 			if int(p.SP[realm].Cur) < cost {
@@ -236,7 +236,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				}
 			case 3:
 				if level == 0 {
-					wpopsUnhighlightRealm(win, -1)
+					unhighlightBookRealm(win, -1)
 					clearWindowArea(win, 13, 1, 20, 1)
 					setCursor(win, 13, 1)
 					printMessage(realm+3950, win, realmColors[realm])

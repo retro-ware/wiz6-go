@@ -621,21 +621,16 @@ func wmazeFce81(ev int) {
 	playSound(4)
 }
 
-// wmazeFceb2 (WMAZE ceb2) puts glyph ch into cell (col, row) of win without drawing it.
-func wmazeFceb2(win *Window, col, row int, ch byte) {
-	win.Cells[int(win.W)*row+col].Ch = ch
-}
-
 // lockFrame draws the box of the lock mini-games, right edge at column right.
 func lockFrame(win *Window, right int) {
 	for _, g := range [][3]int{{0, 17, 19}, {1, 4, 5}, {2, 9, 10}, {3, 4, 5}, {4, 6, 8}} {
-		wmazeFceb2(win, 0, g[0], byte(g[1]))
-		wmazeFceb2(win, right, g[0], byte(g[2]))
+		setFrameGlyph(win, 0, g[0], byte(g[1]))
+		setFrameGlyph(win, right, g[0], byte(g[2]))
 	}
 	for c := 1; c < right; c++ {
-		wmazeFceb2(win, c, 0, 18)
-		wmazeFceb2(win, c, 2, 12)
-		wmazeFceb2(win, c, 4, 7)
+		setFrameGlyph(win, c, 0, 18)
+		setFrameGlyph(win, c, 2, 12)
+		setFrameGlyph(win, c, 4, 7)
 	}
 }
 
@@ -738,7 +733,7 @@ func pickLock(member, ev int) int {
 	lockFrame(win, 18)
 	for c := 3; c < 18; c += 3 {
 		for row, g := range []byte{34, 13, 16, 13, 11} {
-			wmazeFceb2(win, c, row, g)
+			setFrameGlyph(win, c, row, g)
 		}
 	}
 	deferWindowDraw(win)

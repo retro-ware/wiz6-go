@@ -285,7 +285,7 @@ func inspectChest(win *Window, member int) {
 // draw_trap_list (WTREA 6a40) shows the trap names of list around at, the one at at
 // highlighted when hi.
 func drawTrapList(win *Window, at int, hi bool, n int, list []int) {
-	drawChestListBox(win, false)
+	drawListFrame(win, false)
 	deferWindowDraw(win)
 	for d := -2; d <= 2; d++ {
 		if at+d < 0 || at+d >= n {
@@ -502,103 +502,6 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 	}
 }
 
-// unhighlight_realm_slot (WTREA 74f6) redraws realm r's glyph plain (-1: the cancel glyph).
-func unhighlightRealmSlot(w *Window, r int) {
-	if r == -1 {
-		putGlyphAt(w, 13, 3, 34)
-		return
-	}
-	putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
-}
-
-// draw_chest_list_box (WTREA 7549) clears a list window and draws its scroll bar.
-func drawChestListBox(w *Window, refresh bool) {
-	fillWindow(w, ' ', 3)
-	deferWindowDraw(w)
-	putGlyphAt(w, 1, 0, 69)
-	for y := 1; y < 4; y++ {
-		putGlyphAt(w, 1, y, 71)
-	}
-	putGlyphAt(w, 1, 4, 70)
-	resumeWindowDraw(w)
-	if refresh {
-		refreshWindow(w)
-	}
-}
-
-// draw_chest_spell_frame (WTREA 75ed) puts the frame glyphs into the window's cells.
-func drawChestSpellFrame(w *Window) {
-	for _, f := range spellFrame {
-		end, vertical := int(f[3]%128), f[3]/128 != 0
-		switch {
-		case end == 0:
-			wpcvwPutFrameChar(w, int(f[0]), int(f[1]), f[2])
-		case !vertical:
-			for x := int(f[0]); x < end; x++ {
-				wpcvwPutFrameChar(w, x, int(f[1]), f[2])
-			}
-		default:
-			for y := int(f[1]); y < end; y++ {
-				wpcvwPutFrameChar(w, int(f[0]), y, f[2])
-			}
-		}
-	}
-}
-
-// draw_chest_spell_window (WTREA 76c0) draws the realm picker with member's spell points.
-func drawChestSpellWindow(w *Window, member int) {
-	deferWindowDraw(w)
-	fillWindow(w, 0, 1)
-	drawChestSpellFrame(w)
-	for r := range 6 {
-		putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
-	}
-	putGlyphAt(w, 13, 3, 34)
-	for r := range 6 {
-		x := 3
-		if r >= 3 {
-			x = 9
-		}
-		setCursor(w, x, r%3<<1+1)
-		printInt(w, int(party[member].SP[r].Cur), 3, realmColors[r])
-	}
-	for i := range 6 {
-		putCharAt(w, i+15, 3, byte(i+24))
-	}
-	setCursor(w, 13, 5)
-	printMessage(3957, w, 18)
-	setCursor(w, 13, 6)
-	for range 4 {
-		putCharHi(w, ' ', 3)
-	}
-	resumeWindowDraw(w)
-	refreshWindow(w)
-}
-
-// draw_chest_spell_list (WTREA 78aa) is draw_trap_list for the spells of realm r.
-func drawChestSpellList(w *Window, r, at int, hi bool, n int, list []int) {
-	drawChestListBox(w, false)
-	deferWindowDraw(w)
-	for d := -2; d <= 2; d++ {
-		if at+d < 0 || at+d >= n {
-			continue
-		}
-		setCursor(w, 2, d+2)
-		c := 18
-		if hi && d == 0 {
-			c = realmColors[r]
-		}
-		printMessage(list[at+d]+4000, w, c)
-		if hi && d == 0 {
-			for w.CurX < 17 {
-				putChar(w, ' ', realmColors[r])
-			}
-		}
-	}
-	resumeWindowDraw(w)
-	refreshWindow(w)
-}
-
 // trSetBlink sets the blink spot: phase 0 shows a in colour ca, phase 1 b in colour cb.
 func trSetBlink(x, y int, a string, ca int, b string, cb int) {
 	trBlinkX, trBlinkY = x, y
@@ -617,8 +520,8 @@ func chooseChestSpell(win *Window, member int) int {
 		destroyWindow(book, false)
 		destroyWindow(list, false)
 	}
-	drawChestSpellWindow(book, member)
-	drawChestListBox(list, true)
+	drawBookSpellWindow(book, member)
+	drawListFrame(list, true)
 	realm := 0
 	for r := range 6 {
 		x, y := r/3*6+1, r%3<<1+1
@@ -642,13 +545,13 @@ func chooseChestSpell(win *Window, member int) int {
 					printMessage(3956, book, 9)
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = -1
-					drawChestListBox(list, true)
+					drawListFrame(list, true)
 				} else {
 					trBlinkX, trBlinkY = realm/3*6+1, realm%3<<1+1
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(member, realm, spells[:])
-					drawChestSpellList(list, realm, 0, false, count, spells[:])
+					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				trBlinkText = [2]string{string(rune(realm + 35)), "c"}
 				trBlinkColor = [2]int{17, 5}
@@ -660,10 +563,10 @@ func chooseChestSpell(win *Window, member int) int {
 				case k == realm:
 					k = 5
 				case k < 6:
-					unhighlightRealmSlot(book, realm)
+					unhighlightBookRealm(book, realm)
 					realm, k = k, 0
 				default:
-					unhighlightRealmSlot(book, realm)
+					unhighlightBookRealm(book, realm)
 					realm, k, count = -1, 5, -1
 				}
 				redraw = true
@@ -671,20 +574,20 @@ func chooseChestSpell(win *Window, member int) int {
 				switch k {
 				case 1:
 					if realm == -1 {
-						unhighlightRealmSlot(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = 4, true
 					} else if realm-3 >= 0 {
-						unhighlightRealmSlot(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-3, true
 					}
 				case 2:
 					if realm != -1 && realm%3 > 0 {
-						unhighlightRealmSlot(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-1, true
 					}
 				case 3:
 					if realm != -1 {
-						unhighlightRealmSlot(book, realm)
+						unhighlightBookRealm(book, realm)
 						redraw = true
 						if realm += 3; realm >= 6 {
 							realm = -1
@@ -692,7 +595,7 @@ func chooseChestSpell(win *Window, member int) int {
 					}
 				case 4:
 					if realm != -1 && realm%3+1 < 3 {
-						unhighlightRealmSlot(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm+1, true
 					}
 				}
@@ -706,7 +609,7 @@ func chooseChestSpell(win *Window, member int) int {
 			return -1
 		}
 		// The spell.
-		unhighlightRealmSlot(book, realm)
+		unhighlightBookRealm(book, realm)
 		pos, back := 0, false
 		trBlinkWin = list
 		trBlinkX, trBlinkY = 2, 2
@@ -720,7 +623,7 @@ func chooseChestSpell(win *Window, member int) int {
 			trBlink = 1
 			trBlinkText[1] = getMessage(spells[pos] + 4000)
 			trBlinkColor[1] = realmColors[realm]
-			drawChestSpellList(list, realm, pos, true, count, spells[:])
+			drawBookSpellList(list, realm, pos, true, count, spells[:])
 			cost := int(spellTable[spells[pos]].Cost)
 			setCursor(book, 18, 5)
 			if int(p.SP[realm].Cur) < cost {
@@ -766,7 +669,7 @@ func chooseChestSpell(win *Window, member int) int {
 		}
 	}
 	// The power level.
-	drawChestListBox(list, false)
+	drawListFrame(list, false)
 	deferWindowDraw(list)
 	setCursor(list, 2, 2)
 	printMessage(spell+4000, list, 18)
@@ -833,7 +736,7 @@ func chooseChestSpell(win *Window, member int) int {
 				}
 			case 3:
 				if level == 0 {
-					unhighlightRealmSlot(book, -1)
+					unhighlightBookRealm(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
 					setCursor(book, 13, 1)
 					printMessage(realm+3950, book, realmColors[realm])
@@ -912,7 +815,7 @@ func handleChest(chest *TreasureRec) int {
 	deferWindowDraw(trapWin)
 	setCursor(trapWin, 4, 0)
 	printMessage(5226, trapWin, 18)
-	g := func(x, y int, ch byte) { wpcvwPutCharC1(trapWin, x, y, ch) }
+	g := func(x, y int, ch byte) { putGlyphAtC1(trapWin, x, y, ch) }
 	g(0, 1, 17)
 	g(19, 1, 19)
 	g(0, 3, 6)

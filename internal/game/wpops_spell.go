@@ -23,9 +23,9 @@ const (
 	spellNoCost = "***"
 )
 
-// wpopsUnhighlightRealm (unhighlight_combat_realm, WPOPS 5fd6; WDOPT 6789, WTREA 74f6)
+// unhighlightBookRealm (unhighlight_combat_realm, WPOPS 5fd6; WDOPT 6789, WTREA 74f6)
 // redraws realm r's icon (-1 the cancel icon) unlit.
-func wpopsUnhighlightRealm(w *Window, r int) {
+func unhighlightBookRealm(w *Window, r int) {
 	if r == -1 {
 		putGlyphAt(w, 13, 3, 34)
 		return
@@ -33,32 +33,32 @@ func wpopsUnhighlightRealm(w *Window, r int) {
 	putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
 }
 
-// wpopsDrawSpellFrame (draw_spell_frame, WPOPS 60cd; WDOPT 6880, WTREA 75ed).
-func wpopsDrawSpellFrame(w *Window) {
+// drawBookSpellFrame (draw_spell_frame, WPOPS 60cd; WDOPT 6880, WTREA 75ed).
+func drawBookSpellFrame(w *Window) {
 	for _, e := range spellFrame {
 		end, vertical := int(e[3]%128), e[3]/128 != 0
 		switch {
 		case end == 0:
-			wpcvwPutFrameChar(w, int(e[0]), int(e[1]), e[2])
+			setFrameGlyph(w, int(e[0]), int(e[1]), e[2])
 		case !vertical:
 			for x := int(e[0]); x < end; x++ {
-				wpcvwPutFrameChar(w, x, int(e[1]), e[2])
+				setFrameGlyph(w, x, int(e[1]), e[2])
 			}
 		default:
 			for y := int(e[1]); y < end; y++ {
-				wpcvwPutFrameChar(w, int(e[0]), y, e[2])
+				setFrameGlyph(w, int(e[0]), y, e[2])
 			}
 		}
 	}
 }
 
-// wpopsDrawSpellWindow (draw_combat_spell_window, WPOPS 61a0; WDOPT 6953, WTREA 76c0)
+// drawBookSpellWindow (draw_combat_spell_window, WPOPS 61a0; WDOPT 6953, WTREA 76c0)
 // draws the spell book: the realms with member m's spell points, the power levels and
 // the cancel icon.
-func wpopsDrawSpellWindow(w *Window, m int) {
+func drawBookSpellWindow(w *Window, m int) {
 	deferWindowDraw(w)
 	fillWindow(w, 0, 1)
-	wpopsDrawSpellFrame(w)
+	drawBookSpellFrame(w)
 	for _, g := range [][3]int{{1, 1, 35}, {1, 3, 36}, {1, 5, 37}, {7, 1, 38}, {7, 3, 39}, {7, 5, 40}, {13, 3, 34}} {
 		putGlyphAt(w, g[0], g[1], byte(g[2]))
 	}
@@ -83,9 +83,9 @@ func wpopsDrawSpellWindow(w *Window, m int) {
 	refreshWindow(w)
 }
 
-// wpopsDrawSpellList (draw_combat_spell_list, WPOPS 638a; WDOPT 6b3d, WTREA 78aa) shows
+// drawBookSpellList (draw_combat_spell_list, WPOPS 638a; WDOPT 6b3d, WTREA 78aa) shows
 // the spells of list (n of them, of realm) around pos, pos lit with hi.
-func wpopsDrawSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
+func drawBookSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
 	drawListFrame(w, false)
 	deferWindowDraw(w)
 	for r := -2; r <= 2; r++ {
@@ -113,7 +113,7 @@ func wpopsDrawSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
 func chooseCombatSpell(win *Window, m int) int {
 	book := createWindow(0, 18, 23, 7, 25, -1, 0, false)
 	list := createWindow(22, 19, 18, 6, 26, -5, 0, false)
-	wpopsDrawSpellWindow(book, m)
+	drawBookSpellWindow(book, m)
 	drawListFrame(list, true)
 	region := func(i, x, y int) {
 		setClickRegion(i, book.X+byte(x), book.Y+byte(y), book.X+byte(x), book.Y+byte(y))
@@ -152,7 +152,7 @@ func chooseCombatSpell(win *Window, m int) int {
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(m, realm, spells[:])
-					wpopsDrawSpellList(list, realm, 0, false, count, spells[:])
+					drawBookSpellList(list, realm, 0, false, count, spells[:])
 				}
 				pvBlinkText = [2]string{string(rune(realm + 35)), "c"}
 				pvBlinkColor = [2]int{17, 5}
@@ -163,7 +163,7 @@ func chooseCombatSpell(win *Window, m int) int {
 				if k == realm {
 					k = 5
 				} else {
-					wpopsUnhighlightRealm(book, realm)
+					unhighlightBookRealm(book, realm)
 					if k < 6 {
 						realm, k = k, 0
 					} else {
@@ -175,20 +175,20 @@ func chooseCombatSpell(win *Window, m int) int {
 				switch k {
 				case 1:
 					if realm == -1 {
-						wpopsUnhighlightRealm(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = 4, true
 					} else if realm-3 >= 0 {
-						wpopsUnhighlightRealm(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-3, true
 					}
 				case 2:
 					if realm != -1 && realm%3 > 0 {
-						wpopsUnhighlightRealm(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm-1, true
 					}
 				case 3:
 					if realm != -1 {
-						wpopsUnhighlightRealm(book, realm)
+						unhighlightBookRealm(book, realm)
 						redraw = true
 						if realm+3 >= 6 {
 							realm = -1
@@ -198,7 +198,7 @@ func chooseCombatSpell(win *Window, m int) int {
 					}
 				case 4:
 					if realm != -1 && realm%3+1 < 3 {
-						wpopsUnhighlightRealm(book, realm)
+						unhighlightBookRealm(book, realm)
 						realm, redraw = realm+1, true
 					}
 				}
@@ -211,7 +211,7 @@ func chooseCombatSpell(win *Window, m int) int {
 			return quit()
 		}
 		// The spell.
-		wpopsUnhighlightRealm(book, realm)
+		unhighlightBookRealm(book, realm)
 		pos = 0
 		pvBlinkWin, pvBlinkX, pvBlinkY = list, 2, 2
 		pvBlinkText[0], pvBlinkColor[0] = spellBlank, 0
@@ -224,7 +224,7 @@ func chooseCombatSpell(win *Window, m int) int {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[pos] + 4000)
 			pvBlinkColor[1] = realmColors[realm]
-			wpopsDrawSpellList(list, realm, pos, true, count, spells[:])
+			drawBookSpellList(list, realm, pos, true, count, spells[:])
 			cost := int(spellTable[spells[pos]].Cost)
 			setCursor(book, 18, 5)
 			if sp() < cost {
@@ -333,7 +333,7 @@ func chooseCombatSpell(win *Window, m int) int {
 				}
 			case 3:
 				if level == 0 {
-					wpopsUnhighlightRealm(book, -1)
+					unhighlightBookRealm(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
 					setCursor(book, 13, 1)
 					printMessage(realm+3950, book, rc)
@@ -374,9 +374,9 @@ func chooseCombatSpell(win *Window, m int) int {
 	return level<<8 + spell
 }
 
-// wpopsDrawItemList (draw_item_list, WPOPS 7017) shows member m's items around pos,
+// drawItemList (draw_item_list, WPOPS 7017) shows member m's items around pos,
 // pos lit with hi, with the quantity of stackable ones and the item icon.
-func wpopsDrawItemList(w *Window, m, pos int, hi bool, names []string, counts []int) {
+func drawItemList(w *Window, m, pos int, hi bool, names []string, counts []int) {
 	drawListFrame(w, false)
 	deferWindowDraw(w)
 	for r := -2; r <= 2; r++ {
@@ -447,7 +447,7 @@ func chooseCombatItem(win *Window, m int) int {
 		} else {
 			printStringHi(prompt, cancel, 3)
 		}
-		wpopsDrawItemList(list, m, pos, !onCancel, names, counts)
+		drawItemList(list, m, pos, !onCancel, names, counts)
 		k = getCombatInput()
 		if menuClicked == 1 {
 			switch k {

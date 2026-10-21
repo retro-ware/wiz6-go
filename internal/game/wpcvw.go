@@ -340,17 +340,17 @@ func wpcvwInputNumber(w *Window, msg, max int) int32 {
 // wpcvwDrawTextFrame (WPCVW 8dd4) draws the text window's frame.
 func wpcvwDrawTextFrame(w *Window) {
 	fillWindow(w, 0, 1)
-	wpcvwPutFrameChar(w, 0, 0, 9)
-	wpcvwPutFrameChar(w, 39, 0, 10)
-	wpcvwPutFrameChar(w, 0, 15, 6)
-	wpcvwPutFrameChar(w, 39, 15, 8)
+	setFrameGlyph(w, 0, 0, 9)
+	setFrameGlyph(w, 39, 0, 10)
+	setFrameGlyph(w, 0, 15, 6)
+	setFrameGlyph(w, 39, 15, 8)
 	for i := 1; i < 39; i++ {
-		wpcvwPutFrameChar(w, i, 0, 12)
-		wpcvwPutFrameChar(w, i, 15, 7)
+		setFrameGlyph(w, i, 0, 12)
+		setFrameGlyph(w, i, 15, 7)
 	}
 	for i := 1; i < 15; i++ {
-		wpcvwPutFrameChar(w, 0, i, 4)
-		wpcvwPutFrameChar(w, 39, i, 5)
+		setFrameGlyph(w, 0, i, 4)
+		setFrameGlyph(w, 39, i, 5)
 	}
 	refreshWindow(w)
 }
@@ -400,11 +400,6 @@ func wpcvwShowTextPages(menu *Window, msg int) {
 
 // --------------------------------------------------------------------- printing
 
-// wpcvwPutFrameChar (WPCVW 5f86, and fb139) sets the glyph of cell (x, y) of w without drawing it.
-func wpcvwPutFrameChar(w *Window, x, y int, ch byte) {
-	w.Cells[int(w.W)*y+x].Ch = ch
-}
-
 // wpcvwPrintAt (WPCVW 50ba).
 func wpcvwPrintAt(w *Window, x, y int, s string, color int) {
 	setCursor(w, x, y)
@@ -414,14 +409,8 @@ func wpcvwPrintAt(w *Window, x, y int, s string, color int) {
 // wpcvwPrintMsg (WPCVW 5115, and b195) prints message msg in font 0.
 func wpcvwPrintMsg(msg int, w *Window, color int) { printString(w, getMessage(msg), color) }
 
-// wpcvwPutIconAt (WPCVW 5165, and b1bc) puts item icon glyph ch of font 4 at (x, y).
-func wpcvwPutIconAt(w *Window, x, y int, ch byte) {
-	setCursor(w, x, y)
-	putCharHi(w, ch, 4)
-}
-
-// wpcvwPutCharC1 (WPCVW 9f7f) puts glyph ch of font 1 at (x, y).
-func wpcvwPutCharC1(w *Window, x, y int, ch byte) {
+// putGlyphAtC1 (WPCVW 9f7f) puts glyph ch of font 1 at (x, y).
+func putGlyphAtC1(w *Window, x, y int, ch byte) {
 	setCursor(w, x, y)
 	putCharHi(w, ch, 1)
 }

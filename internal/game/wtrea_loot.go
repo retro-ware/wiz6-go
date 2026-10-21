@@ -302,7 +302,7 @@ func distributeLoot() {
 	noneX, noneY := int(win.CurX), int(win.CurY)
 	none := getMessage(5103)
 	printStringHi(win, none, 3)
-	g := func(x, y int, ch byte) { wpcvwPutCharC1(win, x, y, ch) }
+	g := func(x, y int, ch byte) { putGlyphAtC1(win, x, y, ch) }
 	g(1, 2, 17)
 	g(18, 2, 19)
 	g(1, 4, 6)

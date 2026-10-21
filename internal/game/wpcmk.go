@@ -44,7 +44,8 @@ func printStatusCentered(msg int) {
 	printStringHi(sheetWin, t, 3)
 }
 
-// setFrameGlyph (WPCMK 4bed) sets the character of cell (x, y) of win without drawing it.
+// setFrameGlyph (WPCMK 4bed, WPCVW 5f86, WMAZE ceb2) sets the character of cell (x, y) of
+// win without drawing it.
 func setFrameGlyph(win *Window, x, y int, ch byte) {
 	win.Cells[int(win.W)*y+x].Ch = ch
 }
@@ -136,8 +137,8 @@ func putGlyphAt(win *Window, x, y int, ch byte) {
 	putCharHi(win, ch, 2)
 }
 
-// putGlyphAtC4 (WPCMK 50a8) draws glyph ch of font 4 at (x, y).
-func putGlyphAtC4(win *Window, x, y int, ch byte) {
+// putIconAt (WPCMK 50a8, WPCVW 5165) draws glyph ch of font 4 at (x, y).
+func putIconAt(win *Window, x, y int, ch byte) {
 	setCursor(win, x, y)
 	putCharHi(win, ch, 4)
 }
@@ -296,7 +297,7 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 	}
 }
 
-// drawListBox (WPCMK 619b) draws the scroll bar of a 7-row list window.
+// drawListBox (WPCMK 619b, WPCVW 719f) draws the scroll bar of a 7-row list window.
 func drawListBox(win *Window, show bool) {
 	fillWindow(win, 32, 3)
 	deferWindowDraw(win)

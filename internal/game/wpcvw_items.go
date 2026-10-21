@@ -182,7 +182,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	for {
 		fillWindow(w, 0, 1)
-		f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
+		f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 		f(0, 0, 14)
 		f(19, 0, 10)
 		f(0, 15, 11)
@@ -209,8 +209,8 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		deferWindowDraw(w)
 		setCursor(w, 1, 1)
 		printMessage(750, w, 18)
-		wpcvwPutIconAt(w, 2, 1, 100)
-		wpcvwPutIconAt(w, 17, 1, 100)
+		putIconAt(w, 2, 1, 100)
+		putIconAt(w, 17, 1, 100)
 		for i := 0; i < int(p.SwagCount); i++ {
 			it := p.Items[i+10]
 			if !loaded {
@@ -557,7 +557,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 	rec := itemRec(int(p.Items[i].ID))
 	w := createWindow(20, 8, 20, 12, 25, -1, 0, false)
 	fillWindow(w, 0, 1)
-	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
+	f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	f(0, 0, 21)
 	f(19, 0, 8)
 	f(0, 11, 11)
@@ -582,8 +582,8 @@ func showItemInfo(menu *Window, m, i, power int) {
 	for x := 1; x < 20; x++ {
 		putCharHi(w, ' ', 3)
 	}
-	wpcvwPutIconAt(w, 1, 1, rec.Icon+1)
-	wpcvwPutIconAt(w, 18, 1, rec.Icon+1)
+	putIconAt(w, 1, 1, rec.Icon+1)
+	putIconAt(w, 18, 1, rec.Icon+1)
 	name := cstr(rec.Name[:])
 	setCursor(w, 10-(len(name)+1)/2, 1)
 	printStringHi(w, name, 3)

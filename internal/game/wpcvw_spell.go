@@ -124,93 +124,6 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 	}
 }
 
-// wpcvwDrawSpellListFrame (WPCVW 719f) clears the spell list window and draws its left edge.
-func wpcvwDrawSpellListFrame(w *Window, refresh bool) {
-	fillWindow(w, ' ', 3)
-	deferWindowDraw(w)
-	putGlyphAt(w, 0, 0, 69)
-	for y := 1; y < 6; y++ {
-		putGlyphAt(w, 0, y, 71)
-	}
-	putGlyphAt(w, 0, 6, 70)
-	resumeWindowDraw(w)
-	if refresh {
-		refreshWindow(w)
-	}
-}
-
-// wpcvwDrawSpellWindow (WPCVW 721a) draws the spell book frame: title, realm and power rows.
-func wpcvwDrawSpellWindow(w *Window) {
-	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
-	deferWindowDraw(w)
-	fillWindow(w, 0, 1)
-	f(0, 0, 14)
-	f(19, 0, 10)
-	f(0, 2, 21)
-	f(19, 2, 8)
-	for x := 1; x < 19; x++ {
-		f(x, 0, 12)
-		f(x, 2, 7)
-	}
-	f(0, 1, 13)
-	f(19, 1, 5)
-	setCursor(w, 1, 1)
-	printMessage(700, w, 18)
-	wpcvwPutIconAt(w, 2, 1, 34)
-	wpcvwPutIconAt(w, 17, 1, 34)
-	for y := 3; y < 9; y++ {
-		f(0, y, 5)
-	}
-	for _, c := range [][3]int{
-		{0, 9, 10}, {0, 10, 5}, {0, 11, 22}, {0, 12, 13}, {0, 13, 23}, {0, 14, 5}, {0, 15, 8},
-		{1, 11, 18}, {1, 13, 7}, {2, 11, 34}, {2, 12, 13}, {2, 13, 11},
-	} {
-		f(c[0], c[1], byte(c[2]))
-	}
-	for x := 3; x < 6; x++ {
-		f(x, 11, 18)
-		f(x, 13, 7)
-	}
-	for x := 6; x < 9; x++ {
-		f(x, 11, 18)
-		f(x, 13, 12)
-		f(x, 15, 7)
-	}
-	for x := 11; x < 19; x++ {
-		f(x, 11, 18)
-		f(x, 13, 7)
-	}
-	for _, c := range [][3]int{
-		{5, 13, 24}, {5, 14, 4}, {5, 15, 6}, {9, 11, 19}, {9, 12, 5}, {9, 13, 10}, {9, 14, 5},
-		{9, 15, 8}, {10, 11, 17}, {10, 12, 4}, {10, 13, 6}, {19, 11, 19}, {19, 12, 5}, {19, 13, 8},
-	} {
-		f(c[0], c[1], byte(c[2]))
-	}
-	putGlyphAt(w, 1, 12, 34)
-	for i := 0; i < 6; i++ {
-		putCharAt(w, i+3, 12, byte(i+24))
-	}
-	setCursor(w, 1, 14)
-	printMessage(3957, w, 18)
-	for _, r := range [][3]int{{10, 14, 10}, {1, 15, 4}, {10, 15, 10}} {
-		setCursor(w, r[0], r[1])
-		for i := 0; i < r[2]; i++ {
-			putCharHi(w, ' ', 3)
-		}
-	}
-	resumeWindowDraw(w)
-	refreshWindow(w)
-}
-
-// wpcvwUnhighlightRealm (WPCVW 7148) redraws realm r's glyph plain (r -1: the exit glyph).
-func wpcvwUnhighlightRealm(w, book *Window, r int) {
-	if r == -1 {
-		putGlyphAt(book, 1, 12, 34)
-		return
-	}
-	putGlyphAt(w, r/3*10+1, r%3<<1+14, byte(r+35))
-}
-
 // wpcvwCountKnownSpells (WPCVW 76ee) lists in out the spells of realm r member m knows.
 func wpcvwCountKnownSpells(m, r int, out []int) int {
 	n := 0
@@ -221,31 +134,6 @@ func wpcvwCountKnownSpells(m, r int, out []int) int {
 		}
 	}
 	return n
-}
-
-// wpcvwDrawSpellList (WPCVW 7749) shows the spells of list around index at, the one at at
-// highlighted in realm r's colour when hi.
-func wpcvwDrawSpellList(w *Window, r, at int, hi bool, n int, list []int) {
-	wpcvwDrawSpellListFrame(w, false)
-	deferWindowDraw(w)
-	for d := -3; d <= 3; d++ {
-		if at+d < 0 || at+d >= n {
-			continue
-		}
-		setCursor(w, 1, d+3)
-		c := 18
-		if hi && d == 0 {
-			c = realmColors[r]
-		}
-		printMessage(list[at+d]+4000, w, c)
-		if hi && d == 0 {
-			for w.CurX < 18 {
-				putChar(w, ' ', realmColors[r])
-			}
-		}
-	}
-	resumeWindowDraw(w)
-	refreshWindow(w)
 }
 
 // pvSetBlink sets the blinking cursor at (x, y) of w: phase 0 shows a in colour ca,
@@ -271,8 +159,8 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		return v
 	}
 	fillWindow(list, ' ', 3)
-	wpcvwDrawSpellWindow(book)
-	wpcvwDrawSpellListFrame(list, true)
+	drawSheetSpellWindow(book)
+	drawListBox(list, true)
 	refreshWindow(menu)
 	realm := 0
 	for r := 0; r < 6; r++ {
@@ -295,13 +183,13 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					printMessage(3956, book, 9)
 					clearWindowArea(book, 6, 14, 8, 14)
 					n = -1
-					wpcvwDrawSpellListFrame(list, true)
+					drawListBox(list, true)
 				} else {
 					pvBlinkWin, pvBlinkX, pvBlinkY = sheet, realm/3*10+1, realm%3<<1+14
 					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 6, 14, 8, 14)
 					n = wpcvwCountKnownSpells(m, realm, spells[:])
-					wpcvwDrawSpellList(list, realm, 0, false, n, spells[:])
+					drawSheetSpellList(list, realm, 0, false, spells[:n])
 				}
 				pvSetBlink(pvBlinkWin, pvBlinkX, pvBlinkY, string(rune(realm+35)), 17, "c", 5)
 				redraw = false
@@ -312,10 +200,10 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 				case k == realm:
 					k = 5
 				case k < 6:
-					wpcvwUnhighlightRealm(sheet, book, realm)
+					unhighlightSheetRealm(sheet, book, realm)
 					realm, k = k, 0
 				default:
-					wpcvwUnhighlightRealm(sheet, book, realm)
+					unhighlightSheetRealm(sheet, book, realm)
 					realm, k, n = -1, 5, -1
 				}
 				redraw = true
@@ -323,20 +211,20 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 				switch k {
 				case 1:
 					if realm == -1 {
-						wpcvwUnhighlightRealm(sheet, book, realm)
+						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = 4, true
 					} else if realm-3 >= 0 {
-						wpcvwUnhighlightRealm(sheet, book, realm)
+						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm-3, true
 					}
 				case 2:
 					if realm != -1 && realm%3 > 0 {
-						wpcvwUnhighlightRealm(sheet, book, realm)
+						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm-1, true
 					}
 				case 3:
 					if realm != -1 {
-						wpcvwUnhighlightRealm(sheet, book, realm)
+						unhighlightSheetRealm(sheet, book, realm)
 						redraw = true
 						if realm += 3; realm >= 6 {
 							realm = -1
@@ -344,7 +232,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					}
 				case 4:
 					if realm != -1 && realm%3+1 < 3 {
-						wpcvwUnhighlightRealm(sheet, book, realm)
+						unhighlightSheetRealm(sheet, book, realm)
 						realm, redraw = realm+1, true
 					}
 				}
@@ -358,7 +246,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		}
 
 		// Pick a spell of the realm.
-		wpcvwUnhighlightRealm(sheet, book, realm)
+		unhighlightSheetRealm(sheet, book, realm)
 		at, back := 0, false
 		pvSetBlink(list, 1, 3, wpcvwBlankLabel, 0, "", 0)
 		lx, ly := int(list.X), int(list.Y)
@@ -371,7 +259,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[at] + 4000)
 			pvBlinkColor[1] = realmColors[realm]
-			wpcvwDrawSpellList(list, realm, at, true, n, spells[:])
+			drawSheetSpellList(list, realm, at, true, spells[:n])
 			cost := int(spellTable[spells[at]].Cost)
 			setCursor(book, 6, 14)
 			if int(p.SP[realm].Cur) < cost {
@@ -416,7 +304,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		}
 
 		// Pick the power level.
-		wpcvwDrawSpellListFrame(list, false)
+		drawListBox(list, false)
 		deferWindowDraw(list)
 		setCursor(list, 1, 3)
 		printMessage(spell+4000, list, 18)
@@ -482,7 +370,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					}
 				case 3:
 					if power == 0 {
-						wpcvwUnhighlightRealm(sheet, book, -1)
+						unhighlightSheetRealm(sheet, book, -1)
 						clearWindowArea(book, 11, 12, 18, 12)
 						setCursor(book, 11, 12)
 						printMessage(realm+3950, book, realmColors[realm])

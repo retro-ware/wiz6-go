@@ -59,7 +59,7 @@ func refreshMemberCard(w *Window, m int) {
 
 // drawSheetFrame (WPCVW 4ca8) draws the sheet's frame into its cells.
 func drawSheetFrame(w *Window) {
-	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
+	f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	f(0, 0, 1)
 	f(39, 0, 3)
 	f(0, 19, 6)
@@ -516,18 +516,18 @@ func wpcvwViewCharacter(m int) {
 
 // drawPortraitFrame (WPCVW 9fa8) draws the right-hand panel's frame.
 func drawPortraitFrame(w *Window) {
-	wpcvwPutCharC1(w, 0, 0, 20)
-	wpcvwPutCharC1(w, 19, 0, 8)
+	putGlyphAtC1(w, 0, 0, 20)
+	putGlyphAtC1(w, 19, 0, 8)
 	for i := 1; i < 19; i++ {
-		wpcvwPutCharC1(w, i, 0, 7)
+		putGlyphAtC1(w, i, 0, 7)
 	}
 	for i := 1; i < 15; i++ {
-		wpcvwPutCharC1(w, 0, i, 5)
+		putGlyphAtC1(w, 0, i, 5)
 	}
-	wpcvwPutCharC1(w, 0, 9, 10)
-	wpcvwPutCharC1(w, 0, 11, 10)
-	wpcvwPutCharC1(w, 0, 13, 10)
-	wpcvwPutCharC1(w, 0, 15, 8)
+	putGlyphAtC1(w, 0, 9, 10)
+	putGlyphAtC1(w, 0, 11, 10)
+	putGlyphAtC1(w, 0, 13, 10)
+	putGlyphAtC1(w, 0, 15, 8)
 }
 
 // drawMemberNameRight (draw_member_name, WPCVW 8937) reprints member m's name plain in

@@ -27,7 +27,7 @@ func markShownSkills(m int, t [4]string) {
 func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	p := &party[m]
 	markShownSkills(m, classSkills[p.Class])
-	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
+	f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	fillWindow(w, 0, 1)
 	f(0, 0, 14)
 	f(19, 0, 10)
@@ -58,8 +58,8 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 		{1, 1, 0, 9, 2}, {36, 37, 10, 16, 14}, {36, 37, 17, 21, 12}, {33, 33, 22, 29, 11},
 	}
 	pd := pages[pg]
-	wpcvwPutIconAt(w, 2, 1, byte(pd[0]+1))
-	wpcvwPutIconAt(w, 17, 1, byte(pd[1]+1))
+	putIconAt(w, 2, 1, byte(pd[0]+1))
+	putIconAt(w, 17, 1, byte(pd[1]+1))
 	n := 0
 	for k := pd[2]; k <= pd[3]; k++ {
 		if pvSkillShown[k] {

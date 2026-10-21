@@ -664,7 +664,7 @@ func wdoptItemLocationEvent(m, slot int) bool {
 
 // draw_item_list (WDOPT 76d5) shows five rows of the item list around index sel, the one
 // at sel highlighted when hi.
-func wdoptDrawItemList(win *Window, m, sel int, hi bool) {
+func drawSlotItemList(win *Window, m, sel int, hi bool) {
 	drawListFrame(win, false)
 	deferWindowDraw(win)
 	for row := -2; row <= 2; row++ {
@@ -751,7 +751,7 @@ func wdoptDoUseItem(m int) {
 		} else {
 			printStringHi(win, cancel, 3)
 		}
-		wdoptDrawItemList(list, m, sel, !onCancel)
+		drawSlotItemList(list, m, sel, !onCancel)
 		c := wdoptGetMenuChoice(dpKeys)
 		if menuClicked == 1 {
 			switch c {

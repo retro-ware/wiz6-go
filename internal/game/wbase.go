@@ -620,21 +620,15 @@ func showTitleText(text string, x int) {
 	resumeWindowDraw(mainWindow)
 }
 
-// drawFrameGlyph (WBASE 63ce) draws glyph ch of font 2 at (x, y).
-func drawFrameGlyph(win *Window, x, y int, ch byte) {
-	setCursor(win, x, y)
-	putCharHi(win, ch, 2)
-}
-
-// drawListFrame (WBASE 63f7) draws the scroll bar of a list window.
+// drawListFrame (WBASE 63f7, WTREA 7549, ...) draws the scroll bar of a list window.
 func drawListFrame(win *Window, show bool) {
 	fillWindow(win, 32, 3)
 	deferWindowDraw(win)
-	drawFrameGlyph(win, 1, 0, 69)
+	putGlyphAt(win, 1, 0, 69)
 	for y := 1; y < 4; y++ {
-		drawFrameGlyph(win, 1, y, 71)
+		putGlyphAt(win, 1, y, 71)
 	}
-	drawFrameGlyph(win, 1, 4, 70)
+	putGlyphAt(win, 1, 4, 70)
 	resumeWindowDraw(win)
 	if show {
 		refreshWindow(win)

@@ -90,8 +90,8 @@ func drawSkillPage(win *Window, page int) []int {
 		color       int
 	}{{1, 1, 0, 9, 2}, {36, 37, 10, 16, 14}, {36, 37, 17, 21, 12}, {33, 33, 22, 29, 11}}
 	p := pages[page]
-	putGlyphAtC4(win, 2, 1, p.left+1)
-	putGlyphAtC4(win, 17, 1, p.right+1)
+	putIconAt(win, 2, 1, p.left+1)
+	putIconAt(win, 17, 1, p.right+1)
 	var list []int
 	for i := p.first; i <= p.last; i++ {
 		if pcmkSkillShown[i] {
@@ -867,9 +867,9 @@ func putCharAt(win *Window, x, y int, ch byte) {
 	putChar(win, ch, 5)
 }
 
-// unhighlightRealm (WPCMK 6144) puts back realm's glyph on the sheet, or the "done"
+// unhighlightSheetRealm (WPCMK 6144, WPCVW 7148) puts back realm's glyph on the sheet, or the "done"
 // glyph in the spell window for -1.
-func unhighlightRealm(sheet, win *Window, realm int) {
+func unhighlightSheetRealm(sheet, win *Window, realm int) {
 	if realm == -1 {
 		putGlyphAt(win, 1, 12, 34)
 		return
@@ -877,8 +877,8 @@ func unhighlightRealm(sheet, win *Window, realm int) {
 	putGlyphAt(sheet, realm/3*10+1, realm%3<<1+14, byte(realm+35))
 }
 
-// drawSpellWindow (WPCMK 6216) draws the frame of the spell chooser.
-func drawSpellWindow(w *Window) {
+// drawSheetSpellWindow (WPCMK 6216, WPCVW 721a) draws the frame of the spell chooser.
+func drawSheetSpellWindow(w *Window) {
 	g := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	deferWindowDraw(w)
 	fillWindow(w, 0, 1)
@@ -894,8 +894,8 @@ func drawSpellWindow(w *Window) {
 	g(19, 1, 5)
 	setCursor(w, 1, 1)
 	printMessage(700, w, 18)
-	putGlyphAtC4(w, 2, 1, 34)
-	putGlyphAtC4(w, 17, 1, 34)
+	putIconAt(w, 2, 1, 34)
+	putIconAt(w, 17, 1, 34)
 	for i := 3; i < 9; i++ {
 		g(0, i, 5)
 	}
@@ -950,9 +950,9 @@ func listRealmSpells(realm int) []int {
 	return l
 }
 
-// drawSpellList (WPCMK 673f) shows up to three spells either side of sel; with cursor the
+// drawSheetSpellList (draw_spell_list, WPCMK 673f, WPCVW 7749) shows up to three spells either side of sel; with cursor the
 // selected one is highlighted in the realm's color.
-func drawSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
+func drawSheetSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
 	drawListBox(w, false)
 	deferWindowDraw(w)
 	for d := -3; d <= 3; d++ {
@@ -984,7 +984,7 @@ func selectSpell(sheet, win *Window) int {
 	defer destroyWindow(list, false)
 	defer destroyWindow(w, false)
 	fillWindow(list, 32, 3)
-	drawSpellWindow(w)
+	drawSheetSpellWindow(w)
 	drawListBox(list, true)
 	refreshWindow(win)
 	realm := 0
@@ -1015,7 +1015,7 @@ func selectSpell(sheet, win *Window) int {
 					clearWindowArea(w, 6, 14, 8, 14)
 					spells = listRealmSpells(realm)
 					none = len(spells) == 0
-					drawSpellList(list, realm, 0, false, spells)
+					drawSheetSpellList(list, realm, 0, false, spells)
 				}
 				redraw = false
 			}
@@ -1025,10 +1025,10 @@ func selectSpell(sheet, win *Window) int {
 				case key == realm:
 					key = 5
 				case key < 6:
-					unhighlightRealm(sheet, w, realm)
+					unhighlightSheetRealm(sheet, w, realm)
 					realm, key = key, 0
 				default:
-					unhighlightRealm(sheet, w, realm)
+					unhighlightSheetRealm(sheet, w, realm)
 					realm, key, none = -1, 5, false
 				}
 				redraw = true
@@ -1036,20 +1036,20 @@ func selectSpell(sheet, win *Window) int {
 				switch key {
 				case 1:
 					if realm == -1 {
-						unhighlightRealm(sheet, w, realm)
+						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = 4, true
 					} else if realm-3 >= 0 {
-						unhighlightRealm(sheet, w, realm)
+						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm-3, true
 					}
 				case 2:
 					if realm != -1 && realm%3 > 0 {
-						unhighlightRealm(sheet, w, realm)
+						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm-1, true
 					}
 				case 3:
 					if realm != -1 {
-						unhighlightRealm(sheet, w, realm)
+						unhighlightSheetRealm(sheet, w, realm)
 						redraw = true
 						if realm+3 < 6 {
 							realm += 3
@@ -1059,7 +1059,7 @@ func selectSpell(sheet, win *Window) int {
 					}
 				case 4:
 					if realm != -1 && realm%3+1 < 3 {
-						unhighlightRealm(sheet, w, realm)
+						unhighlightSheetRealm(sheet, w, realm)
 						realm, redraw = realm+1, true
 					}
 				}
@@ -1071,14 +1071,14 @@ func selectSpell(sheet, win *Window) int {
 		if realm == -1 {
 			return -1
 		}
-		unhighlightRealm(sheet, w, realm)
+		unhighlightSheetRealm(sheet, w, realm)
 		sel, back := 0, false
 		setClickRegion(7, list.X, list.Y, list.X, list.Y)
 		setClickRegion(8, list.X, list.Y+6, list.X, list.Y+6)
 		setClickRegion(9, list.X+1, list.Y+3, list.X+18, list.Y+3)
 		setClickRegion(10, 255, 0, 0, 0)
 		for {
-			drawSpellList(list, realm, sel, true, spells)
+			drawSheetSpellList(list, realm, sel, true, spells)
 			cost := int(spellTable[spells[sel]].Cost)
 			setCursor(w, 6, 14)
 			if int(newPC.SP[realm].Cur) < cost {
