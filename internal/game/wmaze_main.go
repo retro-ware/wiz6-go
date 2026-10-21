@@ -135,7 +135,7 @@ func loadMazeLevel(m int) {
 	allocMazeBuffers()
 	levelFlags[gameStateArg] = scenarioHdr.LevelFlags[gameStateArg]
 	returnCmd = int16(stateExplore)
-	g4f8a = -1
+	eventFacing = -1
 	eventCells = [96]byte{}
 	cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
 	for blk := 0; blk < mapBlocks; blk++ {
@@ -267,7 +267,7 @@ func initMazeScreen() {
 	mzEnteredCell = 1
 	mzAnimCounter = 0
 	animPhase = 0
-	g363e = 0
+	doorOpenFrame = 0
 }
 
 // memberCell is where member m's name sits in the choose window.
@@ -490,7 +490,7 @@ func tickEffectTimers(n int) {
 func stepPosition(dir int, n int16) {
 	mzEnteredCell = 1
 	curEvent = [4]int16{}
-	g4f86 = 0
+	secretSpotted = 0
 	switch dir {
 	case dirNorth:
 		partyY += n
@@ -619,14 +619,14 @@ func moveParty(turn int) {
 			}
 		} else if wall == 3 && dir == int(partyFacing) {
 			playSound(4)
-			g363e = 1
+			doorOpenFrame = 1
 			redrawMazeView()
 			playSound(13)
 			waitSecondsOrEnter(2)
-			g363e = 2
+			doorOpenFrame = 2
 			redrawMazeView()
 			waitSecondsOrEnter(2)
-			g363e = 0
+			doorOpenFrame = 0
 			if tryMove(dir) != 0 {
 				return
 			}

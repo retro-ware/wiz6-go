@@ -94,7 +94,7 @@ func blockAt(block, x, y int) int {
 func moveToMazeCell(cx, cy, block *int16, x, y int) int {
 	b := blockAt(int(*block), x, y)
 	if b == -1 {
-		b = blockAt(int(g4fa6), x, y)
+		b = blockAt(int(lastFoundBlock), x, y)
 	}
 	if b == -1 {
 		for i := (int(*block) + 1) % mapBlocks; ; {
@@ -109,7 +109,7 @@ func moveToMazeCell(cx, cy, block *int16, x, y int) int {
 	*cx = int16(x - int(mazeA.BlockX[b]))
 	*cy = int16(y - int(mazeA.BlockY[b]))
 	*block = int16(b)
-	g4fa6 = int16(b)
+	lastFoundBlock = int16(b)
 	return 0
 }
 
@@ -381,9 +381,9 @@ func drawFrontCell(row, wall, col, clipL, clipR int, t ...int) {
 		case 1, 3, 4:
 			if wall == 3 {
 				if col == 1 {
-					if row == 0 && g363e > 0 {
-						addViewObject(2, 0, 0, uint8(g363e+15), clipL, clipR, uint8(row))
-					} else if row > 0 || g363e == 0 {
+					if row == 0 && doorOpenFrame > 0 {
+						addViewObject(2, 0, 0, uint8(doorOpenFrame+15), clipL, clipR, uint8(row))
+					} else if row > 0 || doorOpenFrame == 0 {
 						addViewObject(viewObjTiles, p(4), -1, 0, -1, -1, uint8(row))
 					}
 				} else if row > 0 {
@@ -580,7 +580,7 @@ func drawViewFrame() {
 		case 1:
 			tile, frame = 349, int(animPhase)+1
 		case 2:
-			tile, frame = 355, int(animPhase)*int(g4f86)+1
+			tile, frame = 355, int(animPhase)*int(secretSpotted)+1
 		case 3:
 			tile, frame = 346, int(animPhase)+1
 		case 4:
@@ -603,7 +603,7 @@ func drawMazeView() {
 		return
 	}
 	x, y, cx, cy, block := partyX, partyY, cellX, cellY, partyBlock
-	g4fa6 = 0
+	lastFoundBlock = 0
 	viewRowsOpen = 1
 	drvFillBack(pictureWin, 0)
 	if testBit(mazeA.SpecialCells[:], cellIndex(int(block), int(cx), int(cy))) {

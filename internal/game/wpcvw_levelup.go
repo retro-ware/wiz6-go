@@ -559,7 +559,7 @@ func levelUpEntry() {
 	for m := 0; m < partyCount; m++ {
 		checkLevelUp(m)
 	}
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	eraseWindow(mainWindow, false)

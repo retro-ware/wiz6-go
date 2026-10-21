@@ -290,7 +290,7 @@ func showTitleSequence() {
 func showGraveyard() {
 	mazeA, mazeB = nil, nil
 	partyCount = 0
-	for _, w := range []*Window{g4fb0, titleStripWin, pictureWin, fullscreenWin, partyPictureWin, leftPanelWin, rightPanelWin, mainWindow, bottomLineWin} {
+	for _, w := range []*Window{movePadWin, titleStripWin, pictureWin, fullscreenWin, partyPictureWin, leftPanelWin, rightPanelWin, mainWindow, bottomLineWin} {
 		destroyWindow(w, false)
 	}
 	loadSound(34)
@@ -336,7 +336,7 @@ func initMainScreen() {
 	for j := range 3 {
 		picSlotMonster[4+j], picSlotLoaded[4+j] = -1, false
 	}
-	g433a = 0
+	encounterID = 0
 	gameState = stateMasterOptions
 	drv.ShowWindow(winRect(fullscreenWin))
 }

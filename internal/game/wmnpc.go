@@ -18,7 +18,7 @@ import (
 // ovmain (WMNPC 6a6d).
 func wmnpcOvmain() {
 	pvBlinkState = -1
-	npcID = g433a
+	npcID = encounterID
 	runNPCEncounter()
 }
 
@@ -640,7 +640,7 @@ func npcPrintTextLine(s string) {
 	setCursor(npcTextWin, col, npcTextRow)
 	npcTextCol = col
 	npcTextRow++
-	printString(npcTextWin, s, 5) // g0002
+	printString(npcTextWin, s, textColor)
 }
 
 // npcShowMessageText (WMNPC 5c61) shows messages msg, msg+1, ... up to the first missing
@@ -820,7 +820,7 @@ func npcPrintBigLine(s string) {
 	setCursor(npcTextWin, col, npcTextRow)
 	npcTextCol = col
 	npcTextRow++
-	printString(npcTextWin, s, 5) // g0002
+	printString(npcTextWin, s, textColor)
 }
 
 // npcFullMessage (WMNPC 6e7e) shows messages msg.. full screen until Enter or a click.
@@ -1156,13 +1156,13 @@ func runNPCEncounter() {
 	npcStockWares()
 	npcLoadVocabulary()
 	eraseWindow(mainWindow, false)
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	monsterListWin = createWindow(20, 19, 20, 5, 10, borderNone, 0, false)
 	npcDrawNameLine(monsterListWin)
 	npcMainMenu()
 	destroyWindow(monsterListWin, false)
 	eraseWindow(mainWindow, false)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	clear(picSlotLoaded[4:7])    // g4326
 	viewPosGroup = [2][5]int16{} // ba00, which also frees the sprites
 }
@@ -1327,8 +1327,8 @@ func npcMainMenu() {
 
 // npcStartFight sets up a combat with the NPC's monster.
 func npcStartFight() {
-	g433a = int(npcRec.Unk86[npcFightMonster])
-	g4338, g4354 = 1, 0
+	encounterID = int(npcRec.Unk86[npcFightMonster])
+	g4338, noEscape = 1, 0
 	gameState = stateBeginCombat
 	returnCmd = int16(stateNPC)
 }

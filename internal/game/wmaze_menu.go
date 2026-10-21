@@ -14,9 +14,9 @@ func partyCell() int { return int(partyBlock)<<6 | int(cellY)<<3 | int(cellX) }
 // startEncounter rolls a random encounter for the party's block and enters combat
 // (state 10).
 func startEncounter(fixed int16) {
-	g433a = randomEncounterMonster(encounterTable(int(partyBlock)))
+	encounterID = randomEncounterMonster(encounterTable(int(partyBlock)))
 	g4338 = fixed
-	g4354 = 0
+	noEscape = 0
 	gameState = stateBeginCombat
 }
 
@@ -195,7 +195,7 @@ func saveGame() int {
 	eraseWindow(mainWindow, false)
 	stopSound()
 	eraseCursorMark(bottomLineWin, false)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	refreshAllWindows()
 	path := dbs.Path(dataDir, "SAVEGAME.DBS")
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
@@ -261,7 +261,7 @@ func mazePartyMenu() {
 		gameState = stateLoadData // any state but stateExplore
 		return
 	}
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
@@ -312,7 +312,7 @@ func mazePartyMenu() {
 	case 7:
 		diskOptionsMenu()
 	}
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	eraseWindow(mainWindow, false)
 }
 
@@ -440,10 +440,10 @@ func mazeMainLoop() {
 			tickEffectTimers(1)
 		case exploreKeyTurnRight, exploreKeyTurnLeft:
 			mzAnimCounter = 0
-			if g4f88 == 0 {
+			if padSidestep == 0 {
 				partyFacing = (partyFacing + int16(in)) % dirCount
 				mzRedrawView = 1
-				if partyFacing == g4f8a {
+				if partyFacing == eventFacing {
 					mzEnteredCell = 1
 					cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
 				}
@@ -454,21 +454,21 @@ func mazeMainLoop() {
 			}
 			tickEffectTimers(1)
 		case exploreKeyToggleTurn: // switch the arrow pad between turning and side-stepping
-			g4f88 = (g4f88 + 1) % 2
-			deferWindowDraw(g4fb0)
-			if g4f88 == 0 {
-				putGlyphs2x2(g4fb0, 13, 1, 5, 6, 7, 8)
-				putGlyphs2x2(g4fb0, 10, 3, 1, 13, 3, 14)
-				putGlyphs4x2(g4fb0, 12, 3, 17)
-				putGlyphs2x2(g4fb0, 16, 3, 15, 10, 16, 12)
+			padSidestep = (padSidestep + 1) % 2
+			deferWindowDraw(movePadWin)
+			if padSidestep == 0 {
+				putGlyphs2x2(movePadWin, 13, 1, 5, 6, 7, 8)
+				putGlyphs2x2(movePadWin, 10, 3, 1, 13, 3, 14)
+				putGlyphs4x2(movePadWin, 12, 3, 17)
+				putGlyphs2x2(movePadWin, 16, 3, 15, 10, 16, 12)
 			} else {
-				putGlyphs2x2(g4fb0, 13, 1, 5, 6, 7, 8)
-				putGlyphs2x2(g4fb0, 10, 3, 1, 2, 3, 4)
-				putGlyphs4x2(g4fb0, 12, 3, 25)
-				putGlyphs2x2(g4fb0, 16, 3, 9, 10, 11, 12)
+				putGlyphs2x2(movePadWin, 13, 1, 5, 6, 7, 8)
+				putGlyphs2x2(movePadWin, 10, 3, 1, 2, 3, 4)
+				putGlyphs4x2(movePadWin, 12, 3, 25)
+				putGlyphs2x2(movePadWin, 16, 3, 9, 10, 11, 12)
 			}
-			resumeWindowDraw(g4fb0)
-			refreshWindow(g4fb0)
+			resumeWindowDraw(movePadWin)
+			refreshWindow(movePadWin)
 			mzRedrawView = 1
 		case exploreKeyMenu:
 			mazePartyMenu()

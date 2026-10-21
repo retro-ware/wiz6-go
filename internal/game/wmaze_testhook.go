@@ -19,7 +19,7 @@ func MainFight(dir string, mon int) int {
 		returnCmd = int16(stateExplore)
 		startEncounter(0)
 		if mon > 0 {
-			g433a = mon
+			encounterID = mon
 		}
 	})
 }
@@ -47,7 +47,7 @@ func MainChest(dir string, id int) int {
 func MainNPC(dir string, npc int) int {
 	return run(dir, func() {
 		startTestView()
-		g433a = npc
+		encounterID = npc
 		gameState = stateNPC
 	})
 }
@@ -97,13 +97,13 @@ func startTestMaze() {
 	if delaySetting == 0 {
 		delaySetting = 5
 	}
-	g4f88 = 0
+	padSidestep = 0
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
-	g4fb0 = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
-	fillWindow(g4fb0, 32, 3)
+	movePadWin = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
+	fillWindow(movePadWin, 32, 3)
 	curEvent = [4]int16{}
-	g4f86 = 0
+	secretSpotted = 0
 	mazeA, mazeB = nil, nil
 	gameState = stateLoadMap
 }

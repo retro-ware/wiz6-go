@@ -711,7 +711,7 @@ func drawSlotItemList(win *Window, m, sel int, hi bool) {
 func useItemInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
@@ -836,7 +836,7 @@ func useItemInMaze(m int) {
 	}
 	destroyWindow(win, false)
 	destroyWindow(list, false)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
 	if dpResultMsg > 0 {
@@ -849,7 +849,7 @@ func useItemInMaze(m int) {
 func castSpellInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	s := chooseSpellBook(m, func() int { return getMenuChoiceView(dpKeys) }, func(msg int) int { dpTarget = wdoptChooseTarget(msg); return dpTarget })
@@ -866,7 +866,7 @@ func castSpellInMaze(m int) {
 		}
 	}
 	destroyWindow(win, false)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
 	if dpResultMsg > 0 {

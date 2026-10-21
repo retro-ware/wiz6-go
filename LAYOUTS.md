@@ -144,6 +144,6 @@ Where a pointer to the buffer is passed on (`f1234(&l76)`), the callee's `pN` is
 
 ## Uncertain fields
 
-- These names are guesses: `PC.Unk026`, `MapA.Feature`, `SpecialCells` and `SolidCells`, `MapB.Data` and `Unk288`, `MonsterAttack.Range`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `B24` to `B41`.
+- These names are guesses: `PC.Unk026`, `MapA.Feature`, `SpecialCells` and `SolidCells`, `MapB.Data` and `Unk288`, `MonsterAttack.Range`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `Plan` to `SpeedMod`.
 - Every `UnkXX` field is unknown. Name it when a translated function makes its meaning clear.
 - The race and spell tables are static data in the ROOT or overlay data segments, not scenario records. They are not typed here. Their layout is in the per-image `data.c`. The spell table has 6-byte entries at 0xde.

@@ -67,10 +67,10 @@ func drawMonsterGroups(win *Window, refresh bool) {
 	clearWindow(win, true)
 	for g := 1; g <= monsterGroupCount; g++ {
 		grp := monsterGroups[g]
-		grp.B414 = 0
+		grp.AbleCount = 0
 		for i := 0; i < int(grp.Count); i++ {
 			if combatantAble(&grp.Members[i]) {
-				grp.B414++
+				grp.AbleCount++
 			}
 		}
 		setCursor(win, 0, g-1)
@@ -78,7 +78,7 @@ func drawMonsterGroups(win *Window, refresh bool) {
 		win.CurX++
 		printString(win, groupName(g), 14)
 		setCursor(win, 19, g-1)
-		putChar(win, grp.B414+'0', 9)
+		putChar(win, grp.AbleCount+'0', 9)
 	}
 	resumeWindowDraw(win)
 	if refresh {
@@ -96,10 +96,10 @@ func drawAllyGroup() {
 	printMessage(3516, w, 18)
 	clearWindowArea(w, 0, 1, 21, 1)
 	grp := monsterGroups[allyGroup]
-	grp.B414 = 0
+	grp.AbleCount = 0
 	for i := 0; i < int(grp.Count); i++ {
 		if combatantAble(&grp.Members[i]) {
-			grp.B414++
+			grp.AbleCount++
 		}
 	}
 	setCursor(w, 1, 1)
@@ -107,7 +107,7 @@ func drawAllyGroup() {
 	w.CurX++
 	printString(w, groupName(6), 12)
 	setCursor(w, 20, 1)
-	putChar(w, grp.B414+'0', 9)
+	putChar(w, grp.AbleCount+'0', 9)
 	resumeWindowDraw(w)
 }
 
@@ -396,7 +396,7 @@ func selectMonsterGroup(win *Window, msg, rng, sel int) int {
 				for list.CurX < 19 {
 					putChar(list, ' ', -7)
 				}
-				putChar(list, grp.B414+'0', -7)
+				putChar(list, grp.AbleCount+'0', -7)
 			}
 		}
 		k := getCombatInput()
@@ -632,14 +632,14 @@ const (
 func choosePartyActions(win *Window) {
 	for m := 0; m < partyCount; m++ {
 		p, c := &party[m], &monsterGroups[0].Members[m]
-		power := max(random(10)+int(p.AttackPower)+int(c.B41), 1)
+		power := max(random(10)+int(p.AttackPower)+int(c.SpeedMod), 1)
 		step := power / int(p.SecondaryAttacks)
-		if uint8(c.B35[1]) > 0 {
-			c.B35[2] = int8(random(power/2) + random(20) + power/2)
+		if uint8(c.B35[b35Blink]) > 0 {
+			c.B35[b35BlinkAt] = int8(random(power/2) + random(20) + power/2)
 		}
 		c.Swing, c.Plan[planSlot], c.Plan[planSlot+1] = 0, 0, 1
-		swings := min(max(int(p.SecondaryAttacks)+int(c.B41)/10, 1), 4)
-		for i := range 4 {
+		swings := min(max(int(p.SecondaryAttacks)+int(c.SpeedMod)/10, 1), planSwings)
+		for i := range planSwings {
 			if i >= swings || p.Condition >= conditionDown || p.Status[statusParalyzed] > 0 || p.Status[statusAsleep] > 0 {
 				c.Plan[i] = 0
 			} else {
@@ -928,13 +928,13 @@ func chooseGroupActions(group, targetGroup int) {
 	grp, rec := monsterGroups[group], groupMonsterRec[group]
 	for i := 0; i < int(grp.Count); i++ {
 		m := &grp.Members[i]
-		power := max(random(10)+int(m.B41)+int(rec.Unk211[monAttackPower]), 1)
+		power := max(random(10)+int(m.SpeedMod)+int(rec.Unk211[monAttackPower]), 1)
 		step := power / int(rec.Unk211[monSecondaryAttacks])
 		if rec.Flags&2 != 0 {
-			m.B35[1] = 1
+			m.B35[b35Blink] = 1
 		}
-		if uint8(m.B35[1]) > 0 {
-			m.B35[2] = int8(random(power/2) + random(20) + power/2)
+		if uint8(m.B35[b35Blink]) > 0 {
+			m.B35[b35BlinkAt] = int8(random(power/2) + random(20) + power/2)
 		}
 		m.Swing = 0
 		m.Plan[planSlot] = int8(pickRandomRow(group))
@@ -945,7 +945,7 @@ func chooseGroupActions(group, targetGroup int) {
 				break
 			}
 		}
-		for s := range 4 {
+		for s := range planSwings {
 			if int(rec.Unk211[monSecondaryAttacks]) <= s || uint8(m.Condition) >= conditionDown || m.Status[statusParalyzed] > 0 || m.Status[statusAsleep] > 0 {
 				m.Plan[s] = 0
 			} else {

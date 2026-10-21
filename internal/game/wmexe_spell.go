@@ -188,13 +188,13 @@ func doCastAction(c *Combatant) int {
 	return random(power) + int(sp.Level) + power
 }
 
-// checkMiscast keeps a backfire only for spells that can (flag 2) and a fizzle only for
-// those that can (flag 1).
+// checkMiscast keeps a backfire only for spells that can (spellCanBackfire) and a fizzle only for
+// those that can (spellCanFizzle).
 func checkMiscast(sp *Spell) {
-	if mexeBackfire == 1 && sp.B3&2 == 0 {
+	if mexeBackfire == 1 && sp.Miscast&spellCanBackfire == 0 {
 		mexeBackfire, mexeFizzle = 0, 1
 	}
-	if mexeFizzle == 1 && sp.B3&1 == 0 {
+	if mexeFizzle == 1 && sp.Miscast&spellCanFizzle == 0 {
 		mexeFizzle = 0
 	}
 }
@@ -409,18 +409,18 @@ func weakenGroup(g, who, mod, power int, weak bool) {
 		}
 		msg := 3494
 		if weak {
-			c.B40 = int8(clampToward((n-1)/2+1, int(c.B40), 1))
-			c.B39 = int8(clampToward((n-1)/2+1, int(c.B39), 0))
+			c.DamageMod = int8(clampToward((n-1)/2+1, int(c.DamageMod), 1))
+			c.ToHitMod = int8(clampToward((n-1)/2+1, int(c.ToHitMod), 0))
 			c.Level = int16(max(int(c.Level)-n, 1))
 			msg = 3491
 		} else {
-			c.B41 = int8(clampToward(n*3, int(c.B41), 1))
-			for k := range 4 {
+			c.SpeedMod = int8(clampToward(n*3, int(c.SpeedMod), 1))
+			for k := range planSwings {
 				c.Plan[k] = int8(uint8(c.Plan[k]) / 2)
 			}
-			if c.B41 < 0 {
-				for k := min(mexeAbs(int(c.B41))/10, 3); k > 0; k-- {
-					c.Plan[4-k] = 0
+			if c.SpeedMod < 0 {
+				for k := min(mexeAbs(int(c.SpeedMod))/10, 3); k > 0; k-- {
+					c.Plan[planSwings-k] = 0
 				}
 			}
 		}
@@ -615,7 +615,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 	case 14:
 		for i := 0; int(own.Count) > i; i++ {
 			if m := &own.Members[i]; uint8(m.Condition) < conditionDead {
-				m.B41 = int8(clampToward(power*2, int(m.B41), 0))
+				m.SpeedMod = int8(clampToward(power*2, int(m.SpeedMod), 0))
 			}
 		}
 	case 16:
@@ -694,7 +694,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitEffect(tg, -3, 3487, 8, 9, mod, false, power, 2, power)
 	case 37:
 		t := fighter(tg, ti)
-		t.B38 = int8(clampToward(power, int(t.B38), 1))
+		t.ArmorMod = int8(clampToward(power, int(t.ArmorMod), 1))
 	case 40:
 		spellAnimation(tg, 0, 15, false)
 		hitDamage(tg, -(power + 3), 2, 4, power, 7, mod)
@@ -710,7 +710,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		n := resistReduce(tg, power, 0, mod)
 		for i := 0; int(monsterGroups[tg].Count) > i; i++ {
 			m := fighter(tg, i)
-			m.B38 = int8(clampToward(n, int(m.B38), 0))
+			m.ArmorMod = int8(clampToward(n, int(m.ArmorMod), 0))
 		}
 	case 45:
 		switch {
@@ -735,8 +735,8 @@ func doCastSpell(c *Combatant, spell, power int) {
 		n := (power-1)/2 + 1
 		for i := 0; int(own.Count) > i; i++ {
 			m := &own.Members[i]
-			m.B38 = int8(clampToward(n, int(m.B38), 1))
-			m.B39 = int8(clampToward(n, int(m.B39), 1))
+			m.ArmorMod = int8(clampToward(n, int(m.ArmorMod), 1))
+			m.ToHitMod = int8(clampToward(n, int(m.ToHitMod), 1))
 		}
 	case 50:
 		spellAnimation(tg, ti, 16, false)
@@ -791,10 +791,10 @@ func doCastSpell(c *Combatant, spell, power int) {
 		}
 		hitEffect(tg, -power, msg, 11, 3, mod, true, 0, 0, 0)
 	case 69:
-		if me.B35[1] == 0 {
-			me.B35[2] = int8(random(initiative/2) + initiative/2)
+		if me.B35[b35Blink] == 0 {
+			me.B35[b35BlinkAt] = int8(random(initiative/2) + initiative/2)
 		}
-		me.B35[1] = int8(uint8(me.B35[1]) + uint8(power*3))
+		me.B35[b35Blink] = int8(uint8(me.B35[b35Blink]) + uint8(power*3))
 	case 71:
 		switch {
 		case partySide():
@@ -843,13 +843,13 @@ func doCastSpell(c *Combatant, spell, power int) {
 		cure(tg, ti, &fighter(tg, ti).Status[3], power*25)
 	case 26:
 		t := fighter(tg, ti)
-		if v := int(uint8(t.B35[0])) - power; v <= 0 {
-			t.B35[0], t.Status[statusPoisoned] = 0, 0
+		if v := int(uint8(t.B35[b35Poison])) - power; v <= 0 {
+			t.B35[b35Poison], t.Status[statusPoisoned] = 0, 0
 		} else {
-			t.B35[0] = int8(v)
+			t.B35[b35Poison] = int8(v)
 		}
 		if v := int(t.Status[statusPoisoned]) - power*5; v <= 0 {
-			t.Status[statusPoisoned], t.B35[0] = 0, 0
+			t.Status[statusPoisoned], t.B35[b35Poison] = 0, 0
 		} else {
 			t.Status[statusPoisoned] = uint8(v)
 		}

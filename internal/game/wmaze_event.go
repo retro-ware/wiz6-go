@@ -400,8 +400,8 @@ func noopEvent18() {}
 func doMessageEvent() {
 	bits := eventBits()
 	if extractBits(bits, 14, 1) == 1 {
-		g4f8a = int16(extractBits(bits, 12, 2))
-		if g4f8a != partyFacing {
+		eventFacing = int16(extractBits(bits, 12, 2))
+		if eventFacing != partyFacing {
 			return
 		}
 	}
@@ -431,7 +431,7 @@ func showMemberNotice(m int) {
 // secret; the first who does says so.
 func checkSecretDetect() {
 	if partyCounters[2].Duration > 0 && random(100) < int(partyCounters[2].B) {
-		g4f86 = 1
+		secretSpotted = 1
 	}
 	var tried [6]bool
 	for range partyCount {
@@ -689,8 +689,8 @@ func trapEvent() {
 func textEvent() {
 	bits := eventBits()
 	if extractBits(bits, 6, 1) == 1 {
-		g4f8a = int16(extractBits(bits, 4, 2))
-		if g4f8a != partyFacing {
+		eventFacing = int16(extractBits(bits, 4, 2))
+		if eventFacing != partyFacing {
 			return
 		}
 	}
@@ -702,11 +702,11 @@ func textEvent() {
 // one of encounter table Param.
 func encounterEvent() {
 	if extractBits(eventBits(), 3, 1) == 1 {
-		g433a = randomEncounterMonster(eventParam())
+		encounterID = randomEncounterMonster(eventParam())
 	} else {
-		g433a = eventParam()
+		encounterID = eventParam()
 	}
-	g4338, g4354 = 1, 1
+	g4338, noEscape = 1, 1
 	gameState = stateBeginCombat
 	setEventFlags(extractBits(eventBits(), 4, 2))
 	cellEventIndex++
@@ -716,12 +716,12 @@ func encounterEvent() {
 func npcEvent() {
 	bits := eventBits()
 	if extractBits(bits, 2, 1) == 1 {
-		g4f8a = int16(extractBits(bits, 0, 2))
-		if g4f8a != partyFacing {
+		eventFacing = int16(extractBits(bits, 0, 2))
+		if eventFacing != partyFacing {
 			return
 		}
 	}
-	g433a = eventParam()
+	encounterID = eventParam()
 	g4338 = 1
 	gameState = stateNPC
 	cellEventIndex++

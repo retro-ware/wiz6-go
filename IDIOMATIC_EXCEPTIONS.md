@@ -117,8 +117,8 @@ Shared names for the other groups: `gameStateID` and its `state...` constants (s
 
 ### Unclear names kept
 
-- state.go `g4fb0` (a window), `g433a` (read as WMNPC's npcID), `g363e`, `g4338`/`g4354` ("combat entry parameters"), `g4f86`, `g4f88`, `g4f8a`, `g4fa6`, `g4352` (set by an item of kind 7), `msgBlockNum`: meaning not clear from their use. Most are named in the parity goldens too.
-- state.go `Combatant.W10`, `W12`, `B24`..`B41`, `MonsterGroup.B396`..`B414`, `Spell.B3`: offset names of struct fields whose meaning is not known (or not one meaning).
+- state.go `g4338` (a combat entry parameter), `g4352` (set by an item of kind 7), `msgBlockNum`: meaning not clear from their use. Most are named in the parity goldens too.
+- state.go `Combatant.B35`: offset name of a mixed array (see its index constants).
 - state.go `magicWordTyped`: the value it gets, 17210, is the original's; why that number is unknown. It is set in wbase.go as a literal.
 - state.go `conditionGlyph`, `statusGlyph`, `realmColors`, `stackable`, `recipes`, `spellTable`: root data tables, kept as numbers (glyph indexes, colours, item ids, spell fields).
 - winit.go `gmodeInvalid = 255`: the Gmode that makes the game exit with code 2; what the original means by it is not known.
@@ -144,7 +144,6 @@ New names in wbase.go: `menuKeyEscape`..`menuKeyEnter` (places in menuKeys, the 
 
 ### Unclear names kept
 
-- `g4fb0`, `g4f88`, `g4f86` (set in setupGameWindows, resetPartyScreen): core state, meaning not clear.
 - `magicWordTypedValue = 17210`: the original's value; why that number is unknown.
 - Message numbers (1000, 1002, 1202, 2300, 2350, ...), sound numbers, window positions/priorities, colours, fonts, fill glyphs (26), glyph numbers of the camp/command window/list frame/gauges (69..71, 86, 99, drawGlyph2x2 arguments), the camp scene's maze tile and frame tables and clip columns, and the click region indexes in choosePcfileChar/doGameConfiguration stay literals: they are the original's arguments with no name of their own.
 - doGameConfiguration's setting indexes 0..7 (sound, delay, level, input, gmode, path 3, 0, 1), their rows/colours and the `% 6`, `% 3`, `% 2` value counts; scenarioHdr.Paths indexes 0, 1, 3; `scenarioHdr.Input == 1` (mouse): kept as numbers, the path slots' meaning is not checked.
@@ -169,7 +168,7 @@ New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall s
 ### Unclear names kept
 
 - The compass names of `dirNorth`..`dirWest` assume y grows northwards; only the axis (0 y+1, 1 x+1, ...) is certain.
-- `g4f86`, `g4f88` (arrow pad turns/side-steps), `g4f8a` (the facing an event wants), `g4fa6` (last found block), `g363e` (door opening frame), `g4338`/`g4354`/`g433a` (combat entry parameters), `g4fb0`: core state, see the core section.
+- `g4338` (combat entry parameter): core state, see the core section.
 - `mazeB.Unk288`, `scenarioHdr.Unk140`, `event288()`: dbs fields of unknown meaning.
 - Condition values other than 0 and 3 (2 is cured by event 25's bit 5), `Status[3]` and the other status slots, `Resist[...]` indexes, `partyCounters[0]`/`[2]`/`[5]` (effects: levitation-like, detect secret, trap ward by their use): left as numbers. Correction: the character section's `effect...` names are right, [0] is `effectDirection` (spell 38; its B is also the map 8 item's flag) and [5] `effectLevitate` (spell 30, which wards traps).
 - Wall codes (0 open, 1/3 doors, 2 wall, 4..14 features), floor feature codes 1..15 (getFrontWall, sideFeature, tryMove, searchCell's 5, setDoorFeature's 7), map numbers (`gameStateArg == 1, 2, 5, 8, 10, 12, ...` for pits, edges and special cells), encounter odds (74, 92, 975/990, 995), menu entry indexes of mazePartyMenu/diskOptionsMenu/lockedDoorMenu and the event bit field positions in `extractBits(bits, n, w)`: the original's map data and layout, not named.
@@ -194,12 +193,10 @@ Renamed core fields (state.go, goldens rewritten): `Combatant.W10` -> `Choice` (
 
 ### Unclear names kept
 
-- state.go `Combatant.B35` ([0] poison strength, [1] a round count raised by spell 69 and run down each round, [2] the count at which a charge starts): mixed, not split since the goldens name the array.
-- state.go `Combatant.B38`, `B39`, `B40`, `B41` (difficulty and spell modifiers to armour, to-hit, damage and swing count by their use) and `MonsterGroup.B414` (WPOPS): meaning not certain.
-- `Plan[0..3]` swing initiatives and `Plan[4-k]` in weakenGroup: indexed by swing number, kept as numbers.
+- state.go `Combatant.B35` (indexed by `b35Poison`, `b35Blink`, `b35BlinkAt`): mixed, not split since the goldens name the array.
 - `actionDefend`'s Choice 0 and 1 (block with the shield skill, a plain -2 armour): left as numbers.
 - Status indexes other than 2 and 5 (`Status[0]` silence, `[1]`, `[3]`, `[4]`, `[6]`, `[7]`, `[8]`, `[9]`), `Resist[...]` element indexes, `Wards[k]` and cloud indexes `k`, Skills 13/22/24/25 (casting and item skills), weapon skill numbers 0..7 in doAttack's icon table: left as numbers.
-- Spell numbers in doCastSpell's switch, breath kinds in doBreath, spell animation kinds, `Spell.B3` flags (1 can fizzle, 2 can backfire), monster record fields `Unk168`/`Unk172`/`Unk211`, `MonsterPicRec.Unk306`/`Unk309`/`Unk114`, monster ids (128, 150, 151, 153, 211..223, item 458, picture 9..54 lists), `g4338`/`g4352`/`g4354`/`g433a`/`g4fb0`.
+- Spell numbers in doCastSpell's switch, breath kinds in doBreath, spell animation kinds, monster record fields `Unk168`/`Unk172`/`Unk211`, `MonsterPicRec.Unk306`/`Unk309`/`Unk114`, monster ids (128, 150, 151, 153, 211..223, item 458, picture 9..54 lists), `g4338`/`g4352`.
 - Message numbers (3200..3900, 4000+spell), sound numbers other than beep/death, colours, window positions, depths, the hit-flash frame/depth tables, `spellAnimXY`, view tables `viewAdvance`/`viewDepthBase`/`flashShift`, view clip 72/248, `actionNone = 10`, `250` status cap: the original's arguments and data.
 - Sprite `Depth: 255` (free) stays a literal, as in WPOPS.
 
@@ -224,7 +221,7 @@ No identifiers renamed (the goldens name `npcRec`, `npcWares`, `npcPilfered`, ..
 - Interjections 0, 3, 4, 5 and 8, the verb numbers (0..9) and the question word indexes `tk.ask[0..6]` in npcAnswer, and the NPC text message numbers (1500..1641, 2025..2035, 5015, 5050, 7000..7197, 8000): left as numbers.
 - `npcOpRaiseStatus7` and `Status[7]`: which status 7 is (cured by spell 57) is not known.
 - `scenarioHdr.Unk140`, `MonsterPicRec.Unk306`/`Unk309`: dbs field names, not this group's to rename; their uses are described in comments.
-- The record-to-item flag table in npcGiveItemToMember (`{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}`), the spell lists in npcApplySpell whose panels are redrawn, picture ids 40/54 (npcPicAlt), the start-of-game and npcFullMessage destinations (137,151 / 129,132, maps 12/13), `stackable[...] == 1`, `g433a`/`g4338`/`g4354`/`g4fb0`: the original's data, meaning only partly known.
+- The record-to-item flag table in npcGiveItemToMember (`{8, 4}, {4, 8}, {16, 16}, {32, 32}, {2, 64}`), the spell lists in npcApplySpell whose panels are redrawn, picture ids 40/54 (npcPicAlt), the start-of-game and npcFullMessage destinations (137,151 / 129,132, maps 12/13), `stackable[...] == 1`, `g4338`: the original's data, meaning only partly known.
 - Window positions, priorities, colours, the text window's columns/rows (39, 4, 37, 21...), view clip 72/248, the animation states -3..12 of npcAnimStep, `Depth = 255`: the original's arguments, as elsewhere.
 
 ### Low-level code kept
@@ -270,7 +267,7 @@ No identifiers renamed. New names: in wpops.go the party menu's extra entries `m
 
 ### Unclear names kept
 
-- `Plan[0..3]` (swing initiatives, indexed by swing), `Status[1]` (the status that may turn an action into a run; not known which), `B35`, `B41`, `MonsterRec.Unk211`/`Unk168`, `Class` 22 (never fights allies): dbs/state fields, not this group's to rename.
+- `Status[1]` (the status that may turn an action into a run; not known which), `B35`, `MonsterRec.Unk211`/`Unk168`, `Class` 22 (never fights allies): dbs/state fields, not this group's to rename.
 - Item types 2, 12, 16 and the bow/arrow icon pairs (11/22, 13/23, 12/83) in choosePartyActions, attack kinds 2/3 and their bits 4/8 in attackBits, attack bit 4, `wpopsTargetTaken`'s `9+g*9+m` layout, the defend submenu's choice indexes, the switch cases in wpops_spell.go and the rest of wpops.go's menu/draw code (case 1..4 menu rows), message numbers 3000..3611: meaning only partly known, left as numbers.
 - Window positions, sizes, colours and `viewAnimState` -2/-3 in startCombatRound: the original's arguments, as elsewhere.
 

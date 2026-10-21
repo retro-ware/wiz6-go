@@ -34,7 +34,7 @@ func treasureAfterCombat() {
 	trKeys = getMessage(5100)
 	trAnimCounter = 0
 	flushKeys()
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
 	clearWindow(partyPictureWin, false)
@@ -56,7 +56,7 @@ func treasureFound() {
 	trKeys = getMessage(5100)
 	trAnimCounter = 0
 	flushKeys()
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
 	clearWindow(partyPictureWin, false)

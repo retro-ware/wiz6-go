@@ -66,7 +66,7 @@ var combatRoots = map[string]any{
 	"animCycle": &animCycle, "mexeEffect": &mexeEffect, "mexeBackfire": &mexeBackfire, "mexeDelayed": &mexeDelayed,
 	"partyCounters": &partyCounters, "g4352": &g4352, "initiative": &initiative, "alwaysHit": &alwaysHit,
 	"combatOver": &combatOver, "viewRowsOpen": &viewRowsOpen,
-	"g4354": &g4354, "gameStateArg": &gameStateArg, "memberPortrait": &memberPortrait,
+	"noEscape": &noEscape, "gameStateArg": &gameStateArg, "memberPortrait": &memberPortrait,
 	"memberPcfileIndex": &memberPcfileIndex, "mexeSpellSound": &mexeSpellSound, "mexeFizzle": &mexeFizzle,
 	"monsterGroups": &monsterGroups, "groupMonsterRec": &groupMonsterRec,
 	"meleAnnounce": &meleAnnounce, "meleNPCFirst": &meleNPCFirst, "meleNewFight": &meleNewFight,

@@ -488,7 +488,7 @@ func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(
 // setupGameWindows (WBASE 5d39) clears the party picture strip and makes the game's command
 // window.
 func setupGameWindows() {
-	g4f88 = 0
+	padSidestep = 0
 	deferWindowDraw(partyPictureWin)
 	for i := range 5 {
 		setCursor(partyPictureWin, 19, i)
@@ -497,21 +497,21 @@ func setupGameWindows() {
 	resumeWindowDraw(partyPictureWin)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
-	g4fb0 = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
-	fillWindow(g4fb0, ' ', 3)
-	deferWindowDraw(g4fb0)
-	// g4f88 is 0 here, so the C's other set of glyphs (for g4f88 != 0) is never drawn.
-	drawGlyph2x2(g4fb0, 13, 1, 5, 6, 7, 8)
-	drawGlyph2x2(g4fb0, 10, 3, 1, 13, 3, 14)
-	drawGlyph4x2(g4fb0, 12, 3, 17)
-	drawGlyph2x2(g4fb0, 16, 3, 15, 10, 16, 12)
+	movePadWin = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
+	fillWindow(movePadWin, ' ', 3)
+	deferWindowDraw(movePadWin)
+	// padSidestep is 0 here, so the C's other set of glyphs (for padSidestep != 0) is never drawn.
+	drawGlyph2x2(movePadWin, 13, 1, 5, 6, 7, 8)
+	drawGlyph2x2(movePadWin, 10, 3, 1, 13, 3, 14)
+	drawGlyph4x2(movePadWin, 12, 3, 17)
+	drawGlyph2x2(movePadWin, 16, 3, 15, 10, 16, 12)
 	for i := range 4 {
-		setCursor(g4fb0, 1, i+1)
-		printMessage(i+1300, g4fb0, 18)
+		setCursor(movePadWin, 1, i+1)
+		printMessage(i+1300, movePadWin, 18)
 	}
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	curEvent = [4]int16{}
-	g4f86 = 0
+	secretSpotted = 0
 	mazeA, mazeB = nil, nil
 	for i := range 3 {
 		picSlotMonster[4+i], picSlotLoaded[4+i] = -1, false
@@ -760,7 +760,7 @@ func doMasterOptions() {
 // the camp menu.
 func resetPartyScreen() {
 	mazeA, mazeB = nil, nil
-	destroyWindow(g4fb0, false)
+	destroyWindow(movePadWin, false)
 	fillWindow(leftPanelWin, ' ', 3)
 	fillWindow(rightPanelWin, ' ', 3)
 	fillWindow(partyPictureWin, 26, 3)

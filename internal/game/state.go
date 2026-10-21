@@ -32,8 +32,16 @@ type (
 
 // Indexes into Combatant.Plan.
 const (
-	planSlot   = 4 // first of the two attack slots (rows)
-	planAction = 6 // the action kind
+	planSwings = 4          // [0..planSwings-1] swing initiatives, indexed by Combatant.Swing
+	planSlot   = planSwings // first of the two attack slots (rows)
+	planAction = 6          // the action kind
+)
+
+// Indexes into Combatant.B35.
+const (
+	b35Poison  = 0 // poison strength, drained from HP each round
+	b35Blink   = 1 // blink rounds left; nonzero while the combatant can blink out
+	b35BlinkAt = 2 // the initiative count at which it blinks out
 )
 
 // Combatant is one fighter of a MonsterGroup (44 bytes; for group 0, the
@@ -47,16 +55,16 @@ type Combatant struct {
 	Choice       int16     // +10 the action's argument: attack mode, spell (power<<8 | spell), item, breath kind, direction
 	SecondAttack int16     // +12 attack mode of the second hand's swings, -1 none
 	Status       [10]uint8 // +14 mirrors PC.Status
-	Plan         [7]int8   // +24 [0..3] swing initiatives, [planSlot..planSlot+1] attack slots, [planAction] action kind
+	Plan         [7]int8   // +24 [0..planSwings-1] swing initiatives, [planSlot..planSlot+1] attack slots, [planAction] action kind
 	TargetGroup  int8      // +31
 	TargetMember int8      // +32 member in TargetGroup
-	Swing        int8      // +33 index of the next swing in Plan[0..3]
+	Swing        int8      // +33 index of the next swing in Plan[0:planSwings]
 	Condition    int8      // +34
 	B35          [3]int8   // +35
-	B38          int8      // +38 difficulty mod
-	B39          int8      // +39 difficulty mod
-	B40          int8      // +40
-	B41          int8      // +41 difficulty mod
+	ArmorMod     int8      // +38 difficulty mod
+	ToHitMod     int8      // +39 difficulty mod
+	DamageMod    int8      // +40
+	SpeedMod     int8      // +41 difficulty mod
 	Pos          int8      // +42 -1 = none
 	Stance       int8      // +43 stanceNone..stanceCharging (wmexe.go)
 }
@@ -72,7 +80,7 @@ type MonsterGroup struct {
 	PicSlot         uint8        // +411
 	Unidentified    uint8        // +412 1 until the party identifies the group
 	Count           uint8        // +413 1..9
-	B414            uint8        // +414
+	AbleCount       uint8        // +414
 	_               uint8        // +415
 }
 
@@ -183,7 +191,7 @@ var (
 	partyPictureWin *Window // (party_picture_win)
 	pictureWin      *Window // the maze view (picture_win)
 	titleStripWin   *Window // g4fac: the title strip above the view
-	g4fb0           *Window
+	movePadWin      *Window
 	rightPanelWin   *Window // g4fb8: the right-hand side panel
 	leftPanelWin    *Window // g4fba: the left-hand side panel
 )
@@ -192,7 +200,7 @@ var (
 var (
 	partyCount        int    // party_count
 	memberPcfileIndex [6]int // PCFILE slot of each member (member_pcfile_index)
-	g433a             int
+	encounterID       int
 	msgBlockNum       int
 
 	// Monster pictures in the picture slots (pic_slot_monster, pic_slot_loaded).
@@ -228,13 +236,19 @@ var (
 
 // Spell is one spell_table entry (ROOT 0x00de, 6 bytes).
 type Spell struct {
-	Realm  uint8 // +0
-	Level  uint8 // +1 g00df
-	Cost   uint8 // +2 g00e0: spell points per power level
-	B3     uint8 // +3
-	Target uint8 // +4 g00e2: 1 cast on a chosen member
-	Books  uint8 // +5 g00e3: bit per spell book (8 mage 4 priest 1 alchemist 2 psionic, spellBookBits)
+	Realm   uint8 // +0
+	Level   uint8 // +1 g00df
+	Cost    uint8 // +2 g00e0: spell points per power level
+	Miscast uint8 // +3 spellCanFizzle, spellCanBackfire
+	Target  uint8 // +4 g00e2: 1 cast on a chosen member
+	Books   uint8 // +5 g00e3: bit per spell book (8 mage 4 priest 1 alchemist 2 psionic, spellBookBits)
 }
+
+// Spell.Miscast bits.
+const (
+	spellCanFizzle   = 1
+	spellCanBackfire = 2
+)
 
 // spellTable (ROOT spell_table): the 82 spells.
 var spellTable = [82]Spell{
@@ -275,12 +289,12 @@ var (
 
 // Root state WMAZE uses.
 var (
-	returnCmd    int16 // 0x4fce return_cmd
-	menuClicked  int16 // 0x4fc4 menu_clicked
-	animPhase    int16 // 0x3646 anim_phase
-	g363e        int16 // 0x363e
-	g4338, g4354 int16 // combat entry parameters
-	viewRowsOpen int16 // 0x433c view_rows_open
+	returnCmd       int16 // 0x4fce return_cmd
+	menuClicked     int16 // 0x4fc4 menu_clicked
+	animPhase       int16 // 0x3646 anim_phase
+	doorOpenFrame   int16 // 0x363e
+	g4338, noEscape int16 // combat entry parameters
+	viewRowsOpen    int16 // 0x433c view_rows_open
 
 	reachableCells [96]byte // 0x4e08: 768-bit cell set (flood_mark_cells)
 	eventCells     [96]byte // 0x4e68: cells with an event record
@@ -291,8 +305,8 @@ var (
 	mapCacheB              [16]MapB
 	reloadMapA, reloadMapB bool // g4eeb, g4eea
 
-	g4f86, g4f88, g4f8a, g4fa6 int16
-	curSoundSize               int32 // 0x33f0 cur_sound_size
+	secretSpotted, padSidestep, eventFacing, lastFoundBlock int16
+	curSoundSize                                            int32 // 0x33f0 cur_sound_size
 )
 
 // Combat state in the root data segment that the combat overlays share.

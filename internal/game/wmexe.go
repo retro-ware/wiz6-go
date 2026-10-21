@@ -51,7 +51,7 @@ const (
 	stanceNone         = 0
 	stanceHidden       = 1
 	stanceFled         = 2
-	stanceCharging     = 3 // set at Combatant.B35[2]'s count, lands at its swing
+	stanceCharging     = 3 // set at Combatant.B35[b35BlinkAt]'s count, lands at its swing
 )
 
 // ROOT data: where the hit flash goes at view row, col (g006a x, g007e y).
@@ -373,7 +373,7 @@ func runCombatRound() {
 			grp := monsterGroups[actGroup]
 			for actMember = 0; int(grp.Count) > actMember; actMember++ {
 				c := actor()
-				if uint8(c.B35[1]) > 0 && int(uint8(c.B35[2])) == initiative {
+				if uint8(c.B35[b35Blink]) > 0 && int(uint8(c.B35[b35BlinkAt])) == initiative {
 					if c.Stance == stanceNone {
 						if int(uint8(c.Plan[c.Swing])) != initiative {
 							c.Stance = stanceCharging
@@ -382,14 +382,14 @@ func runCombatRound() {
 							actorLine(3518, -1, 6, 0)
 							combatDelay(int(delaySetting) / 2)
 						}
-						c.B35[2] = int8(max(initiative-random(10)-5, 1))
+						c.B35[b35BlinkAt] = int8(max(initiative-random(10)-5, 1))
 					} else if c.Stance == stanceCharging {
 						landCharge(c)
 					}
 				}
 				switch {
 				case int(uint8(c.Plan[c.Swing])) == initiative:
-					if uint8(c.B35[1]) > 0 && c.Stance == stanceCharging {
+					if uint8(c.B35[b35Blink]) > 0 && c.Stance == stanceCharging {
 						landCharge(c)
 					}
 					performAction()
@@ -439,7 +439,7 @@ func runCombatRound() {
 // landCharge ends fighter c's charge (message 3519).
 func landCharge(c *Combatant) {
 	c.Stance = stanceNone
-	c.B35[2] = 0
+	c.B35[b35BlinkAt] = 0
 	clearWindow(partyPictureWin, true)
 	combatDelay(2)
 	actorLine(3519, -1, 6, 0)
@@ -633,7 +633,7 @@ func performAction() {
 		leave = 1
 		if monsterGroups[actGroup].MonsterID == 151 {
 			c.Stance = stanceCharging
-			c.B35[1] = 1
+			c.B35[b35Blink] = 1
 			leave = 2
 		}
 	}
@@ -649,7 +649,7 @@ func performAction() {
 				c.Condition = conditionDead
 				c.HP = 0
 			}
-			for k := range 4 {
+			for k := range planSwings {
 				c.Plan[k] = 0
 			}
 			combatDelay(int(delaySetting))
@@ -825,7 +825,7 @@ func doRunAway(c *Combatant) {
 		r := groupMonsterRec[g]
 		chance = chance - int(r.HP.Count)*int(monsterGroups[g].Count) - (int(r.Stats[monSpeed])-int(groupMonsterRec[actGroup].Stats[monSpeed]))*2
 	}
-	if g4354 == 1 {
+	if noEscape == 1 {
 		chance = 0
 	}
 	actorFlavour(3517)

@@ -283,8 +283,8 @@ func riddleEvent() {
 	ev := int(cellEventIndex)
 	bits := int(mazeB.DirBits[ev])
 	if extractBits(bits, 11, 1) == 1 {
-		g4f8a = int16(extractBits(bits, 9, 2))
-		if g4f8a != partyFacing {
+		eventFacing = int16(extractBits(bits, 9, 2))
+		if eventFacing != partyFacing {
 			return
 		}
 	}
@@ -356,8 +356,8 @@ func showCenteredNotice(msg int) {
 // gets the effects of the event's bits (0..6 good, 8..14 bad).
 func applyMemberEffects() {
 	ev := int(cellEventIndex)
-	g4f8a = int16(mazeB.Param[ev])
-	if g4f8a != partyFacing {
+	eventFacing = int16(mazeB.Param[ev])
+	if eventFacing != partyFacing {
 		return
 	}
 	if mazeB.Data[ev] > 0 {
@@ -457,7 +457,7 @@ func applyMemberEffects() {
 // runCellEvents (WMAZE c8eb) runs each event record of the party's cell while the game
 // stays in the maze.
 func runCellEvents() {
-	g4f8a = -1
+	eventFacing = -1
 	eventScreenDirty = 0
 	for {
 		cellEventIndex = int16(findCellEvent(int(cellX), int(cellY), int(partyBlock), int(cellEventIndex)))
@@ -806,7 +806,7 @@ func lockedDoorMenu(ev int) {
 		lockTumblers[i] = int16(random(diff * 5))
 	}
 	enabled := []int{1, 1, 1, -1} // the C's l20 (-1) ends the list
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	for {
 		fillWindow(win, 32, 3)
@@ -833,7 +833,7 @@ func lockedDoorMenu(ev int) {
 		}
 	}
 	destroyWindow(win, false)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	eraseWindow(mainWindow, false)
 }
 

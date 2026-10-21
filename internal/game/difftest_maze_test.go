@@ -9,7 +9,7 @@ var mazeFuncs = map[string]func(a []int) int{
 	"f5949": func(a []int) int { mzWins(); moveParty(a[0]); return 0 },
 	"f56f4": func(a []int) int { mzWins(); return tryMove(a[0]) },
 	"f7868": func(a []int) int { mzWins(); fleeParty(a[0]); return 0 },
-	// fc8eb run_cell_events: open. The C side stubs puzzle/riddle/message events, Go runs them (89/300 differ); g433a writes unexplained.
+	// fc8eb run_cell_events: open. The C side stubs puzzle/riddle/message events, Go runs them (89/300 differ); encounterID writes unexplained.
 	// "fc8eb": func(a []int) int { mzWins(); runCellEvents(); return 0 },
 	"fa4f5": func(a []int) int { mzWins(); checkSecretDetect(); return 0 },
 	"f6054": func(a []int) int { mzWins(); applySpellOutsideCombat(a[0], a[1], a[2], a[3]); return 0 },
@@ -37,7 +37,7 @@ var mazeFuncs = map[string]func(a []int) int{
 func mzWins() {
 	windows, cellOwner = nil, [len(cellOwner)]uint8{}
 	partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
-	for _, w := range []**Window{&mainWindow, &bottomLineWin, &pictureWin, &titleStripWin, &g4fb0, &rightPanelWin, &leftPanelWin, &textWin} {
+	for _, w := range []**Window{&mainWindow, &bottomLineWin, &pictureWin, &titleStripWin, &movePadWin, &rightPanelWin, &leftPanelWin, &textWin} {
 		*w = createWindow(0, 0, 40, 25, 8, -1, 0, false)
 	}
 }
@@ -53,13 +53,13 @@ var mazeRoots = map[string]any{
 	"scenarioHdr": &scenarioHdr, "messageDelay": &messageDelay, "curSound": &curSound, "curMember": &curMember,
 	"cellEventIndex": &cellEventIndex, "curEvent": &curEvent, "reloadMapA": &reloadMapA, "reloadMapB": &reloadMapB,
 	"levelFlags": &levelFlags, "saveState": &saveState, "partyCounters": &partyCounters,
-	"magicWordTyped": &magicWordTyped, "g4f86": &g4f86, "g4f88": &g4f88, "g4f8a": &g4f8a, "g4fa6": &g4fa6,
+	"magicWordTyped": &magicWordTyped, "secretSpotted": &secretSpotted, "padSidestep": &padSidestep, "eventFacing": &eventFacing, "lastFoundBlock": &lastFoundBlock,
 	"partyFacing": &partyFacing, "partyBlock": &partyBlock, "cellX": &cellX, "cellY": &cellY,
 	"partyX": &partyX, "partyY": &partyY, "mazeA": &mazeA, "mazeB": &mazeB,
 	"mzRedrawView": &mzRedrawView, "mzEnteredCell": &mzEnteredCell, "mzWaitCut": &mzWaitCut, "mzBumpMessage": &mzBumpMessage,
 	"mzRefreshPending": &mzRefreshPending, "mzClearMessage": &mzClearMessage, "eventScreenDirty": &eventScreenDirty, "mzNextEvent": &mzNextEvent,
-	"returnCmd": &returnCmd, "g363e": &g363e, "reachableCells": &reachableCells, "eventCells": &eventCells,
-	"g4338": &g4338, "g433a": &g433a, "treasureID": &treasureID,
+	"returnCmd": &returnCmd, "doorOpenFrame": &doorOpenFrame, "reachableCells": &reachableCells, "eventCells": &eventCells,
+	"g4338": &g4338, "encounterID": &encounterID, "treasureID": &treasureID,
 	"lockTumblers": &lockTumblers, "msgNotFound": &msgNotFound, "dpTarget": &dpTarget, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,
 }
 

@@ -306,7 +306,7 @@ func trPrintTextLine(s string) {
 	setCursor(trTextWin, col, trTextRow)
 	trTextCol = col
 	trTextRow++
-	printString(trTextWin, s, 5) // g0002
+	printString(trTextWin, s, textColor)
 }
 
 // show_message_text (WTREA 4b36) shows messages msg, msg+1, ... up to the first missing one.

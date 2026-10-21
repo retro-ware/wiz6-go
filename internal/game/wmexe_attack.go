@@ -103,7 +103,7 @@ func clearHandAttackX(h int) {
 	clearHandAttack(actMember, h)
 	c := fighter(0, actMember)
 	c.Plan[planAction] = actionNone
-	for k := range 4 {
+	for k := range planSwings {
 		c.Plan[k] = 0
 	}
 }
@@ -126,8 +126,8 @@ func killCombatant(g, i int) {
 	c.Pos = -1
 	c.Condition = conditionDead
 	c.HP, c.Stamina = 0, 0
-	c.B35[1], c.B35[2] = 0, 0
-	for k := range 4 {
+	c.B35[b35Blink], c.B35[b35BlinkAt] = 0, 0
+	for k := range planSwings {
 		c.Plan[k] = 0
 	}
 	if g >= 1 && g <= 5 {
@@ -227,7 +227,7 @@ func statusEffect(g, i, n, r, s, mod, count, sides, base, report int) {
 		c.Status[s] += uint8(d)
 	}
 	if s == statusPoisoned {
-		c.B35[0] = int8(base)
+		c.B35[b35Poison] = int8(base)
 	}
 	effectMsg(g, i, n, 1, 0)
 }
@@ -538,7 +538,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		return int(r.Stats[monSpeed]) + int(r.Stats[monDexterity]) + int(r.Stats[monIntelligence])
 	}
 	statDiff := (sum(tRec) - sum(atkRec)) / 2
-	bonus := int(c.B40)
+	bonus := int(c.DamageMod)
 	var toHit, ac, acArea, mult int
 	var dice Dice
 	var fx attackFx
@@ -576,7 +576,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			load = lc.PrimaryToHit
 		}
 		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(p.ToHit) + int(p.Hands[slot].ToHit) +
-			int(c.B39)*5 + statDiff + load - int(p.Skills[skill])/3
+			int(c.ToHitMod)*5 + statDiff + load - int(p.Skills[skill])/3
 		dice = p.Hands[slot].Damage
 		fx = handFx(&p.Hands[slot])
 		item := int(p.Equipped[slot])
@@ -595,7 +595,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			bonus = 0
 			useActorItemCharge(item)
 		}
-		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.B38)
+		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.ArmorMod)
 		if partyCounters[3].Duration > 0 {
 			def += int(partyCounters[3].B)
 		}
@@ -603,7 +603,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		acArea = kindAC(tRec, kind) + def
 	} else {
 		a := &atkRec.Attacks[slot]
-		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(c.B39)*5 + int(a.ToHit) + statDiff
+		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(c.ToHitMod)*5 + int(a.ToHit) + statDiff
 		dice = a.Damage
 		copy(fx[:], a.HitEffects[:])
 		if thrownOrBash {
@@ -613,7 +613,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		if tg == 0 {
 			loadAC = getLoadCategory(ti).AC
 		}
-		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.B38)
+		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.ArmorMod)
 		if tg == 0 && partyCounters[1].Duration > 0 {
 			def -= int(partyCounters[1].B)
 		}
@@ -651,7 +651,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		strength++
 	}
 	bonus += strength
-	swings := min(max(random(int(atkRec.Unk211[monPrimaryAttacks])-int(t.B41)/10)+1, 1), 4)
+	swings := min(max(random(int(atkRec.Unk211[monPrimaryAttacks])-int(t.SpeedMod)/10)+1, 1), planSwings)
 	switch kind {
 	case 1:
 		ac -= 2

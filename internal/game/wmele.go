@@ -167,9 +167,9 @@ func generateMonsterGroup(mon, n int) {
 		c.Pos = -1
 		switch scenarioHdr.Level {
 		case 1:
-			c.B38, c.B39, c.B41 = 2, 2, -5
+			c.ArmorMod, c.ToHitMod, c.SpeedMod = 2, 2, -5
 		case 2:
-			c.B38, c.B39, c.B41 = -2, -2, 5
+			c.ArmorMod, c.ToHitMod, c.SpeedMod = -2, -2, 5
 		}
 	}
 	limit := min((gameStateArg+1)/2+1+b2i(g4338 > 0), 5)
@@ -210,7 +210,7 @@ func fillPartyGroup() {
 		c.StaminaMax, c.Stamina = p.StaminaMax, p.Stamina
 		c.Condition = int8(p.Condition)
 		c.Status = p.Status
-		c.B35[0] = int8(p.PoisonStr)
+		c.B35[b35Poison] = int8(p.PoisonStr)
 		c.Pos = -1
 	}
 }
@@ -297,7 +297,7 @@ func updateCombatant(g, i, regen, drain int) bool {
 		c.Stamina = 0
 		c.Status[statusAsleep] = uint8(random(6) + 6)
 	}
-	c.HP += int16(regen - drain - int(uint8(c.B35[0])))
+	c.HP += int16(regen - drain - int(uint8(c.B35[b35Poison])))
 	if c.HP > c.HPMax {
 		c.HP = c.HPMax
 	}
@@ -322,16 +322,16 @@ func updateCombatant(g, i, regen, drain int) bool {
 		}
 	}
 	if c.Status[statusPoisoned] == 0 {
-		c.B35[0] = 0
+		c.B35[b35Poison] = 0
 	}
 	switch {
-	case c.B41 < 0:
-		c.B41++
-	case c.B41 > 0:
-		c.B41--
+	case c.SpeedMod < 0:
+		c.SpeedMod++
+	case c.SpeedMod > 0:
+		c.SpeedMod--
 	}
-	if c.B35[1] != 0 {
-		c.B35[1]--
+	if c.B35[b35Blink] != 0 {
+		c.B35[b35Blink]--
 	}
 	if c.Stance == stanceCharging {
 		c.Stance = stanceNone
@@ -519,7 +519,7 @@ func copyMemberToCombatant(i int) {
 	p.Stamina = c.Stamina
 	p.Condition = uint8(c.Condition)
 	p.Status = c.Status
-	p.PoisonStr = uint8(c.B35[0])
+	p.PoisonStr = uint8(c.B35[b35Poison])
 }
 
 // updatePartyAfterRound (update_party_after_round, WMELE 5c7a) ends the round for the
@@ -585,15 +585,15 @@ func drawCombatCard(i int, hilite bool) {
 	}
 }
 
-// setUpEncounter (start_encounter, WMELE 62ce) rolls the encounter g433a: groups,
+// setUpEncounter (start_encounter, WMELE 62ce) rolls the encounter encounterID: groups,
 // treasure, surprise and the party's group.
 func setUpEncounter() {
 	combatGold = 0
-	if g433a == 128 || g433a == 151 || g433a == 153 {
-		g4354 = 1
+	if encounterID == 128 || encounterID == 151 || encounterID == 153 {
+		noEscape = 1
 	}
 	clearCombatGroups()
-	generateMonsterGroup(g433a, 1)
+	generateMonsterGroup(encounterID, 1)
 	treasureID = int16(groupMonsterRec[1].Treasure[g4338])
 	checkGroupSurprise()
 	fillPartyGroup()
@@ -609,7 +609,7 @@ func endEncounter() {
 	destroyWindow(monsterListWin, false)
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
-	resumeWindowDraw(g4fb0)
+	resumeWindowDraw(movePadWin)
 	eraseWindow(mainWindow, false)
 	deferWindowDraw(partyPictureWin)
 	fillWindow(partyPictureWin, 26, 3)
@@ -715,7 +715,7 @@ func beginCombat() {
 	}
 	clear(picSlotLoaded[4:7]) // g4326
 	monsterJitterX[0], monsterJitterY[0] = [5]uint8{}, [5]uint8{}
-	deferWindowDraw(g4fb0)
+	deferWindowDraw(movePadWin)
 	combatActionWin = createWindow(0, 19, 19, 5, 11, borderRightEdge, 0, false)
 	monsterListWin = createWindow(20, 19, 20, 5, 10, borderNone, 0, false)
 	allyStripWin = nil
