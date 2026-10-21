@@ -24,6 +24,9 @@ func clampToward(n, v, mode int) int {
 
 // refreshCard (WPCVW 6ac3) shows member m's changed card for a moment.
 func refreshCard(w *Window, m int) {
+	if dtLog != nil { // stubbed in the difftest
+		return
+	}
 	resumeWindowDraw(w)
 	drawMemberCard(w, m)
 	waitSecondsOrEnter(4)
@@ -150,6 +153,14 @@ func pvSetBlink(w *Window, x, y int, a string, ca int, b string, cb int) {
 // also asks for that member (pvSpellTarget).
 func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 	p := &party[m]
+	if dtLog != nil { // stubbed in the difftest: the lowest known spell
+		for s := range 82 {
+			if testBit(p.KnownSpells[:], s) {
+				return s
+			}
+		}
+		return -1
+	}
 	book := createWindow(20, 4, 20, 16, 22, -1, 0, false)
 	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
 	done := func(v int) int {

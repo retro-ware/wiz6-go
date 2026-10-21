@@ -45,6 +45,8 @@ var charFuncs = map[string]func(a []int) int{
 	"pcvw_5ec7": func(a []int) int { removeSwagItem(a[0], a[1]); return 0 },
 	"pcvw_5f53": func(a []int) int { useItemChargeShown(a[0], a[1]); return 0 },
 	"pcvw_6aec": func(a []int) int { return clampToward(a[0], a[1], a[2]) },
+	"pcvw_6b3c": func(a []int) int { castSpell(a[0], a[1], a[2], a[3], dtWin(), dtWin()); return 0 },
+	"pcvw_8353": func(a []int) int { learnNewSpell(dtWin(), dtWin(), a[0], a[1]); return 0 },
 	"pcvw_a11b": func(a []int) int {
 		t := ""
 		for _, c := range a[2:] {
@@ -55,14 +57,21 @@ var charFuncs = map[string]func(a []int) int{
 	},
 }
 
-// dtWin is a window for functions that print on the sheet.
-func dtWin() *Window { return createWindow(0, 0, 40, 20, 20, -1, 0, false) }
+// dtWin is a window for functions that print on the sheet (one, made once).
+var dtWinW *Window
+
+func dtWin() *Window {
+	if dtWinW == nil {
+		dtWinW = createWindow(0, 0, 40, 20, 20, -1, 0, false)
+	}
+	return dtWinW
+}
 
 // charRoots: the globals their cases name.
 var charRoots = map[string]any{
 	"party": &party, "partyCount": &partyCount,
 	"newPC": &newPC, "bonusPoints": &bonusPoints, "classEligible": &classEligible,
-	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed,
+	"pcmkSkillShown": &pcmkSkillShown, "pvClassAllowed": &pvClassAllowed, "partyCounters": &partyCounters,
 }
 
 func init() {
