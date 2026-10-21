@@ -1,0 +1,12 @@
+# boot -> title -> master options -> character menu -> create character
+WAIT 8
+PACE 3
+enter
+down
+down
+enter
+down
+enter
+enter
+enter
+enter
