@@ -22,6 +22,7 @@ func main() {
 	steps := flag.String("steps", "", "testing: -input ACTIONs done one by one once the screen has settled (see -stepdir)")
 	stepDir := flag.String("stepdir", ".", "testing: with -steps, write DIR/NNN.png, the settled frame after step NNN")
 	stepWait := flag.Float64("stepwait", 8, "testing: with -steps, seconds before the first step at least")
+	detRNG := flag.Bool("detrng", false, "testing: fixed random seed, no random step per key poll (matches tools/parity's patched WROOT.EXE)")
 	maze := flag.Bool("maze", false, "testing: boot straight into NEWGAME.DBS's maze with the first six PCFILE.DBS characters")
 	pcview := flag.Int("pcview", -1, "testing: as -maze, but open the character view of party member N")
 	fight := flag.Int("fight", -1, "testing: as -maze, but start an encounter (with monster N when N > 0)")
@@ -56,6 +57,7 @@ func main() {
 		}
 		time.AfterFunc(d, func() { host.Screenshot(path) })
 	}
+	game.DetRNG = *detRNG
 	if *input != "" || *steps != "" {
 		host.Scripted = true
 		host.MouseTo(160, 100) // where the original's mouse driver reset puts the pointer

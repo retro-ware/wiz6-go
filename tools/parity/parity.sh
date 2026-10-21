@@ -31,6 +31,20 @@ shot_t() { local s=$SLOTS; [ $(($1+1)) -lt $N ] && s=${SLOT[$(($1+1))]}; echo "$
 
 # --- original: AUTOTYPE feeds keys inside DOSBox-X, DX-CAPTURE records a ZMBV AVI ---
 cp -R "$ORIG/" "$OUT/work/dos/"
+# Deterministic random numbers (DETRNG=0 to turn off): seed_random reads 0 instead of the BIOS
+# tick count (26 8B 07 -> 31 C0 90 at 0x1F4A) and key_available no longer calls step_random
+# (E8 66 FF -> 90 90 90 at 0x2850). The port does the same under -detrng.
+DET=${DETRNG:-1}
+if [ "$DET" = 1 ]; then
+  python3 - "$OUT/work/dos/WROOT.EXE" <<'P'
+import sys
+p = sys.argv[1]; b = bytearray(open(p, 'rb').read())
+for off, old, new in ((0x1F4A, '268b07', '31c090'), (0x2850, 'e866ff', '909090')):
+    assert b[off:off+3] == bytes.fromhex(old), hex(off)
+    b[off:off+3] = bytes.fromhex(new)
+open(p, 'wb').write(b)
+P
+fi
 LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
 cat > "$OUT/work/dos.conf" <<C
 [sdl]
@@ -75,7 +89,7 @@ cp -R "$ORIG/" "$OUT/work/godata/"
 in=""
 for k in "${KEYS[@]}"; do in+="k$(scan "$k"),"; done
 (cd "$OUT/work" && timeout -s KILL $((WAIT + N*10 + 30)) ./wiz6 -data godata -steps "${in%,}" -stepdir "$OUT/go" \
-  -stepwait "$WAIT" >go.log 2>&1) || true
+  -stepwait "$WAIT" $([ "$DET" = 1 ] && echo -detrng) >go.log 2>&1) || true
 
 # --- diff ---
 printf "step key pixels still-pixels\n" > "$OUT/report.txt"

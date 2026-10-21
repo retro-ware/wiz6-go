@@ -19,8 +19,16 @@ var lcg = [3]struct{ a, q, r, m int }{
 
 // seedRandom (ROOT, asm) seeds the second generator from the BIOS tick count.
 func seedRandom() {
+	if DetRNG {
+		seeds[1] = 2 // a BIOS tick count of 0
+		return
+	}
 	seeds[1] = int(host.Now()/(54925*time.Microsecond)+2) & 0x7fff
 }
+
+// DetRNG (testing, -detrng) makes the random numbers independent of timing: a fixed seed and
+// no step on each key poll. tools/parity patches WROOT.EXE the same way.
+var DetRNG bool
 
 // stepRandom (ROOT 25b9, asm) moves each generator on one step.
 func stepRandom() {
@@ -223,7 +231,9 @@ func accepts(class, c int) bool {
 // keyAvailable (ROOT 2643, asm) is whether a key of class is waiting; keys the class does
 // not take are thrown away. It steps the random numbers.
 func keyAvailable(class int) bool {
-	stepRandom()
+	if !DetRNG {
+		stepRandom()
+	}
 	pumpKeys()
 	for len(keyBuf) > 0 && !accepts(class, mapKey(keyBuf[0])) {
 		keyBuf = keyBuf[1:]
