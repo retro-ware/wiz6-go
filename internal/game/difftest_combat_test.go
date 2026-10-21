@@ -27,6 +27,7 @@ var combatFuncs = map[string]func(a []int) int{
 	"f724f": func(a []int) int { endCombatRound(); return 0 },
 	"f574b": func(a []int) int { advanceMonsterGroups(); return 0 },
 	"f62ce": func(a []int) int { setUpEncounter(); return 0 },
+	"f70ce": func(a []int) int { redrawCombatScreen(); return 0 },
 	"f4572": func(a []int) int { return fatigueMod(a[0], a[1], a[2]) },
 	"f77d4": func(a []int) int { mexeRaiseSkill(a[0], a[1], a[2]); return 0 },
 	"f7254": func(a []int) int { reduceStamina(fighter(a[0], a[1]), a[2]); return 0 },

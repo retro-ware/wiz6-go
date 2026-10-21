@@ -30,3 +30,5 @@
 2026-10-21 10:44:50 [char] ROOT random/random_word/set_bit/test_bit/set_bitfield/get_bitfield/extract_bits match; fixed extractBits (unsigned 16-bit shift)
 2026-10-21 10:45:22 [maze] done: 18 functions x300 match, no port bugs; lock mini-games/puzzle/riddle/use/cast open (input loops); DIFFTEST.md Maze section
 2026-10-21 10:46:08 [combat] WMELE end_combat_round 724f, advance_monster_groups 574b, start_encounter 62ce x300 match. PORT BUGS fixed: g4330/g4326 were separate vars but alias pic_slot_monster[4..6]/pic_slot_loaded[4..6] (merged into picSlotMonster/picSlotLoaded); advanceMonsterGroups power sums wrap int16; message 3510/3511 fetched once.
+2026-10-21 10:46:22 [char] WPCVW 8fbf do_use_item match
+2026-10-21 10:46:39 [combat] f70ce redraw_combat_screen x300 match. Combat done; DIFFTEST.md table updated.

@@ -52,7 +52,26 @@ and message/number/sound log must match. `go test -tags nofakecgo -run TestDiff 
 | WMEXE | fc546 | nextTargetMonster | 1000 | match |
 | WMEXE | 7816 calc_spell_level_value | spellPower | 1000 | match |
 | WMEXE | 4c48 do_attack | doAttack | 1000 | match (inputs: thrown attacks need an item; the C indexes item 255 otherwise, Go guards) |
-| WMEXE | 47a3 apply_hit_effects | applyHitEffects | 1000 | match |
+| WMEXE | 47a3 apply_hit_effects | applyHitEffects | 300 | match |
+| WMEXE | 4c48 do_attack | doAttack | 300 | fixed bug (kind -1 of a confused fighter's 2nd attack reads AC[7]; Go panicked) |
+| WMEXE | 88b1 | weakenGroup | 300 | fixed bug (who >= 0 is a count from a random first member: targetRun) |
+| WMEXE | 8bdb | chaosStrike | 300 | fixed bug (same targeting) |
+| WMEXE | b03c do_cast_action | doCastAction | 300 | match |
+| WMEXE | b44d do_use_item_action | doUseItemAction | 300 | match (inputs: real item records only) |
+| WMEXE | 9405 do_cast_spell | doCastSpell | 300 | match |
+| WMEXE | c064 do_hide | doHide | 300 | fixed bug (monster actor crashed trySkillGain); open: monster members 6-8, the C's try_raise_skill writes past party |
+| WMEXE | c1e4 do_run_away | doRunAway | 300 | match |
+| WMEXE | b934 breath | doBreath | 300 | match |
+| WMEXE | c3ee do_advance_retreat | doAdvanceRetreat | 300 | match |
+| WMEXE | 8fa8 summon | summonGroup | 300 | match |
+| WMEXE | c66e perform_action | performAction | 300 | match |
+| WMEXE | d109 run_combat_round | runCombatRound | 300 | match |
+| WMELE | 724f end_combat_round | endCombatRound | 300 | match (covers update_party_after_round, compact_monster_groups, update_group, tick_combat_effects) |
+| WMELE | 574b advance_monster_groups | advanceMonsterGroups | 300 | fixed bug (power sums wrap int16; message fetched twice) |
+| WMELE | 62ce start_encounter | setUpEncounter | 300 | fixed bug (g4330/g4326 were separate vars aliasing pic_slot_monster/loaded[4..6]); covers generate_monster_group, check_group_surprise, fill_party_group |
+| WMELE | 70ce redraw_combat_screen | redrawCombatScreen | 300 | match (arrange_monster_positions, advance) |
+
+Known limits: a Go write to a field the case neither reads nor expects to change is not seen. UI, sprites, picture/sound loading and end_encounter are stubbed on both sides (MEXE_UI, MELE_UI; dtLog guards in Go).
 
 ## Maze (WMAZE, WDOPT, WINIT)
 
