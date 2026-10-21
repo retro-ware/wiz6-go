@@ -623,7 +623,7 @@ func inflictStatus(m, msg, resist, status, count, sides, base int) {
 		return
 	}
 	n := rollDice(formatDice(count, sides, base))
-	if resist != 0 && random(100) <= int(p.Resist[resist])-count*3 {
+	if resist != 0 && random(100) <= int(int16(int(p.Resist[resist])-count*3)) { // C int wraps
 		return
 	}
 	if base == 255 {
