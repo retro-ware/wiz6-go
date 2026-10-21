@@ -355,7 +355,7 @@ func chooseCombatSpell(win *Window, m int) int {
 	}
 	c := &monsterGroups[0].Members[m]
 	switch spellTable[spell].Target {
-	case 1:
+	case spellTargetMember:
 		fillWindow(win, 32, 3)
 		refreshAllWindows()
 		c.TargetGroup = 0
@@ -364,7 +364,7 @@ func chooseCombatSpell(win *Window, m int) int {
 			return -1
 		}
 		c.TargetMember = int8(t)
-	case 2:
+	case spellTargetGroup:
 		t := selectMonsterGroup(win, 3603, 3, 0)
 		if t == -1 {
 			return -1
@@ -490,7 +490,7 @@ func chooseCombatItem(win *Window, m int) int {
 		spell := int(rec.Spell) % 256
 		c := &monsterGroups[0].Members[m]
 		switch spellTable[spell].Target {
-		case 1:
+		case spellTargetMember:
 			fillWindow(win, 32, 3)
 			refreshAllWindows()
 			c.TargetGroup = 0
@@ -499,7 +499,7 @@ func chooseCombatItem(win *Window, m int) int {
 				return -1
 			}
 			c.TargetMember = int8(t)
-		case 2:
+		case spellTargetGroup:
 			t := selectMonsterGroup(win, 3604, 3, 0)
 			if t == -1 {
 				return -1

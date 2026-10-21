@@ -219,7 +219,7 @@ func mexeAnimateStep() {
 	}
 	viewAnimState++
 	if viewAnimState == 12 {
-		viewAnimState = -3
+		viewAnimState = viewAnimShow
 	}
 }
 
@@ -228,10 +228,10 @@ func resetAnimation() {
 	if dtLog != nil {
 		return
 	}
-	viewAnimState = -2
+	viewAnimState = viewAnimMaze
 	for {
 		mexeAnimateStep()
-		if viewAnimState == -2 {
+		if viewAnimState == viewAnimMaze {
 			break
 		}
 	}

@@ -264,3 +264,22 @@ New names, from the game's messages (MSG.DBS 100+, 120+, 140+, 351+, 1550+, 3050
 - Spell numbers packed as `power<<8 + spell` (chooseSheetSpell, ItemRec.Spell) and `mask16` for the 16-bit class/race masks read with test_bit: the record and return formats.
 - `PC.AC` is written through `uint8` (naturalAC's int is stored as a byte), as the C.
 - Duplicates kept as in the overlays: WPCMK's drawSkillPage/distributeSkillPoints/selectSpell/chooseStartingSpell and WPCVW's drawSkillsPage/spendSkillPage/chooseSheetSpell/learnNewSpell, initResistsHandsAC and resetCombatValues, printSkillValue and printNumberCol16.
+
+## internal/game: wpops
+
+No identifiers renamed. New names: in wpops.go the party menu's extra entries `menuBack`/`menuStartOver` (9, 10, after the action kinds); in wpcvw.go `spellTargetGroup` (Spell.Target 2) beside `spellTargetMember`. `planSlot`/`planAction`, `action...`, `stance...`, `allyGroup`, `stateStartCombatRound`/`stateRunCombatRound`, `conditionDown`/`conditionDead`, `statusAsleep`/`statusParalyzed`, `statPersonality`, `skillHide`, `raceDracon`, `classThief`/`classNinja`/`classRanger`/`classBard`/`classMonk`, `equipPrimary`/`equipSecondary`, `noEquippedItem`, `itemTypeLauncher`/`itemTypeMissile`/`itemTypeShield`, `soundBeep` replace literals; the party menu's `enabled[...]` uses the action kinds as indexes.
+
+### Hex/binary literals in code
+
+- None.
+
+### Unclear names kept
+
+- `Plan[0..3]` (swing initiatives, indexed by swing), `Status[1]` (the status that may turn an action into a run; not known which), `Hands[0].B0D` (attack range), `B35`, `B41`, `MonsterRec.Unk211`/`Unk168`/`Unk138`/`Unk208` (22: never fights allies): dbs/state fields, not this group's to rename.
+- Item types 2, 12, 16 and the bow/arrow icon pairs (11/22, 13/23, 12/83) in choosePartyActions, attack kinds 2/3 and their bits 4/8 in attackBits, attack bit 4, `wpopsTargetTaken`'s `9+g*9+m` layout, the defend submenu's choice indexes, the switch cases in wpops_spell.go and the rest of wpops.go's menu/draw code (case 1..4 menu rows), message numbers 3000..3611: meaning only partly known, left as numbers.
+- Window positions, sizes, colours and `viewAnimState` -2/-3 in startCombatRound: the original's arguments, as elsewhere.
+
+### Low-level code kept
+
+- `int8`/`uint8`/`int16` casts on Combatant fields: the C's byte fields, kept for parity.
+- Spell choices packed as `level<<8 + spell`: the combat action format WMEXE reads.

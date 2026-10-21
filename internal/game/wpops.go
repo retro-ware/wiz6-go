@@ -8,7 +8,7 @@ import "github.com/retro-ware/wiz6-go/internal/drv"
 
 // ovmain (WPOPS 4572).
 func wpopsOvmain() {
-	if gameState == 12 {
+	if gameState == stateStartCombatRound {
 		startCombatRound()
 	}
 }
@@ -28,7 +28,7 @@ func clearTargets() { clear(wpopsTargetTaken[9:54]) }
 
 // combatantAble is the C's "condition < 2 and neither status 2 nor 3".
 func combatantAble(c *Combatant) bool {
-	return uint8(c.Condition) < 2 && c.Status[3] == 0 && c.Status[2] == 0
+	return uint8(c.Condition) < conditionDown && c.Status[statusParalyzed] == 0 && c.Status[statusAsleep] == 0
 }
 
 // groupName is the group's monster name, singular or plural, identified or not.
@@ -95,7 +95,7 @@ func drawAllyGroup() {
 	setCursor(w, 4, 0)
 	printMessage(3516, w, 18)
 	clearWindowArea(w, 0, 1, 21, 1)
-	grp := monsterGroups[6]
+	grp := monsterGroups[allyGroup]
 	grp.B414 = 0
 	for i := 0; i < int(grp.Count); i++ {
 		if combatantAble(&grp.Members[i]) {
@@ -137,7 +137,7 @@ func buildMonsterAnimFrames(g, col int) []byte {
 	for layer := 0; layer < int(p.Unk309[3]); layer++ {
 		st := &monsterFrames[col][layer]
 		var frame int
-		if c.Condition == 2 || c.Status[3] > 0 || c.Status[2] > 0 {
+		if c.Condition == conditionDown || c.Status[statusParalyzed] > 0 || c.Status[statusAsleep] > 0 {
 			frame = int(p.SeqStartFrame[st[0]])
 		} else {
 			frame = int(st[1])
@@ -178,7 +178,7 @@ func insertSprite(depth, pic, x, y, clipL, clipR, mirror int, frames []byte) {
 	}
 	if pos >= 12 {
 		for {
-			playSound(0) // the C hangs here
+			playSound(soundBeep) // the C hangs here
 		}
 	}
 	s := &spriteList[pos]
@@ -291,17 +291,17 @@ func animateCombatStep() {
 	}
 	viewAnimState++
 	if viewAnimState == 12 {
-		viewAnimState = -3
+		viewAnimState = viewAnimShow
 	}
 }
 
 // animateUntilReset (animate_until_reset, WPOPS 51c8; WMEXE 773a, WMELE 6e01) runs a
 // whole animation cycle.
 func animateUntilReset() {
-	viewAnimState = -2
+	viewAnimState = viewAnimMaze
 	for {
 		animateCombatStep()
-		if viewAnimState == -2 {
+		if viewAnimState == viewAnimMaze {
 			break
 		}
 	}
@@ -330,7 +330,7 @@ func getCombatInput() int {
 		}
 		paceViewCycle()
 		animateCombatStep()
-		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
+		if viewAnimState == viewAnimMaze && pvBlinkState != -1 && animPhase == phase {
 			blinkCursor()
 		}
 	}
@@ -570,7 +570,7 @@ func pickTargetMonster(attacker, group int) int {
 		}
 	}
 	for {
-		playSound(0) // the C hangs here
+		playSound(soundBeep) // the C hangs here
 	}
 }
 
@@ -609,6 +609,12 @@ func pcItemType(m, i int) uint8 {
 	return party[m].Items[i].Type
 }
 
+// Party action menu entries past the action kinds.
+const (
+	menuBack      = 9 // back one member
+	menuStartOver = 10
+)
+
 // choosePartyActions (WPOPS 76e9) sets each member's swings, then asks every able
 // member for an action and target (fight, parry, ..., back, start over) and confirms.
 func choosePartyActions(win *Window) {
@@ -619,10 +625,10 @@ func choosePartyActions(win *Window) {
 		if uint8(c.B35[1]) > 0 {
 			c.B35[2] = int8(random(power/2) + random(20) + power/2)
 		}
-		c.Swing, c.Plan[4], c.Plan[5] = 0, 0, 1
+		c.Swing, c.Plan[planSlot], c.Plan[planSlot+1] = 0, 0, 1
 		swings := min(max(int(p.SecondaryAttacks)+int(c.B41)/10, 1), 4)
 		for i := range 4 {
-			if i >= swings || p.Condition >= 2 || p.Status[3] > 0 || p.Status[2] > 0 {
+			if i >= swings || p.Condition >= conditionDown || p.Status[statusParalyzed] > 0 || p.Status[statusAsleep] > 0 {
 				c.Plan[i] = 0
 			} else {
 				c.Plan[i] = int8(power)
@@ -636,38 +642,38 @@ func choosePartyActions(win *Window) {
 	var enabled [12]int // 0..10 the actions; [11] ends the list
 	for member := 0; member < partyCount; {
 		p := &party[member]
-		if p.Condition < 2 && p.Status[3] == 0 && p.Status[2] == 0 {
+		if p.Condition < conditionDown && p.Status[statusParalyzed] == 0 && p.Status[statusAsleep] == 0 {
 			doneMembers[done] = member
 			done++
 			c := &monsterGroups[0].Members[member]
 			for i := range 11 {
 				enabled[i] = 1
 			}
-			if p.Race != 7 {
-				enabled[8] = 0
+			if p.Race != raceDracon {
+				enabled[actionBreath] = 0
 			}
-			if c.Stance != 0 || p.Class != 3 && p.Class != 13 && p.Class != 4 && p.Class != 6 && p.Class != 12 && p.Skills[16] == 0 {
-				enabled[6] = 0
+			if c.Stance != stanceNone || p.Class != classThief && p.Class != classNinja && p.Class != classRanger && p.Class != classBard && p.Class != classMonk && p.Skills[skillHide] == 0 {
+				enabled[actionHide] = 0
 			}
 			if p.ItemCount == 0 {
-				enabled[4] = 0
+				enabled[actionUseItem] = 0
 			}
 			if done < 2 {
-				enabled[9], enabled[10] = 0, 0
+				enabled[menuBack], enabled[menuStartOver] = 0, 0
 			}
-			if e := int(p.Equipped[0]); e != 255 && p.Items[e].Type == 3 {
-				ammo := int(p.Equipped[1])
-				if ammo == 255 || p.Items[ammo].Type != 4 {
-					enabled[0] = 0
+			if e := int(p.Equipped[equipPrimary]); e != noEquippedItem && p.Items[e].Type == itemTypeLauncher {
+				ammo := int(p.Equipped[equipSecondary])
+				if ammo == noEquippedItem || p.Items[ammo].Type != itemTypeMissile {
+					enabled[actionAttack] = 0
 				} else {
 					bow, arrow := p.Items[e].Icon, p.Items[ammo].Icon
 					if bow == 11 && arrow != 22 || bow == 13 && arrow != 23 || bow == 12 && arrow != 83 {
-						enabled[0] = 0
+						enabled[actionAttack] = 0
 					}
 				}
 			}
-			if member >= 3 && p.Hands[0].B0D == 0 && c.Stance != 1 {
-				enabled[0] = 0
+			if member >= 3 && p.Hands[0].B0D == 0 && c.Stance != stanceHidden {
+				enabled[actionAttack] = 0
 			}
 			enabled[11] = -1
 			name := copyName(memberName(member))
@@ -696,18 +702,18 @@ func choosePartyActions(win *Window) {
 				c.TargetGroup, c.TargetMember = -1, 0
 				retry := false
 				switch action {
-				case 0: // fight
+				case actionAttack:
 					prompt(3501)
-					weapon := int(p.Equipped[0])
+					weapon := int(p.Equipped[equipPrimary])
 					kinds := 0
 					var attacks [9]int
-					if weapon != 255 && p.Items[weapon].Type == 3 {
+					if weapon != noEquippedItem && p.Items[weapon].Type == itemTypeLauncher {
 						kinds, choice = 1, 8
 					}
 					if choice == -1 {
 						for i := range 8 {
 							attacks[i] = b2i(testBit([]byte{p.Hands[0].Flags}, i))
-							if i != 4 && member >= 3 && weapon != 255 && p.Items[weapon].Type == 2 {
+							if i != 4 && member >= 3 && weapon != noEquippedItem && p.Items[weapon].Type == 2 {
 								attacks[i] = 0
 							}
 							if attacks[i] == 1 {
@@ -726,8 +732,8 @@ func choosePartyActions(win *Window) {
 						if rng == 2 && choice != 4 {
 							rng = 0
 						}
-						if rng == 0 && member >= 3 && c.Stance != 1 {
-							playSound(0)
+						if rng == 0 && member >= 3 && c.Stance != stanceHidden {
+							playSound(soundBeep)
 							target = -1
 						} else {
 							target = selectMonsterGroup(win, 3602, rng, 0)
@@ -738,30 +744,30 @@ func choosePartyActions(win *Window) {
 					} else {
 						c.TargetGroup = int8(target)
 					}
-				case 1: // parry and the like
+				case actionDefend: // parry and the like
 					prompt(3502)
 					refreshAllWindows()
 					for i := range 4 {
 						enabled[i] = 1
 					}
-					if pcItemType(member, int(p.Equipped[1])) != 11 {
-						enabled[0] = 0
+					if pcItemType(member, int(p.Equipped[equipSecondary])) != itemTypeShield {
+						enabled[0] = 0 // the shield choice
 					}
 					enabled[4] = -1 // the C leaves it so: a retry shows only four actions
 					if choice = menuSelect(win, 3100, enabled[:], 3, 1, 9, 2, 5, 0, getCombatInput); choice == -1 {
 						retry = true
 					}
-				case 3: // spell
+				case actionCast:
 					choice = chooseCombatSpell(win, member)
 					pvBlinkState = -1
 					retry = choice == -1
-				case 4: // use an item
+				case actionUseItem:
 					choice = chooseCombatItem(win, member)
 					retry = choice == -1
-				case 5:
+				case actionMove:
 					choice = selectPartyMember(3611)
 					retry = choice == -1
-				case 8:
+				case actionBreath:
 					target = selectMonsterGroup(win, 3605, 1, 0)
 					choice = 8
 					if target == -1 {
@@ -769,7 +775,7 @@ func choosePartyActions(win *Window) {
 					} else {
 						c.TargetGroup = int8(target)
 					}
-				case 9: // back one member
+				case menuBack:
 					clearTargets()
 					for i := 0; member-1 > i; i++ {
 						markTarget(i)
@@ -777,7 +783,7 @@ func choosePartyActions(win *Window) {
 					member = doneMembers[done-2] - 1
 					done -= 2
 					back = true
-				case 10: // start over
+				case menuStartOver:
 					clearTargets()
 					member = -1
 					done = 0
@@ -790,15 +796,15 @@ func choosePartyActions(win *Window) {
 			if !back {
 				c.Choice = int16(choice)
 				c.SecondAttack = -1
-				c.Plan[6] = int8(action)
+				c.Plan[planAction] = int8(action)
 				if target = int(uint8(c.TargetGroup)); target >= 1 && target <= 5 {
 					c.TargetMember = int8(pickTargetMonster(member, target))
 				}
-				ammo := int(p.Equipped[1])
-				if action == 0 {
-					if ammo == 255 && p.Equipped[0] == 255 {
+				ammo := int(p.Equipped[equipSecondary])
+				if action == actionAttack {
+					if ammo == noEquippedItem && p.Equipped[equipPrimary] == noEquippedItem {
 						c.SecondAttack = int16(pickRandomSetBit(p.Hands[0].Flags))
-					} else if ammo != 255 {
+					} else if ammo != noEquippedItem {
 						switch t := p.Items[ammo].Type; {
 						case t == 2 || t == 12 || t == 16:
 							c.SecondAttack = 4
@@ -845,13 +851,13 @@ func choosePartyActions(win *Window) {
 	}
 	for m := 0; m < partyCount; m++ {
 		c := &monsterGroups[0].Members[m]
-		if c.Status[1] > 0 && random(100) > int(party[m].Stats[6])+80 {
-			c.Plan[6] = 7
+		if c.Status[1] > 0 && random(100) > int(party[m].Stats[statPersonality])+80 {
+			c.Plan[planAction] = actionRun
 		}
-		if c.Plan[6] == 1 || c.Plan[6] == 5 {
+		if c.Plan[planAction] == actionDefend || c.Plan[planAction] == actionMove {
 			c.Plan[0] = 1
 		}
-		if c.Plan[6] == 0 {
+		if c.Plan[planAction] == actionAttack {
 			if c.SecondAttack == -1 {
 				c.Plan[1], c.Plan[3] = 0, 0
 			}
@@ -919,16 +925,16 @@ func chooseGroupActions(group, targetGroup int) {
 			m.B35[2] = int8(random(power/2) + random(20) + power/2)
 		}
 		m.Swing = 0
-		m.Plan[4] = int8(pickRandomRow(group))
+		m.Plan[planSlot] = int8(pickRandomRow(group))
 		for n := 0; ; {
-			m.Plan[5] = int8(pickRandomRow(group))
+			m.Plan[planSlot+1] = int8(pickRandomRow(group))
 			n++
-			if m.Plan[5] != m.Plan[4] || n >= 3 {
+			if m.Plan[planSlot+1] != m.Plan[planSlot] || n >= 3 {
 				break
 			}
 		}
 		for s := range 4 {
-			if int(rec.Unk211[2]) <= s || uint8(m.Condition) >= 2 || m.Status[3] > 0 || m.Status[2] > 0 {
+			if int(rec.Unk211[2]) <= s || uint8(m.Condition) >= conditionDown || m.Status[statusParalyzed] > 0 || m.Status[statusAsleep] > 0 {
 				m.Plan[s] = 0
 			} else {
 				m.Plan[s] = int8(power)
@@ -939,13 +945,13 @@ func chooseGroupActions(group, targetGroup int) {
 		m.TargetGroup = int8(targetGroup)
 		for {
 			m.TargetMember = int8(random(int(monsterGroups[targetGroup].Count)))
-			if uint8(monsterGroups[uint8(m.TargetGroup)].Members[uint8(m.TargetMember)].Condition) < 3 {
+			if uint8(monsterGroups[uint8(m.TargetGroup)].Members[uint8(m.TargetMember)].Condition) < conditionDead {
 				break
 			}
 		}
 		if random(100) < int(rec.Unk168[0]) {
-			act = 3
-			m.Plan[6] = 3
+			act = actionCast
+			m.Plan[planAction] = actionCast
 			roll, limit, spell := random(100), 5, -1
 			for k := 0; spell == -1; k++ {
 				if roll < limit {
@@ -960,9 +966,9 @@ func chooseGroupActions(group, targetGroup int) {
 					limit += 15
 				}
 			}
-			if spellTable[spell].Target == 1 {
-				if group == 6 {
-					if findMostWounded(m, 0) == 0 && findMostWounded(m, 6) == 0 {
+			if spellTable[spell].Target == spellTargetMember {
+				if group == allyGroup {
+					if findMostWounded(m, 0) == 0 && findMostWounded(m, allyGroup) == 0 {
 						act = -1
 					}
 				} else if findMostWounded(m, group) == 0 && findMostWounded(m, random(monsterGroupCount)+1) == 0 {
@@ -976,16 +982,16 @@ func chooseGroupActions(group, targetGroup int) {
 			m.Choice = int16(lv<<8 + spell)
 		}
 		if act == -1 && random(100) < int(rec.Unk168[2]) {
-			act = 8
-			m.Plan[6] = 8
+			act = actionBreath
+			m.Plan[planAction] = actionBreath
 			m.Choice = int16(rec.Unk211[5])
 		}
 		if act == -1 {
 			reach := 0
-			if uint8(m.Condition) < 2 && m.Status[3] == 0 && m.Status[2] == 0 {
-				a := int(uint8(m.Plan[4]))
+			if uint8(m.Condition) < conditionDown && m.Status[statusParalyzed] == 0 && m.Status[statusAsleep] == 0 {
+				a := int(uint8(m.Plan[planSlot]))
 				switch {
-				case group == 6:
+				case group == allyGroup:
 					reach = 9
 				case group >= 3 && rec.Attacks[a].Range <= 1:
 				default:
@@ -1003,22 +1009,22 @@ func chooseGroupActions(group, targetGroup int) {
 			reach = min(reach, int(tg.Count))
 			alive := 0
 			for k := 0; k < reach; k++ {
-				if uint8(tg.Members[k].Condition) < 3 {
+				if uint8(tg.Members[k].Condition) < conditionDead {
 					alive++
 				}
 			}
 			if alive > 0 {
-				m.Plan[6] = 0
+				m.Plan[planAction] = actionAttack
 				m.TargetGroup = int8(targetGroup)
 				m.TargetMember = int8(random(alive))
-				m.Choice = attackBits(rec, int(uint8(m.Plan[4])))
+				m.Choice = attackBits(rec, int(uint8(m.Plan[planSlot])))
 			} else {
 				m.Plan[0] = 0
 			}
 		}
 		m.SecondAttack = -1
-		if m.Plan[6] == 0 {
-			a := int(uint8(m.Plan[5]))
+		if m.Plan[planAction] == actionAttack {
+			a := int(uint8(m.Plan[planSlot+1]))
 			if group >= 3 && rec.Attacks[a].Range <= 1 {
 				m.Plan[1], m.Plan[3] = 0, 0
 			} else {
@@ -1034,12 +1040,12 @@ func chooseGroupActions(group, targetGroup int) {
 // party's allies, who in turn fight one of the groups.
 func chooseMonsterActions() {
 	monsterGroups[0].Count = uint8(partyCount)
-	allies := monsterGroups[6].Count > 0
+	allies := monsterGroups[allyGroup].Count > 0
 	for g := 1; g <= monsterGroupCount; g++ {
 		if !allies || random(4) != 1 || groupMonsterRec[g].Unk208 == 22 {
 			chooseGroupActions(g, 0)
 		} else {
-			chooseGroupActions(g, 6)
+			chooseGroupActions(g, allyGroup)
 		}
 	}
 	if !allies {
@@ -1049,7 +1055,7 @@ func chooseMonsterActions() {
 	for g < monsterGroupCount && random(3) == 0 {
 		g++
 	}
-	chooseGroupActions(6, g)
+	chooseGroupActions(allyGroup, g)
 }
 
 // startCombatRound (WPOPS 8aea) sets up the windows (a shorter view over the allies'
@@ -1063,7 +1069,7 @@ func startCombatRound() {
 	resumeWindowDraw(monsterListWin)
 	eraseCursorMark(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
-	if monsterGroups[6].Count > 0 {
+	if monsterGroups[allyGroup].Count > 0 {
 		destroyWindow(pictureWin, false)
 		pictureWin = createWindow(9, 4, 22, 12, 2, -1, 2, false)
 		allyStripWin = createWindow(9, 16, 22, 2, 16, -1, 0, false)
@@ -1075,10 +1081,10 @@ func startCombatRound() {
 		allyStripWin = nil
 		destroyWindow(pictureWin, false)
 		pictureWin = createWindow(9, 4, 22, 14, 2, -1, 2, false)
-		viewAnimState = -2
+		viewAnimState = viewAnimMaze
 		for {
 			animateCombatStep()
-			if viewAnimState == -3 {
+			if viewAnimState == viewAnimShow {
 				break
 			}
 		}
@@ -1091,5 +1097,5 @@ func startCombatRound() {
 	chooseMonsterActions()
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	gameState = 13
+	gameState = stateRunCombatRound
 }

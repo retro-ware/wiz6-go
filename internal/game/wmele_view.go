@@ -151,7 +151,7 @@ func showEncounterView(wide int) {
 		if (random(8) == 0 || flash == loud) && groupMonsterRec[1].Sound > 0 {
 			playSound(14)
 		}
-		viewAnimState = -2
+		viewAnimState = viewAnimMaze
 		animateViewStep()
 		for row := range 2 {
 			for col := range 5 {
@@ -168,7 +168,7 @@ func showEncounterView(wide int) {
 		viewAnimState = 0
 		for {
 			animateViewStep()
-			if viewAnimState == -2 {
+			if viewAnimState == viewAnimMaze {
 				break
 			}
 		}

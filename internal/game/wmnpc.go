@@ -352,7 +352,7 @@ func npcAnimStep() {
 	}
 	viewAnimState++
 	if viewAnimState == 12 {
-		viewAnimState = -3
+		viewAnimState = viewAnimShow
 	}
 }
 
@@ -361,10 +361,10 @@ func npcAnimateCycle() {
 	if dtLog != nil { // the difftest stubs it
 		return
 	}
-	viewAnimState = -2
+	viewAnimState = viewAnimMaze
 	for {
 		npcAnimStep()
-		if viewAnimState == -2 {
+		if viewAnimState == viewAnimMaze {
 			break
 		}
 	}
@@ -387,7 +387,7 @@ func npcGesture(kind int) {
 		if (random(8) == 0 || i == beat) && npcSound > 0 {
 			playSound(npcSound)
 		}
-		viewAnimState = -2
+		viewAnimState = viewAnimMaze
 		npcAnimStep()
 		dx := int(flashShift[kind*4+i])
 		if left {
@@ -397,7 +397,7 @@ func npcGesture(kind int) {
 		viewAnimState = 0
 		for {
 			npcAnimStep()
-			if viewAnimState == -2 {
+			if viewAnimState == viewAnimMaze {
 				break
 			}
 		}
@@ -495,7 +495,7 @@ func npcMenuInput() int {
 		}
 		paceViewCycle()
 		npcAnimStep()
-		if viewAnimState == -2 && pvBlinkState != -1 && animPhase == phase {
+		if viewAnimState == viewAnimMaze && pvBlinkState != -1 && animPhase == phase {
 			blinkCursor()
 		}
 	}
@@ -538,7 +538,7 @@ func npcMorePrompt() {
 		}
 		paceViewCycle()
 		npcAnimStep()
-		if viewAnimState == -2 {
+		if viewAnimState == viewAnimMaze {
 			setCursor(npcTextWin, 39, npcTextRows)
 			if blink < 2 {
 				putChar(npcTextWin, ' ', 1)
@@ -1151,7 +1151,7 @@ func initNPCEncounter() {
 		spriteList[i].Depth = 255
 	}
 	spriteCount = 0
-	viewAnimState = -2
+	viewAnimState = viewAnimMaze
 	viewPosGroup = [2][5]int16{}
 	picSlotMonster[4], picSlotMonster[5], picSlotMonster[6] = -1, -1, -1 // g4330
 	npcSeqForce = [10][5]int16{}

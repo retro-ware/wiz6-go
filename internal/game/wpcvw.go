@@ -94,6 +94,7 @@ const (
 	maxPower          = 6   // the highest power level of a spell
 	realmCount        = 6   // fire, water, air, earth, mental, magic (messages 3950+)
 	spellTargetMember = 1   // Spell.Target: cast on a chosen member
+	spellTargetGroup  = 2   // Spell.Target: cast on a chosen monster group
 	unlimitedSP       = 999 // a realm's spell points while a spell to learn is picked
 
 	// Skills: 0..9 weaponry, 10..16 physical, 17..21 personal, 22..29 academia (messages

@@ -94,13 +94,13 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 	q := int(p.SeqStartFrame[frame])
 	for s := 0; s < 3; s++ {
 		f := byte(int(p.Quads[q][1]) + step[s])
-		viewAnimState = -2
+		viewAnimState = viewAnimMaze
 		mexeAnimateStep()
 		at := kind*24 + side*12 + mirror*6 + s*2
 		insertSprite(42, pic, int(spellAnimXY[at]), int(spellAnimXY[at+1]), 72, 248, flip, []byte{f})
 		for {
 			mexeAnimateStep()
-			if viewAnimState == -2 {
+			if viewAnimState == viewAnimMaze {
 				break
 			}
 		}

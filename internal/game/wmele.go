@@ -83,7 +83,7 @@ func clearCombatGroups() {
 	}
 	monsterGroupCount = 0
 	combatOver = 0
-	viewAnimState = -2
+	viewAnimState = viewAnimMaze
 }
 
 // findMonsterPicSlot (f4858, WMELE) is the picture slot (4..6) holding monster picture
