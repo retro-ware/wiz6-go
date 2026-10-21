@@ -26,6 +26,14 @@ scan() {
   down:50 pagedown:51 insert:52 delete:53 "
   local r=${s#* $1:}; [ "$r" != "$s" ] || { echo "parity: unknown key $1" >&2; exit 1; }; echo "${r%% *}"
 }
+# The ASCII code BIOS reports with a key (hex, 2 digits): 00 for arrows and function keys.
+ascii() {
+  case "$1" in
+  enter) echo 0d ;; esc) echo 1b ;; space) echo 20 ;; bksp) echo 08 ;; tab) echo 09 ;;
+  minus) echo 2d ;; equals) echo 3d ;; comma) echo 2c ;; period) echo 2e ;;
+  [a-z0-9]) printf %02x "'$1" ;; *) echo 00 ;;
+  esac
+}
 # Step i's key goes in at WAIT+SLOT[i]*PACE; its frame is taken just before key i+1 (last: one PACE after).
 shot_t() { local s=$SLOTS; [ $(($1+1)) -lt $N ] && s=${SLOT[$(($1+1))]}; echo "$WAIT + $s*$PACE - 0.3" | bc; }
 
@@ -46,6 +54,21 @@ open(p, 'wb').write(b)
 P
 fi
 LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
+# Keys: KEYFEED.COM (keyfeed.asm), a TSR that puts each key in the BIOS buffer at its time on
+# the emulated clock (18.2 ticks/s), so key and frame times line up exactly. (DOSBox-X's
+# AUTOTYPE runs on host time and aborts at random with "MAPPER: Couldn't find a button".)
+# TPS is INT 1Ch ticks per second of capture time: nominally 18.2065, but measured against
+# the AVI the ticks run about 8.7% slow (keys landed 2.8 s late after 32 s), so 16.75.
+TPS=${TPS:-16.75}
+{ cat "$HERE/keyfeed.asm"
+  prev=0
+  for i in $(seq 0 $((N-1))); do
+    t=$(echo "($WAIT + ${SLOT[$i]}*$PACE)*$TPS/1" | bc)
+    echo "	dw $((t-prev)), 0x$(scan "${KEYS[$i]}")$(ascii "${KEYS[$i]}")"; prev=$t
+  done
+  echo "	dw 0FFFFh"; echo "tend:"
+} > "$OUT/work/keyfeed.asm"
+nasm -f bin -o "$OUT/work/dos/KEYFEED.COM" "$OUT/work/keyfeed.asm"
 cat > "$OUT/work/dos.conf" <<C
 [sdl]
 output=surface
@@ -59,7 +82,7 @@ cycles=${CYCLES:-fixed 20000}
 [autoexec]
 mount c "$OUT/work/dos"
 c:
-autotype -w $WAIT -p $PACE ${AT[*]}
+keyfeed
 dx-capture /V wroot.exe
 exit
 C
