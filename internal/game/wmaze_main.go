@@ -40,7 +40,7 @@ func allocMazeBuffers() {
 
 // f4655 (WMAZE): one idle step between animation frames, now and then an ambient sound.
 func idleStep() {
-	if random(40) > 0 {
+	if DetRNG || random(40) > 0 { // -detrng: no ambient roll per idle step (tools/parity patches the OVRs alike)
 		delayTick()
 		delayTick()
 		return

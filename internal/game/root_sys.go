@@ -1,6 +1,9 @@
 package game
 
 import (
+	"fmt"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/retro-ware/wiz6-go/internal/drv"
@@ -55,6 +58,10 @@ func randomWord() int {
 
 // random (ROOT 09e2) is a number 0..n-1, or 0 for n <= 0.
 func random(n int) int {
+	if os.Getenv("WIZ6_RNGLOG") != "" {
+		pc, _, line, _ := runtime.Caller(1)
+		fmt.Fprintf(os.Stderr, "rng %d %s:%d\n", n, runtime.FuncForPC(pc).Name(), line)
+	}
 	if n <= 0 {
 		return 0
 	}

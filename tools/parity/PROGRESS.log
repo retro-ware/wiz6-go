@@ -9,3 +9,4 @@
 2026-10-21 08:29:29 step 3 chargen: det RNG gives same bonus (9) both sides. Fixed: port didn't present the frame while blocked in key_available (last typed name char showed one key late); keyAvailable now presents before sleeping. Re-running
 2026-10-21 08:42:22 step 2b: original's sound player reprograms PIT/IRQ0 -> KEYFEED clock drifted; parity now sets sound off (SCENARIO.HDR[408]=5) in both copies, TPS back to 18.2065; key->screen change now constant ~0.8 s render lag, no drift
 2026-10-21 08:57:14 step 3 chargen: steps 0-65 0 px (bonus rolls equal); PCFILE.DBS after create differs only in karma (byte 2924: roll_karma rerolls until a key, so it depends on key timing); late skill-screen frames differ only by DOS render lag
+2026-10-21 09:02:04 step 3 save: DOS run now writes SAVEGAME.DBS; port with -detrng diverges at maze entry (no gate message at step 14, HMMMM later) - investigating port RNG use

@@ -56,6 +56,16 @@ for off, old, new in ((0x1F4A, '268b07', '31c090'), (0x2850, 'e866ff', '909090')
     b[off:off+3] = bytes.fromhex(new)
 open(p, 'wb').write(b)
 P
+  # The ambient-sound idle step (WMAZE f4655, WDOPT 4688, WTREA 45b8) rolls random(40) on every
+  # idle step: its call random becomes mov ax,1 (the port: -detrng skips the roll).
+  python3 - "$OUT"/work/dos/*.OVR <<'P'
+import re, sys
+for p in sys.argv[1:]:
+    b = open(p, 'rb').read()
+    n = re.sub(rb'(\xb8\x28\x00\x50)\xe8..(\x59\x3d\x00\x00\x7e\x08)', rb'\1\xb8\x01\x00\2', b, flags=re.S)
+    if n != b:
+        open(p, 'wb').write(n)
+P
 fi
 LIMIT=$(echo "$WAIT + ($SLOTS+1)*$PACE + 2" | bc | cut -d. -f1)
 # Keys: KEYFEED.COM (keyfeed.asm), a TSR that puts each key in the BIOS buffer at its time on
