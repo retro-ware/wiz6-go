@@ -158,7 +158,7 @@ func getLoadCategory(m int) LoadCategory {
 func getItemWeight(i, m int) int16 {
 	it := wpcvwGetItem(&party[m], i)
 	qty := int16(1)
-	if wpcvwStackable[it.Type] == 1 {
+	if stackable[it.Type] == 1 {
 		if qty = int16(it.Qty); qty < 1 {
 			qty = 1
 		}
@@ -187,9 +187,9 @@ func drawSpellPoints(w *Window, pc *PC) {
 			x = 3
 		}
 		setCursor(w, x, r%3<<1+14)
-		printInt(w, int(pc.SP[r].Cur), 3, wpcvwRealmColors[r])
+		printInt(w, int(pc.SP[r].Cur), 3, realmColors[r])
 		putChar(w, '/', 9)
-		printInt(w, int(pc.SP[r].Max), 3, wpcvwRealmColors[r])
+		printInt(w, int(pc.SP[r].Max), 3, realmColors[r])
 	}
 }
 
@@ -241,7 +241,7 @@ func drawStatsPanel(w *Window, m int) {
 	printInt(w, int(p.HPMax), 4, 6)
 	printMsgAt(213, w, 10, 8, 4)
 	w.CurX += 2
-	printInt(w, wpcvwStaminaPct(p), 3, 6)
+	printInt(w, staminaPct(p), 3, 6)
 	putChar(w, '%', 4)
 	printMsgAt(214, w, 10, 9, 4)
 	w.CurX++
@@ -338,7 +338,7 @@ func drawInventoryPanel(w *Window, m int) {
 	}
 	for i := 0; i < int(p.ItemCount); i++ {
 		if !pvNamesLoaded {
-			rec := wpcvwItemRec(int(p.Items[i].ID))
+			rec := itemRec(int(p.Items[i].ID))
 			pvItemNames[i] = cstr(rec.Name[:])
 		}
 		mark, color := byte(' '), 9
@@ -360,7 +360,7 @@ func drawInventoryPanel(w *Window, m int) {
 		pvItemRowColor[i] = color
 		printString(w, pvItemNames[i], color)
 		padToColumn(w, 34, 0)
-		if wpcvwStackable[p.Items[i].Type] == 1 {
+		if stackable[p.Items[i].Type] == 1 {
 			setCursor(w, 34, i+9)
 			printInt(w, int(p.Items[i].Qty), 3, 1)
 		} else {
@@ -569,10 +569,10 @@ func chooseMember(w *Window, title, sel int) int {
 		} else {
 			printStringHi(w, memberName(i), 3)
 		}
-		wpcvwRegion(i, int(w.X)+x, int(w.Y)+y, len(memberName(i))+int(w.X)+x-1, int(w.Y)+y)
+		setRegion(i, int(w.X)+x, int(w.Y)+y, len(memberName(i))+int(w.X)+x-1, int(w.Y)+y)
 	}
-	wpcvwRegion(partyCount, int(w.X)+cx, int(w.Y)+cy, len(cancel)+int(w.X)+cx-1, int(w.Y)+cy)
-	wpcvwEndRegions(partyCount + 1)
+	setRegion(partyCount, int(w.X)+cx, int(w.Y)+cy, len(cancel)+int(w.X)+cx-1, int(w.Y)+cy)
+	endRegions(partyCount + 1)
 	for {
 		if !mousePresent {
 			if sel == -1 {

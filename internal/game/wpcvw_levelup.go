@@ -129,10 +129,10 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 	row := 0
 	mx, my := int(menu.X), int(menu.Y)
 	for i, x := range []int{2, 3, 22, 23} {
-		wpcvwRegion(i, mx+x, my+1, mx+x, my+1)
+		setRegion(i, mx+x, my+1, mx+x, my+1)
 	}
-	wpcvwRegion(4, mx+13, my+2, mx+13, my+2)
-	wpcvwEndRegions(5)
+	setRegion(4, mx+13, my+2, mx+13, my+2)
+	endRegions(5)
 	mark := func(ch byte, c int) {
 		setCursor(w, 15, row+3)
 		putChar(w, ch, c)
@@ -147,7 +147,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 		} else {
 			printMessage(609, menu, 18)
 		}
-		wpcvwRegion(4, mx+x, my+2, mx+x, my+2)
+		setRegion(4, mx+x, my+2, mx+x, my+2)
 		k := wpcvwGetMenuInput()
 		if menuClicked == 1 && k >= 0 && k < 5 {
 			k = [5]int{1, 3, 2, 4, 5}[k]
@@ -489,8 +489,8 @@ func levelUpSpellPoints(m int) {
 	for r := range p.SP {
 		known := 0
 		if p.SP[r].Max > 0 {
-			for s := range wpcvwSpells {
-				if int(wpcvwSpells[s].Realm) == r && testBit(p.KnownSpells[:], s) {
+			for s := range spellTable {
+				if int(spellTable[s].Realm) == r && testBit(p.KnownSpells[:], s) {
 					known++
 				}
 			}
@@ -694,10 +694,10 @@ func doChoosePortrait(w *Window, m int) {
 	setCursor(w, 12, 2)
 	printMessage(1113, w, 18)
 	wx, wy := int(w.X), int(w.Y)
-	wpcvwRegion(0, wx+9, wy+1, wx+9, wy+1)
-	wpcvwRegion(1, wx+10, wy+1, wx+10, wy+1)
-	wpcvwRegion(2, wx+18, wy+2, wx+18, wy+2)
-	wpcvwEndRegions(3)
+	setRegion(0, wx+9, wy+1, wx+9, wy+1)
+	setRegion(1, wx+10, wy+1, wx+10, wy+1)
+	setRegion(2, wx+18, wy+2, wx+18, wy+2)
+	endRegions(3)
 	shown := -1
 	for {
 		if int(p.Portrait) != shown {

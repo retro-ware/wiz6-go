@@ -42,7 +42,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 					drawListFrame(list, true)
 				} else {
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, win, wpcvwRealmColors[realm])
+					printMessage(realm+3950, win, realmColors[realm])
 					clearWindowArea(win, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(m, realm, spells[:])
 					wpopsDrawSpellList(list, realm, 0, false, count, spells[:])
@@ -116,14 +116,14 @@ func wdoptChooseSpell(_ *Window, m int) int {
 		for {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[sel] + 4000)
-			pvBlinkColor[1] = wpcvwRealmColors[realm]
+			pvBlinkColor[1] = realmColors[realm]
 			wpopsDrawSpellList(list, realm, sel, true, count, spells[:])
-			cost := int(wpcvwSpells[spells[sel]].Cost)
+			cost := int(spellTable[spells[sel]].Cost)
 			setCursor(win, 18, 5)
 			if int(p.SP[realm].Cur) < cost {
-				printString(win, "***", wpcvwRealmColors[realm])
+				printString(win, "***", realmColors[realm])
 			} else {
-				printInt(win, cost, 3, wpcvwRealmColors[realm])
+				printInt(win, cost, 3, realmColors[realm])
 			}
 			c := wdoptGetMenuChoice(dpKeys)
 			if menuClicked == 1 {
@@ -163,7 +163,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 	}
 	// The power level.
 	spell := spells[sel]
-	sp := &wpcvwSpells[spell]
+	sp := &spellTable[spell]
 	drawListFrame(list, false)
 	deferWindowDraw(list)
 	setCursor(list, 2, 2)
@@ -203,9 +203,9 @@ func wdoptChooseSpell(_ *Window, m int) int {
 				pvBlinkColor = [2]int{0, 7}
 				setCursor(win, 18, 5)
 				if int(p.SP[realm].Cur) < cost {
-					printString(win, "***", wpcvwRealmColors[realm])
+					printString(win, "***", realmColors[realm])
 				} else {
-					printInt(win, cost, 3, wpcvwRealmColors[realm])
+					printInt(win, cost, 3, realmColors[realm])
 				}
 			}
 		}
@@ -238,7 +238,7 @@ func wdoptChooseSpell(_ *Window, m int) int {
 					wpopsUnhighlightRealm(win, -1)
 					clearWindowArea(win, 13, 1, 20, 1)
 					setCursor(win, 13, 1)
-					printMessage(realm+3950, win, wpcvwRealmColors[realm])
+					printMessage(realm+3950, win, realmColors[realm])
 					level, redraw = 1, true
 				} else if level < maxLevel {
 					unmark()

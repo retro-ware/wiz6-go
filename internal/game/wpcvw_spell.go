@@ -214,8 +214,8 @@ func wpcvwUnhighlightRealm(w, book *Window, r int) {
 // wpcvwCountKnownSpells (WPCVW 76ee) lists in out the spells of realm r member m knows.
 func wpcvwCountKnownSpells(m, r int, out []int) int {
 	n := 0
-	for s := range wpcvwSpells {
-		if int(wpcvwSpells[s].Realm) == r && testBit(party[m].KnownSpells[:], s) {
+	for s := range spellTable {
+		if int(spellTable[s].Realm) == r && testBit(party[m].KnownSpells[:], s) {
 			out[n] = s
 			n++
 		}
@@ -235,12 +235,12 @@ func wpcvwDrawSpellList(w *Window, r, at int, hi bool, n int, list []int) {
 		setCursor(w, 1, d+3)
 		c := 18
 		if hi && d == 0 {
-			c = wpcvwRealmColors[r]
+			c = realmColors[r]
 		}
 		printMessage(list[at+d]+4000, w, c)
 		if hi && d == 0 {
 			for w.CurX < 18 {
-				putChar(w, ' ', wpcvwRealmColors[r])
+				putChar(w, ' ', realmColors[r])
 			}
 		}
 	}
@@ -277,13 +277,13 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 	realm := 0
 	for r := 0; r < 6; r++ {
 		x, y := int(sheet.X)+r/3*10+1, int(sheet.Y)+r%3<<1+14
-		wpcvwRegion(r, x, y, x, y)
+		setRegion(r, x, y, x, y)
 	}
-	wpcvwRegion(6, int(book.X)+1, int(book.Y)+12, int(book.X)+1, int(book.Y)+12)
+	setRegion(6, int(book.X)+1, int(book.Y)+12, int(book.X)+1, int(book.Y)+12)
 	var spells [20]int
 	for {
 		// Pick a realm.
-		wpcvwEndRegions(7)
+		endRegions(7)
 		n, redraw := 0, true
 		for {
 			if redraw {
@@ -298,7 +298,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					wpcvwDrawSpellListFrame(list, true)
 				} else {
 					pvBlinkWin, pvBlinkX, pvBlinkY = sheet, realm/3*10+1, realm%3<<1+14
-					printMessage(realm+3950, book, wpcvwRealmColors[realm])
+					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 6, 14, 8, 14)
 					n = wpcvwCountKnownSpells(m, realm, spells[:])
 					wpcvwDrawSpellList(list, realm, 0, false, n, spells[:])
@@ -362,22 +362,22 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		at, back := 0, false
 		pvSetBlink(list, 1, 3, wpcvwBlankLabel, 0, "", 0)
 		lx, ly := int(list.X), int(list.Y)
-		wpcvwRegion(7, lx, ly, lx, ly)
-		wpcvwRegion(8, lx, ly+6, lx, ly+6)
-		wpcvwRegion(9, lx+1, ly+3, lx+18, ly+3)
-		wpcvwEndRegions(10)
+		setRegion(7, lx, ly, lx, ly)
+		setRegion(8, lx, ly+6, lx, ly+6)
+		setRegion(9, lx+1, ly+3, lx+18, ly+3)
+		endRegions(10)
 		k := 0
 		for k != 5 && !back {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[at] + 4000)
-			pvBlinkColor[1] = wpcvwRealmColors[realm]
+			pvBlinkColor[1] = realmColors[realm]
 			wpcvwDrawSpellList(list, realm, at, true, n, spells[:])
-			cost := int(wpcvwSpells[spells[at]].Cost)
+			cost := int(spellTable[spells[at]].Cost)
 			setCursor(book, 6, 14)
 			if int(p.SP[realm].Cur) < cost {
-				printString(book, wpcvwNoPoints, wpcvwRealmColors[realm])
+				printString(book, wpcvwNoPoints, realmColors[realm])
 			} else {
-				printInt(book, cost, 3, wpcvwRealmColors[realm])
+				printInt(book, cost, 3, realmColors[realm])
 			}
 			k = wpcvwGetMenuInput()
 			if menuClicked == 1 {
@@ -423,13 +423,13 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		resumeWindowDraw(list)
 		refreshWindow(list)
 		power := 1
-		most := min(max(int(p.Level)-int(wpcvwSpells[spell].Level)+1, 1), 6)
+		most := min(max(int(p.Level)-int(spellTable[spell].Level)+1, 1), 6)
 		bx, by := int(book.X), int(book.Y)
 		for i := 0; i < most; i++ {
-			wpcvwRegion(i, bx+i+3, by+12, bx+i+3, by+12)
+			setRegion(i, bx+i+3, by+12, bx+i+3, by+12)
 		}
-		wpcvwRegion(most, bx+1, by+12, bx+1, by+12)
-		wpcvwEndRegions(most + 1)
+		setRegion(most, bx+1, by+12, bx+1, by+12)
+		endRegions(most + 1)
 		redraw = true
 		pvBlinkWin = book
 		unmark := func() {
@@ -437,7 +437,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 			putChar(book, byte(power+23), 5)
 		}
 		for {
-			cost := int(wpcvwSpells[spell].Cost) * power
+			cost := int(spellTable[spell].Cost) * power
 			if redraw {
 				pvBlinkState, redraw = 1, false
 				if power == 0 {
@@ -450,9 +450,9 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 					pvSetBlink(book, power+2, 12, " ", 0, string(rune(power+23)), 7)
 					setCursor(book, 6, 14)
 					if int(p.SP[realm].Cur) < cost {
-						printString(book, wpcvwNoPoints, wpcvwRealmColors[realm])
+						printString(book, wpcvwNoPoints, realmColors[realm])
 					} else {
-						printInt(book, cost, 3, wpcvwRealmColors[realm])
+						printInt(book, cost, 3, realmColors[realm])
 					}
 				}
 			}
@@ -485,7 +485,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 						wpcvwUnhighlightRealm(sheet, book, -1)
 						clearWindowArea(book, 11, 12, 18, 12)
 						setCursor(book, 11, 12)
-						printMessage(realm+3950, book, wpcvwRealmColors[realm])
+						printMessage(realm+3950, book, realmColors[realm])
 						power, redraw = 1, true
 					} else if power < most {
 						unmark()
@@ -503,7 +503,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		if power == 0 {
 			return -1
 		}
-		if wpcvwSpells[spell].Target == 1 {
+		if spellTable[spell].Target == 1 {
 			if pvSpellTarget = chooseMember(menu, 502, -1); pvSpellTarget == -1 {
 				return -1
 			}
@@ -526,8 +526,8 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 		lv = 7
 	}
 	n := 0
-	for s := range wpcvwSpells {
-		if bit&int(wpcvwSpells[s].Books) != 0 && int(wpcvwSpells[s].Level) <= lv && !testBit(known[:], s) {
+	for s := range spellTable {
+		if bit&int(spellTable[s].Books) != 0 && int(spellTable[s].Level) <= lv && !testBit(known[:], s) {
 			setBit(p.KnownSpells[:], s, true)
 			n++
 		}
@@ -559,10 +559,10 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 		p.SP[r].Cur = saved[r]
 	}
 	setBit(p.KnownSpells[:], s, true)
-	gain := random(int(p.Skills[skill])/20) + int(wpcvwSpells[s].Level)<<1 + 1
-	sp := &p.SP[wpcvwSpells[s].Realm]
-	if int(sp.Max)+gain < int(wpcvwSpells[s].Cost) {
-		gain = int(wpcvwSpells[s].Cost) - int(sp.Max)
+	gain := random(int(p.Skills[skill])/20) + int(spellTable[s].Level)<<1 + 1
+	sp := &p.SP[spellTable[s].Realm]
+	if int(sp.Max)+gain < int(spellTable[s].Cost) {
+		gain = int(spellTable[s].Cost) - int(sp.Max)
 	}
 	sp.Max += int16(gain)
 	sp.Cur += int16(gain)
@@ -590,8 +590,8 @@ func doCastMenu(sheet, menu *Window, m int, canCast bool) {
 	pvBlinkState = -1
 	p := &party[m]
 	power, s := v/256, v%256
-	p.SP[wpcvwSpells[s].Realm].Cur -= int16(int(wpcvwSpells[s].Cost) * power)
-	p.Stamina -= int16(random(power) + int(wpcvwSpells[s].Level) + power)
+	p.SP[spellTable[s].Realm].Cur -= int16(int(spellTable[s].Cost) * power)
+	p.Stamina -= int16(random(power) + int(spellTable[s].Level) + power)
 	if p.Stamina < 0 {
 		p.Stamina = 0
 		p.Status[2] = uint8(random(6) + 6)

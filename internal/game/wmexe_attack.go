@@ -449,7 +449,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			mexeVerb = getMessage(random(2) + 3385)
 		}
 		if item != 255 {
-			rec := wpcvwItemRec(int(p.Items[item].ID))
+			rec := itemRec(int(p.Items[item].ID))
 			mexeText = cstr(rec.Name[:])
 			if thrownOrBash {
 				if kind == 4 && rec.Unk28 != 0 {

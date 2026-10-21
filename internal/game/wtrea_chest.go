@@ -560,7 +560,7 @@ func drawChestSpellWindow(w *Window, member int) {
 			x = 9
 		}
 		setCursor(w, x, r%3<<1+1)
-		printInt(w, int(party[member].SP[r].Cur), 3, wpcvwRealmColors[r])
+		printInt(w, int(party[member].SP[r].Cur), 3, realmColors[r])
 	}
 	for i := range 6 {
 		putCharAt(w, i+15, 3, byte(i+24))
@@ -586,12 +586,12 @@ func drawChestSpellList(w *Window, r, at int, hi bool, n int, list []int) {
 		setCursor(w, 2, d+2)
 		c := 18
 		if hi && d == 0 {
-			c = wpcvwRealmColors[r]
+			c = realmColors[r]
 		}
 		printMessage(list[at+d]+4000, w, c)
 		if hi && d == 0 {
 			for w.CurX < 17 {
-				putChar(w, ' ', wpcvwRealmColors[r])
+				putChar(w, ' ', realmColors[r])
 			}
 		}
 	}
@@ -645,7 +645,7 @@ func chooseChestSpell(win *Window, member int) int {
 					drawChestListBox(list, true)
 				} else {
 					trBlinkX, trBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, book, wpcvwRealmColors[realm])
+					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(member, realm, spells[:])
 					drawChestSpellList(list, realm, 0, false, count, spells[:])
@@ -719,14 +719,14 @@ func chooseChestSpell(win *Window, member int) int {
 		for {
 			trBlink = 1
 			trBlinkText[1] = getMessage(spells[pos] + 4000)
-			trBlinkColor[1] = wpcvwRealmColors[realm]
+			trBlinkColor[1] = realmColors[realm]
 			drawChestSpellList(list, realm, pos, true, count, spells[:])
-			cost := int(wpcvwSpells[spells[pos]].Cost)
+			cost := int(spellTable[spells[pos]].Cost)
 			setCursor(book, 18, 5)
 			if int(p.SP[realm].Cur) < cost {
-				printString(book, "***", wpcvwRealmColors[realm]) // 0x5005
+				printString(book, "***", realmColors[realm]) // 0x5005
 			} else {
-				printInt(book, cost, 3, wpcvwRealmColors[realm])
+				printInt(book, cost, 3, realmColors[realm])
 			}
 			k := trInput()
 			if menuClicked == 1 {
@@ -774,7 +774,7 @@ func chooseChestSpell(win *Window, member int) int {
 	refreshWindow(list)
 	trBlinkWin = book
 	level = 1
-	maxLevel := min(max(int(p.Level)-int(wpcvwSpells[spell].Level)+1, 1), 6)
+	maxLevel := min(max(int(p.Level)-int(spellTable[spell].Level)+1, 1), 6)
 	for l := range maxLevel {
 		setClickRegion(l, book.X+byte(l)+15, book.Y+3, book.X+byte(l)+15, book.Y+3)
 	}
@@ -787,7 +787,7 @@ func chooseChestSpell(win *Window, member int) int {
 	}
 	var cost int
 	for {
-		cost = int(wpcvwSpells[spell].Cost) * level
+		cost = int(spellTable[spell].Cost) * level
 		if redraw {
 			redraw = false
 			trBlink = 1
@@ -801,9 +801,9 @@ func chooseChestSpell(win *Window, member int) int {
 				trSetBlink(level+14, 3, " ", 0, string(rune(level+23)), 7)
 				setCursor(book, 18, 5)
 				if int(p.SP[realm].Cur) < cost {
-					printString(book, "***", wpcvwRealmColors[realm]) // 0x5009
+					printString(book, "***", realmColors[realm]) // 0x5009
 				} else {
-					printInt(book, cost, 3, wpcvwRealmColors[realm])
+					printInt(book, cost, 3, realmColors[realm])
 				}
 			}
 		}
@@ -836,7 +836,7 @@ func chooseChestSpell(win *Window, member int) int {
 					unhighlightRealmSlot(book, -1)
 					clearWindowArea(book, 13, 1, 20, 1)
 					setCursor(book, 13, 1)
-					printMessage(realm+3950, book, wpcvwRealmColors[realm])
+					printMessage(realm+3950, book, realmColors[realm])
 					level, redraw = 1, true
 				} else if level < maxLevel {
 					plainLevel()
@@ -853,7 +853,7 @@ func chooseChestSpell(win *Window, member int) int {
 	if level == 0 {
 		return -1
 	}
-	if wpcvwSpells[spell].Target == 1 {
+	if spellTable[spell].Target == 1 {
 		if trSpellTarget = trChooseMember(2030, 1); trSpellTarget == -1 {
 			return -1
 		}
@@ -870,7 +870,7 @@ func castSpellOnChest(win, trapWin *Window, member int) {
 	}
 	level, spell := spell/256, spell%256
 	p := &party[member]
-	s := wpcvwSpells[spell]
+	s := spellTable[spell]
 	p.SP[s.Realm].Cur -= int16(int(s.Cost) * level)
 	castChestSpell(member, spell, level, trSpellTarget, win, trapWin)
 	p.Stamina -= int16(random(level) + int(s.Level) + level)

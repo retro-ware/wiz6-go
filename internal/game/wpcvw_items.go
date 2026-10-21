@@ -119,13 +119,13 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 	sx, sy := int(sheet.X), int(sheet.Y)
 	for i := 0; i < count; i++ {
 		if !swag {
-			wpcvwRegion(i, sx+22, sy+i+9, sx+37, sy+i+9)
+			setRegion(i, sx+22, sy+i+9, sx+37, sy+i+9)
 		} else {
-			wpcvwRegion(i, sx+2, sy+i+3, sx+17, sy+i+3)
+			setRegion(i, sx+2, sy+i+3, sx+17, sy+i+3)
 		}
 	}
-	wpcvwRegion(count, int(w.X)+cx, int(w.Y)+cy, len(cancel)+int(w.X)+cx-1, int(w.Y)+cy)
-	wpcvwEndRegions(count + 1)
+	setRegion(count, int(w.X)+cx, int(w.Y)+cy, len(cancel)+int(w.X)+cx-1, int(w.Y)+cy)
+	endRegions(count + 1)
 	for {
 		if !mousePresent {
 			switch {
@@ -214,13 +214,13 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		for i := 0; i < int(p.SwagCount); i++ {
 			it := wpcvwGetItem(p, i+10)
 			if !loaded {
-				rec := wpcvwItemRec(int(it.ID))
+				rec := itemRec(int(it.ID))
 				pvSwagNames[i] = cstr(rec.Name[:])
 			}
 			setCursor(w, 2, i+3)
 			printString(w, pvSwagNames[i], 9)
 			padToColumn(w, 14, 0)
-			if wpcvwStackable[it.Type] == 1 {
+			if stackable[it.Type] == 1 {
 				setCursor(w, 14, i+3)
 				printInt(w, int(it.Qty), 3, 1)
 			} else {
@@ -328,7 +328,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		if it.Flags&1 != 0 || it.Flags&2 != 0 {
 			whole, give = false, false
 			playSound(0)
-		} else if wpcvwStackable[it.Type] == 1 {
+		} else if stackable[it.Type] == 1 {
 			for {
 				n = int(int16(wpcvwInputNumber(menu, 405, 3)))
 				if int(it.Qty) < n {
@@ -353,7 +353,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 		add, slot := 1, int(q.ItemCount)
 		stacks := func(s int) bool {
 			o := wpcvwGetItem(q, s)
-			return o.ID == it.ID && wpcvwStackable[o.Type] == 1 && int(o.Qty)+n <= 250
+			return o.ID == it.ID && stackable[o.Type] == 1 && int(o.Qty)+n <= 250
 		}
 		for s := slot - 1; s >= 0; s-- {
 			if stacks(s) {
@@ -395,7 +395,7 @@ func doTradeItems(sheet, menu *Window, m int) {
 // removes item other.
 func replaceItem(sheet *Window, m, id, i, other int) {
 	p := &party[m]
-	rec := wpcvwItemRec(id)
+	rec := itemRec(id)
 	pvItemNames[i] = cstr(rec.Name[:])
 	it := &p.Items[i]
 	it.ID = int16(id)
@@ -424,7 +424,7 @@ func replaceItem(sheet *Window, m, id, i, other int) {
 // them.
 func tryCombineRecipe(sheet *Window, m, a, b int) bool {
 	ia, ib := party[m].Items[a].ID, party[m].Items[b].ID
-	for _, r := range wpcvwRecipes {
+	for _, r := range recipes {
 		if ia == r[0] && ib == r[1] || ia == r[1] && ib == r[0] {
 			replaceItem(sheet, m, int(r[2]), a, b)
 			return true
@@ -459,7 +459,7 @@ func doMergeItems(sheet, menu *Window, m int) {
 		}
 	}
 	a := pvChosenItem
-	if p.Items[a].ID == p.Items[b].ID && wpcvwStackable[p.Items[a].Type] == 1 {
+	if p.Items[a].ID == p.Items[b].ID && stackable[p.Items[a].Type] == 1 {
 		if n := int(p.Items[a].Qty) + int(p.Items[b].Qty); n <= 250 {
 			p.Items[a].Qty = uint8(n)
 			wpcvwRemoveItem(m, b)
@@ -477,7 +477,7 @@ func doMergeItems(sheet, menu *Window, m int) {
 // Unk69 picks a reading or key action, else Unk28 is a spell it casts.
 func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 	p := &party[m]
-	rec := wpcvwItemRec(int(p.Items[i].ID))
+	rec := itemRec(int(p.Items[i].ID))
 	if rec.Unk69 > 0 {
 		pickedIs := func(id int16) bool {
 			j := chooseItem(sheet, menu, 408, m, false)
@@ -494,9 +494,9 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 		case 2:
 			wpcvwShowTextPages(menu, int(int16(rec.Price))) // Price's low word is the text
 		case 3: // a spell book: Unk28 is the spell
-			if testBit(wpcvwMask16(rec.ClassMask), int(p.Class)) {
+			if testBit(mask16(rec.ClassMask), int(p.Class)) {
 				s := int(rec.Unk28) % 256
-				if int(wpcvwSpells[s].Level)<<1 > int(p.Level) {
+				if int(spellTable[s].Level)<<1 > int(p.Level) {
 					wpcvwShowTextPages(menu, 725)
 				} else {
 					setBit(p.KnownSpells[:], s, true)
@@ -529,7 +529,7 @@ func wpcvwDoUseItem(sheet, menu *Window, m, i int) {
 		return
 	}
 	power, s := int(rec.Unk28)/256, int(rec.Unk28)%256
-	if wpcvwSpells[s].Target == 1 {
+	if spellTable[s].Target == 1 {
 		if pvSpellTarget = chooseMember(menu, 504, -1); pvSpellTarget == -1 {
 			return
 		}
@@ -554,7 +554,7 @@ func printCipher(w *Window, v, color int) {
 // power, its damage, bonuses, powers and resistances, if power*3 beats its Unk62.
 func showItemInfo(menu *Window, m, i, power int) {
 	p := &party[m]
-	rec := wpcvwItemRec(int(p.Items[i].ID))
+	rec := itemRec(int(p.Items[i].ID))
 	w := createWindow(20, 8, 20, 12, 25, -1, 0, false)
 	fillWindow(w, 0, 1, true)
 	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
@@ -626,7 +626,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 			setCursor(w, 3, 4)
 			s := getMessage(454)
 			for b := 0; b < 11; b++ {
-				putChar(w, byte(byteAt(s, b)), maskColor(testBit(wpcvwMask16(rec.RaceMask), b)))
+				putChar(w, byte(byteAt(s, b)), maskColor(testBit(mask16(rec.RaceMask), b)))
 			}
 			w.CurX++
 			s = getMessage(455)
@@ -636,14 +636,14 @@ func showItemInfo(menu *Window, m, i, power int) {
 			setCursor(w, 3, 5)
 			s = getMessage(456)
 			for b := 0; b < 14; b++ {
-				putChar(w, byte(byteAt(s, b)), maskColor(testBit(wpcvwMask16(rec.ClassMask), b)))
+				putChar(w, byte(byteAt(s, b)), maskColor(testBit(mask16(rec.ClassMask), b)))
 			}
 		} else if spell && rec.Unk28 != 0 {
 			centered(getMessage(int(rec.Unk28)%256+4000), 5, 4)
 		}
 		if skill {
 			s, c := getMessage(1567), 9
-			if testBit(wpcvwMask16(rec.RaceMask), int(p.Race)) && testBit(wpcvwMask16(rec.ClassMask), int(p.Class)) && testBit([]byte{rec.SexMask, rec.Flags}, int(p.Sex)) {
+			if testBit(mask16(rec.RaceMask), int(p.Race)) && testBit(mask16(rec.ClassMask), int(p.Class)) && testBit([]byte{rec.SexMask, rec.Flags}, int(p.Sex)) {
 				s, c = getMessage(weaponSkill(rec.Icon)+5500), 2
 			}
 			centered(s, 6, c)
@@ -768,10 +768,10 @@ func showItemInfo(menu *Window, m, i, power int) {
 			for r := 0; r < 6; r++ {
 				v := min((int(rec.SkillBonus[2*r+1])+int(rec.SkillBonus[2*r+2]))/2, 99)
 				setCursor(w, r/3*9+1, r%3+row)
-				printString(w, getMessage(r+3950), wpcvwRealmColors[r])
+				printString(w, getMessage(r+3950), realmColors[r])
 				setCursor(w, r/3*9+7, r%3+row)
 				printInt(w, v, 2, 1)
-				putChar(w, '%', wpcvwRealmColors[r])
+				putChar(w, '%', realmColors[r])
 			}
 		}
 

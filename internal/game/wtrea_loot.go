@@ -133,10 +133,10 @@ func openTreasure() {
 		lootLabel[i] = getMessage(5005)
 		var kind string
 		if lootItem[i] > 0 {
-			rec := wpcvwItemRec(lootItem[i])
+			rec := itemRec(lootItem[i])
 			lootLabel[i] = replaceCharWithString(lootLabel[i], cstr(rec.Name[:]), '^')
 			lootQty[i] = 1
-			if wpcvwStackable[rec.Type] == 1 {
+			if stackable[rec.Type] == 1 {
 				lootQty[i] = int(uint8(rollDice(rec.Charges)))
 			}
 			lootWeight[i] = lootQty[i] * int(rec.Weight)
@@ -209,16 +209,16 @@ func markChestOpened() {
 func giveItemToMember(member, loot int) int {
 	p := &party[member]
 	id := lootItem[loot]
-	rec := wpcvwItemRec(id)
+	rec := itemRec(id)
 	var qty uint8
-	if wpcvwStackable[rec.Type] == 1 {
+	if stackable[rec.Type] == 1 {
 		qty = uint8(lootQty[loot])
 	} else {
 		qty = uint8(rollDice(rec.Charges))
 	}
 	stacks := func(i int) bool {
 		it := wpcvwGetItem(p, i)
-		return int(it.ID) == id && wpcvwStackable[it.Type] == 1 && int(it.Qty)+int(qty) <= 250
+		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+int(qty) <= 250
 	}
 	place := 1 // 1 a new pack slot, 2 a new swag slot, 0 a stack
 	slot := int(p.ItemCount)

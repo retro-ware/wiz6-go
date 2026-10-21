@@ -1051,7 +1051,7 @@ func chooseGroupActions(group, targetGroup int) {
 					limit += 15
 				}
 			}
-			if wpcvwSpells[spell].Target == 1 {
+			if spellTable[spell].Target == 1 {
 				if group == 6 {
 					if findMostWounded(m, 0) == 0 && findMostWounded(m, 6) == 0 {
 						act = -1
@@ -1060,7 +1060,7 @@ func chooseGroupActions(group, targetGroup int) {
 					act = -1
 				}
 			}
-			lv := min(max(int(m.Level)-int(wpcvwSpells[spell].Level)+1, 1), 6)
+			lv := min(max(int(m.Level)-int(spellTable[spell].Level)+1, 1), 6)
 			for random(int(m.Level))+1 < lv {
 				lv--
 			}

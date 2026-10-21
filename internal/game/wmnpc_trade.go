@@ -49,7 +49,7 @@ func npcCastSpell(win *Window, m int) {
 		return
 	}
 	power, s := r/256, r%256
-	sp := &wpcvwSpells[s]
+	sp := &spellTable[s]
 	p := &party[m]
 	p.SP[sp.Realm].Cur -= int16(int(sp.Cost) * power)
 	npcApplySpell(m, s, power, npcTarget)
@@ -66,12 +66,12 @@ func npcUseItem(win *Window, m int) {
 	if slot == -1 {
 		return
 	}
-	rec := wpcvwItemRec(int(wpcvwGetItem(&party[m], slot).ID))
+	rec := itemRec(int(wpcvwGetItem(&party[m], slot).ID))
 	if rec.Unk28 == 0 {
 		return
 	}
 	power, s := int(rec.Unk28)/256, int(rec.Unk28)%256
-	if wpcvwSpells[s].Target == 1 {
+	if spellTable[s].Target == 1 {
 		refreshAllWindows()
 		if npcTarget = npcChooseMember(2032, true); npcTarget == -1 {
 			return
@@ -96,7 +96,7 @@ func npcDrawItemList(win *Window, m, sel int, hi bool) {
 		setCursor(win, 2, row+2)
 		slot := npcItemSlots[sel+row]
 		it := wpcvwGetItem(p, slot)
-		stack := wpcvwStackable[it.Type] == 1
+		stack := stackable[it.Type] == 1
 		if hi && row == 0 {
 			printString(win, npcItemNames[slot], 3)
 			if stack {
@@ -121,7 +121,7 @@ func npcDrawItemList(win *Window, m, sel int, hi bool) {
 
 // npcAddItem (WMNPC 99e6) lists item slot of member m.
 func npcAddItem(m, slot int) {
-	rec := wpcvwItemRec(int(wpcvwGetItem(&party[m], slot).ID))
+	rec := itemRec(int(wpcvwGetItem(&party[m], slot).ID))
 	npcItemNames[slot] = cstr(rec.Name[:])
 	npcItemSlots = append(npcItemSlots, slot)
 }
@@ -248,12 +248,12 @@ func npcListWares() {
 func npcPriceWares() {
 	for _, i := range npcWareList {
 		w := &npcWares[i]
-		rec := wpcvwItemRec(w.ID)
+		rec := itemRec(w.ID)
 		w.Name = cstr(rec.Name[:])
 		w.Type = rec.Type
 		w.Qty = int(rec.Charges.Count)*int(rec.Charges.Sides) + int(rec.Charges.Base)
 		price := rec.Price
-		if wpcvwStackable[w.Type] == 1 {
+		if stackable[w.Type] == 1 {
 			price *= int32(w.Qty)
 		}
 		w.Price = int32(npcRec.Unk68[5]) * price / 100
@@ -297,7 +297,7 @@ func npcDrawWareList(win *Window, m, sel int, hi bool) {
 		}
 		setCursor(win, 2, row+2)
 		w := &npcWares[npcWareList[sel+row]]
-		stack := wpcvwStackable[w.Type] == 1
+		stack := stackable[w.Type] == 1
 		if hi && row == 0 {
 			printString(win, w.Name, 3)
 			if stack {
@@ -389,11 +389,11 @@ func npcSellItem(win *Window, m, slot int) int {
 	p := &party[m]
 	it := wpcvwGetItem(p, slot)
 	id := int(it.ID)
-	rec := wpcvwItemRec(id)
+	rec := itemRec(id)
 	full := max(int(rec.Charges.Count)*int(rec.Charges.Sides)+int(rec.Charges.Base), 1)
 	qty := max(int(it.Qty), 1)
 	price := rec.Price
-	if wpcvwStackable[rec.Type] == 1 {
+	if stackable[rec.Type] == 1 {
 		price *= int32(qty)
 	} else {
 		price = price * 100 / int32(full) * int32(qty) / 100
@@ -482,7 +482,7 @@ func npcGiveGold(win *Window, m int) int {
 		return 0
 	}
 	id := int(it.ID)
-	rec := wpcvwItemRec(id)
+	rec := itemRec(id)
 	if rec.Flags&2 != 0 && id != int(npcRec.Unk68[7]) && id != int(npcRec.Unk68[8]) {
 		npcRefuse(1529)
 		return 0

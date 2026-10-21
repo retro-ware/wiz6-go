@@ -1251,7 +1251,7 @@ func npcRunScript(m, n int) int {
 			}
 		case 10: // take item arg (a charge of a stack)
 			if k := npcFindItem(m, arg); k != -1 {
-				if wpcvwStackable[wpcvwGetItem(&party[m], k).Type] == 1 {
+				if stackable[wpcvwGetItem(&party[m], k).Type] == 1 {
 					wdoptUseItemCharge(m, k)
 				} else {
 					wdoptRemoveItem(m, k)
@@ -1506,13 +1506,13 @@ func npcFindItem(m, id int) int {
 // (-1 rolls the item's charges).
 func npcGiveItemToMember(member, id, qty int) int {
 	p := &party[member]
-	rec := wpcvwItemRec(id)
+	rec := itemRec(id)
 	if qty == -1 {
 		qty = rollDice(rec.Charges)
 	}
 	stacks := func(i int) bool {
 		it := wpcvwGetItem(p, i)
-		return int(it.ID) == id && wpcvwStackable[it.Type] == 1 && int(it.Qty)+qty <= 250
+		return int(it.ID) == id && stackable[it.Type] == 1 && int(it.Qty)+qty <= 250
 	}
 	place := 1 // 1 a new pack slot, 2 a new swag slot, 0 a stack
 	slot := int(p.ItemCount)

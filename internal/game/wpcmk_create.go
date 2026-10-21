@@ -943,7 +943,7 @@ func drawSpellWindow(w *Window) {
 func listRealmSpells(realm int) []int {
 	var l []int
 	for s := range 82 {
-		if int(wpcvwSpells[s].Realm) == realm && testBit(newPC.KnownSpells[:], s) {
+		if int(spellTable[s].Realm) == realm && testBit(newPC.KnownSpells[:], s) {
 			l = append(l, s)
 		}
 	}
@@ -963,12 +963,12 @@ func drawSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
 		setCursor(w, 1, d+3)
 		color := 18
 		if cursor && d == 0 {
-			color = wpcvwRealmColors[realm]
+			color = realmColors[realm]
 		}
 		printMessage(spells[i]+4000, w, color)
 		if cursor && d == 0 {
 			for w.CurX < 18 {
-				putChar(w, 32, wpcvwRealmColors[realm])
+				putChar(w, 32, realmColors[realm])
 			}
 		}
 	}
@@ -1011,7 +1011,7 @@ func selectSpell(sheet, win *Window) int {
 					drawListBox(list, true)
 				} else {
 					putCharAt(sheet, realm/3*10+1, realm%3<<1+14, 99)
-					printMessage(realm+3950, w, wpcvwRealmColors[realm])
+					printMessage(realm+3950, w, realmColors[realm])
 					clearWindowArea(w, 6, 14, 8, 14)
 					spells = listRealmSpells(realm)
 					none = len(spells) == 0
@@ -1079,12 +1079,12 @@ func selectSpell(sheet, win *Window) int {
 		setClickRegion(10, 255, 0, 0, 0)
 		for {
 			drawSpellList(list, realm, sel, true, spells)
-			cost := int(wpcvwSpells[spells[sel]].Cost)
+			cost := int(spellTable[spells[sel]].Cost)
 			setCursor(w, 6, 14)
 			if int(newPC.SP[realm].Cur) < cost {
-				printString(w, wpcvwNoPoints, wpcvwRealmColors[realm])
+				printString(w, wpcvwNoPoints, realmColors[realm])
 			} else {
-				printInt(w, cost, 3, wpcvwRealmColors[realm])
+				printInt(w, cost, 3, realmColors[realm])
 			}
 			key = getMenuInput(menuKeys, clickRegions[:])
 			if menuClicked == 1 {
@@ -1131,7 +1131,7 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 	newPC.KnownSpells = [12]uint8{}
 	n := 0
 	for s := range 82 {
-		sp := wpcvwSpells[s]
+		sp := spellTable[s]
 		if sp.Books&bit != 0 && sp.Level <= 1 && !testBit(saved[:], s) {
 			setBit(newPC.KnownSpells[:], s, true)
 			n++
@@ -1160,7 +1160,7 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 		newPC.SP[r].Cur = savedSP[r]
 	}
 	setBit(newPC.KnownSpells[:], spell, true)
-	sp := wpcvwSpells[spell]
+	sp := spellTable[spell]
 	add := int16(sp.Level)<<1 + 1
 	r := sp.Realm
 	if int16(sp.Cost) > newPC.SP[r].Max+add {

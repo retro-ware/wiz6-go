@@ -68,7 +68,7 @@ func wpopsDrawSpellWindow(w *Window, m int) {
 			x = 9
 		}
 		setCursor(w, x, r%3<<1+1)
-		printInt(w, int(party[m].SP[r].Cur), 3, wpcvwRealmColors[r])
+		printInt(w, int(party[m].SP[r].Cur), 3, realmColors[r])
 	}
 	for i := range 6 {
 		putCharAt(w, i+15, 3, byte(i+24))
@@ -97,11 +97,11 @@ func wpopsDrawSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
 		lit := hi && r == 0
 		color := 18
 		if lit {
-			color = wpcvwRealmColors[realm]
+			color = realmColors[realm]
 		}
 		printMessage(list[i]+4000, w, color)
 		for lit && w.CurX < 17 {
-			putChar(w, ' ', wpcvwRealmColors[realm])
+			putChar(w, ' ', realmColors[realm])
 		}
 	}
 	resumeWindowDraw(w)
@@ -149,7 +149,7 @@ func chooseCombatSpell(win *Window, m int) int {
 					drawListFrame(list, true)
 				} else {
 					pvBlinkX, pvBlinkY = realm/3*6+1, realm%3<<1+1
-					printMessage(realm+3950, book, wpcvwRealmColors[realm])
+					printMessage(realm+3950, book, realmColors[realm])
 					clearWindowArea(book, 18, 5, 20, 5)
 					count = wpcvwCountKnownSpells(m, realm, spells[:])
 					wpopsDrawSpellList(list, realm, 0, false, count, spells[:])
@@ -223,14 +223,14 @@ func chooseCombatSpell(win *Window, m int) int {
 		for k := 0; k != 5; {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[pos] + 4000)
-			pvBlinkColor[1] = wpcvwRealmColors[realm]
+			pvBlinkColor[1] = realmColors[realm]
 			wpopsDrawSpellList(list, realm, pos, true, count, spells[:])
-			cost := int(wpcvwSpells[spells[pos]].Cost)
+			cost := int(spellTable[spells[pos]].Cost)
 			setCursor(book, 18, 5)
 			if sp() < cost {
-				printString(book, spellNoCost, wpcvwRealmColors[realm])
+				printString(book, spellNoCost, realmColors[realm])
 			} else {
-				printInt(book, cost, 3, wpcvwRealmColors[realm])
+				printInt(book, cost, 3, realmColors[realm])
 			}
 			k = getCombatInput()
 			if menuClicked == 1 {
@@ -274,7 +274,7 @@ func chooseCombatSpell(win *Window, m int) int {
 	refreshWindow(list)
 	pvBlinkWin = book
 	level := 1
-	maxLevel := min(max(int(party[m].Level)-int(wpcvwSpells[spell].Level)+1, 1), 6)
+	maxLevel := min(max(int(party[m].Level)-int(spellTable[spell].Level)+1, 1), 6)
 	for i := range maxLevel {
 		region(i, i+15, 3)
 	}
@@ -284,9 +284,9 @@ func chooseCombatSpell(win *Window, m int) int {
 		setCursor(book, level+14, 3)
 		putChar(book, byte(level+23), 5)
 	}
-	rc := wpcvwRealmColors[realm]
+	rc := realmColors[realm]
 	for redraw := true; ; {
-		cost := int(wpcvwSpells[spell].Cost) * level
+		cost := int(spellTable[spell].Cost) * level
 		if redraw {
 			redraw = false
 			pvBlinkState = 1
@@ -354,7 +354,7 @@ func chooseCombatSpell(win *Window, m int) int {
 		return -1
 	}
 	c := &monsterGroups[0].Members[m]
-	switch wpcvwSpells[spell].Target {
+	switch spellTable[spell].Target {
 	case 1:
 		fillWindow(win, 32, 3, false)
 		refreshAllWindows()
@@ -427,9 +427,9 @@ func chooseCombatItem(win *Window, m int) int {
 	p := &party[m]
 	names, counts := make([]string, p.ItemCount), make([]int, p.ItemCount)
 	for i := range names {
-		rec := wpcvwItemRec(int(p.Items[i].ID))
+		rec := itemRec(int(p.Items[i].ID))
 		names[i] = cstr(rec.Name[:])
-		if wpcvwStackable[p.Items[i].Type] == 1 {
+		if stackable[p.Items[i].Type] == 1 {
 			counts[i] = int(p.Items[i].Qty)
 		}
 	}
@@ -485,11 +485,11 @@ func chooseCombatItem(win *Window, m int) int {
 	if onCancel {
 		return -1
 	}
-	rec := wpcvwItemRec(int(p.Items[pos].ID))
+	rec := itemRec(int(p.Items[pos].ID))
 	if rec.Unk28 != 0 {
 		spell := int(rec.Unk28) % 256
 		c := &monsterGroups[0].Members[m]
-		switch wpcvwSpells[spell].Target {
+		switch spellTable[spell].Target {
 		case 1:
 			fillWindow(win, 32, 3, false)
 			refreshAllWindows()

@@ -110,7 +110,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 }
 
 // spellPower (calc_spell_level_value, WMEXE 7816).
-func spellPower(spell, power int) int { return int(wpcvwSpells[spell].Level)*3 + power*3 - 6 }
+func spellPower(spell, power int) int { return int(spellTable[spell].Level)*3 + power*3 - 6 }
 
 // sideOf is 1 when the acting fighter is on the party's side (spells at "the other
 // side" hit the monsters).
@@ -121,11 +121,11 @@ func partySide() bool { return actGroup == 0 || actGroup == 6 }
 func doCastAction(c *Combatant) int {
 	monsterGroups[0].Count = uint8(partyCount)
 	power, spell := int(c.W10)/256, int(c.W10)%256
-	sp := &wpcvwSpells[spell]
+	sp := &spellTable[spell]
 	mexeName = combatantName(actGroup, actMember)
 	mexeVerb = getMessage(3308)
 	mexeText = getMessage(spell + 4000)
-	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, wpcvwRealmColors[sp.Realm])
+	printCombatLine(mexeName, mexeVerb, mexeText, nameColor(actGroup), 14, realmColors[sp.Realm])
 	mexeBackfire, mexeFizzle = 0, 0
 	grp := monsterGroups[actGroup]
 	if random(int(uint8(grp.B396[5]))+int(c.Level)+1) < int(uint8(grp.B396[5])) {
@@ -187,7 +187,7 @@ func doCastAction(c *Combatant) int {
 
 // checkMiscast keeps a backfire only for spells that can (flag 2) and a fizzle only for
 // those that can (flag 1).
-func checkMiscast(sp *WpcvwSpell) {
+func checkMiscast(sp *Spell) {
 	if mexeBackfire == 1 && sp.B3&2 == 0 {
 		mexeBackfire, mexeFizzle = 0, 1
 	}
@@ -214,7 +214,7 @@ func doUseItemAction(c *Combatant) {
 	if actGroup == 0 {
 		p := &party[actMember]
 		item := int(c.W10)
-		rec := wpcvwItemRec(int(p.Items[item].ID))
+		rec := itemRec(int(p.Items[item].ID))
 		mexeText = cstr(rec.Name[:])
 		if rec.Unk28 != 0 {
 			power, spell = int(rec.Unk28)/256, int(rec.Unk28)%256
@@ -235,7 +235,7 @@ func doUseItemAction(c *Combatant) {
 					skill = 22
 				default:
 					if p.Class == 6 {
-						power = int(p.Skills[12])/15 + 2 - int(wpcvwSpells[spell].Level)
+						power = int(p.Skills[12])/15 + 2 - int(spellTable[spell].Level)
 						mexeRaiseSkill(actMember, 12, 1)
 						power = min(max(power, 0), 6)
 					}
@@ -264,7 +264,7 @@ func doUseItemAction(c *Combatant) {
 		return
 	}
 	mexeBackfire, mexeFizzle = 0, 0
-	roll := random(int(wpcvwSpells[spell].Level)*10+power*5) - 10
+	roll := random(int(spellTable[spell].Level)*10+power*5) - 10
 	if actGroup == 0 {
 		if skill != -1 {
 			mexeRaiseSkill(actMember, skill, 3)
@@ -283,7 +283,7 @@ func doUseItemAction(c *Combatant) {
 			mexeBackfire = 1
 		}
 	}
-	checkMiscast(&wpcvwSpells[spell])
+	checkMiscast(&spellTable[spell])
 	if mexeFizzle == 1 {
 		combatDelay(2)
 		printMsgCentered(3201, 5, 2)

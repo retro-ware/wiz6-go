@@ -10,9 +10,6 @@ import (
 
 // WPCVW: the character sheet (game state 17: stats, inventory, equip, spells, trade,
 // swag, skills, modify) and the level up after combat (game state 22).
-//
-// Functions that the C duplicates in other overlays (see DUPLICATES.txt) carry a
-// wpcvw prefix until they are merged; so do the root helpers the root port lacks.
 
 func init() { wpcvwMain = wpcvwOvmain }
 
@@ -45,48 +42,6 @@ var (
 	pvClassAllowed [14]bool   // class_allowed (0x57e0)
 	pvChosenItem   int        // g43ca (root): the item the last choose_item picked
 )
-
-// Root data (ROOT data segment) WPCVW reads.
-var (
-	wpcvwTextColor   = 5                                          // g0002
-	wpcvwRealmColors = [6]int{4, 2, 3, 6, 7, 5}                   // realm_colors: fire water air earth mental magic
-	wpcvwStackable   = [18]uint8{2: 1, 4: 1, 12: 1, 15: 1, 16: 1} // g00cc: by item type, the item has a quantity
-	wpcvwRecipes     = [9][3]int16{                               // g0546: item a + item b make item c
-		{390, 396, 397}, {407, 407, 408}, {408, 408, 409}, {393, 440, 442}, {393, 441, 443},
-		{442, 441, 444}, {443, 440, 444}, {446, 447, 448}, {405, 480, 406},
-	}
-)
-
-// WpcvwSpell is one spell_table entry (ROOT 0x00de, 6 bytes).
-type WpcvwSpell struct {
-	Realm  uint8 // +0
-	Level  uint8 // +1 g00df
-	Cost   uint8 // +2 g00e0: spell points per power level
-	B3     uint8 // +3
-	Target uint8 // +4 g00e2: 1 cast on a chosen member
-	Books  uint8 // +5 g00e3: bit per spell book (8 mage 4 priest 2 alchemist 1 psionic)
-}
-
-// wpcvwSpells (ROOT spell_table): the 82 spells.
-var wpcvwSpells = [82]WpcvwSpell{
-	{0, 1, 2, 3, 2, 8}, {0, 2, 3, 2, 2, 1}, {0, 3, 6, 3, 2, 8}, {0, 3, 8, 1, 0, 8}, {0, 4, 8, 3, 2, 1},
-	{0, 5, 8, 3, 2, 4}, {0, 5, 9, 3, 2, 8}, {0, 6, 12, 3, 2, 8}, {0, 7, 16, 3, 0, 8}, {1, 1, 2, 3, 2, 8},
-	{1, 1, 2, 1, 1, 7}, {1, 1, 3, 3, 2, 10}, {1, 2, 4, 3, 2, 10}, {1, 2, 4, 3, 2, 6}, {1, 3, 5, 1, 0, 6},
-	{1, 3, 6, 1, 1, 7}, {1, 3, 8, 1, 0, 8}, {1, 4, 8, 3, 2, 8}, {1, 4, 5, 3, 2, 6}, {1, 5, 6, 3, 2, 8},
-	{2, 1, 2, 3, 2, 1}, {2, 2, 5, 1, 0, 8}, {2, 3, 4, 3, 2, 9}, {2, 3, 8, 1, 3, 9}, {2, 3, 4, 3, 2, 6},
-	{2, 4, 7, 3, 2, 1}, {2, 4, 8, 1, 1, 5}, {2, 4, 8, 3, 2, 4}, {2, 5, 10, 1, 0, 5}, {2, 5, 8, 3, 2, 1},
-	{2, 5, 12, 1, 0, 8}, {2, 6, 8, 3, 2, 1}, {2, 6, 10, 3, 2, 9}, {2, 6, 12, 3, 0, 9}, {2, 7, 16, 3, 0, 1},
-	{3, 1, 2, 2, 2, 1}, {3, 1, 2, 2, 2, 1}, {3, 1, 2, 1, 1, 8}, {3, 1, 3, 1, 0, 8}, {3, 2, 6, 1, 0, 10},
-	{3, 3, 6, 3, 2, 6}, {3, 3, 6, 1, 0, 4}, {3, 3, 7, 3, 2, 9}, {3, 4, 8, 3, 2, 1}, {3, 4, 8, 3, 2, 10},
-	{3, 5, 10, 1, 0, 1}, {3, 6, 18, 1, 1, 5}, {4, 1, 3, 1, 2, 2}, {4, 1, 3, 3, 2, 11}, {4, 1, 4, 1, 0, 6},
-	{4, 1, 5, 3, 2, 7}, {4, 2, 4, 1, 1, 7}, {4, 2, 4, 1, 0, 6}, {4, 2, 5, 1, 0, 10}, {4, 2, 8, 1, 0, 6},
-	{4, 3, 6, 3, 2, 6}, {4, 3, 8, 1, 2, 2}, {4, 3, 10, 1, 1, 6}, {4, 4, 8, 3, 2, 2}, {4, 4, 10, 1, 0, 2},
-	{4, 4, 10, 1, 0, 10}, {4, 5, 10, 3, 2, 6}, {4, 6, 8, 1, 0, 6}, {4, 7, 18, 3, 0, 2}, {5, 1, 4, 1, 1, 7},
-	{5, 1, 3, 3, 2, 4}, {5, 2, 4, 3, 2, 8}, {5, 2, 7, 1, 2, 4}, {5, 2, 4, 1, 0, 4}, {5, 3, 7, 1, 0, 10},
-	{5, 4, 8, 1, 0, 8}, {5, 4, 10, 1, 0, 12}, {5, 5, 7, 1, 2, 8}, {5, 5, 10, 1, 1, 4}, {5, 6, 12, 1, 2, 6},
-	{5, 6, 8, 1, 2, 12}, {5, 7, 18, 3, 0, 4}, {5, 7, 20, 1, 1, 14}, {5, 7, 20, 3, 0, 4}, {5, 0, 0, 0, 2, 0},
-	{5, 0, 0, 0, 0, 0}, {5, 0, 0, 0, 0, 0},
-}
 
 // WPCVW data segment strings (0x4fee..0x549e).
 const (
@@ -128,40 +83,32 @@ var (
 
 // ---------------------------------------------------------------- root helpers
 
-// wpcvwRegion is set_click_region with int arguments.
-func wpcvwRegion(i, x1, y1, x2, y2 int) {
+// setRegion is set_click_region with int arguments.
+func setRegion(i, x1, y1, x2, y2 int) {
 	setClickRegion(i, byte(x1), byte(y1), byte(x2), byte(y2))
 }
 
-// wpcvwEndRegions ends the click region table at i.
-func wpcvwEndRegions(i int) { setClickRegion(i, 255, 0, 0, 0) }
-
-// replaceCharWithString (ROOT 05c1) replaces the first ch in s with repl.
-func wpcvwReplaceChar(s, repl string, ch byte) string {
-	if i := strings.IndexByte(s, ch); i >= 0 {
-		return s[:i] + repl + s[i+1:]
-	}
-	return s
-}
+// endRegions ends the click region table at i.
+func endRegions(i int) { setClickRegion(i, 255, 0, 0, 0) }
 
 // copyThroughChar (ROOT 0c82) is s up to and including the first ch.
-func wpcvwCopyThroughChar(s string, ch byte) string {
+func copyThroughChar(s string, ch byte) string {
 	if i := strings.IndexByte(s, ch); i >= 0 {
 		return s[:i+1]
 	}
 	return s
 }
 
-// wpcvwItemRec reads item record id (access_scenario_record type 1).
-func wpcvwItemRec(id int) ItemRec {
+// itemRec reads item record id (access_scenario_record type 1).
+func itemRec(id int) ItemRec {
 	b := make([]byte, dbs.Size[ItemRec]())
 	accessScenarioRecord(dbs.RecItem, id, b, false)
 	rec, _ := dbs.Decode[ItemRec](b)
 	return rec
 }
 
-// wpcvwMask16 is a 16-bit mask as the byte pair test_bit reads.
-func wpcvwMask16(v uint16) []byte { return []byte{byte(v), byte(v >> 8)} }
+// mask16 is a 16-bit mask as the byte pair test_bit reads.
+func mask16(v uint16) []byte { return []byte{byte(v), byte(v >> 8)} }
 
 // The PC record has 22 item slots: 10 inventory, then up to 12 swag from 10 on. dbs.PC
 // types the first 20 as Items; the last two are the 16 bytes of Unk0E0.
@@ -185,9 +132,9 @@ func wpcvwSetItem(p *PC, i int, it Item) {
 	b[4], b[5], b[6], b[7] = it.Type, it.Icon, it.Qty, it.Flags
 }
 
-// wpcvwStaminaPct is the stamina percentage the sheet shows (16-bit, as the C computes it),
+// staminaPct is the stamina percentage the sheet shows (16-bit, as the C computes it),
 // at least 1 while there is any stamina.
-func wpcvwStaminaPct(p *PC) int {
+func staminaPct(p *PC) int {
 	n := int(int16(int(p.Stamina)*100)) / int(p.StaminaMax)
 	if n < 1 && p.Stamina > 0 {
 		n = 1
@@ -224,10 +171,10 @@ func wpcvwRunMenu(w *Window, firstMsg int, enabled []int, x0, y0, colW, rows, co
 		}
 		texts = append(texts, s)
 		items = append(items, item)
-		wpcvwRegion(n, int(w.X)+x, int(w.Y)+y, len(s)+int(w.X)+x-1, int(w.Y)+y)
+		setRegion(n, int(w.X)+x, int(w.Y)+y, len(s)+int(w.X)+x-1, int(w.Y)+y)
 	}
 	n := len(texts)
-	wpcvwEndRegions(n)
+	endRegions(n)
 	for {
 		if !mousePresent {
 			setCursor(w, sel/rows*colW+x0, sel%rows+y0)
@@ -468,7 +415,7 @@ func wpcvwShowTextPages(menu *Window, msg int) {
 			x = prevX
 		}
 		setCursor(w, x, row)
-		printString(w, s, wpcvwTextColor)
+		printString(w, s, textColor)
 		prevX = x
 		msg++
 	}

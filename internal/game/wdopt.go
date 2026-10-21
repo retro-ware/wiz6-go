@@ -723,10 +723,10 @@ func wdoptDoUseItem(m int) {
 	dpItemSlots = dpItemSlots[:0]
 	add := func(slot int) {
 		it := wpcvwGetItem(p, slot)
-		rec := wpcvwItemRec(int(it.ID))
+		rec := itemRec(int(it.ID))
 		dpItemNames[slot] = cstr(rec.Name[:])
 		dpItemQty[slot] = 0
-		if wpcvwStackable[it.Type] == 1 {
+		if stackable[it.Type] == 1 {
 			dpItemQty[slot] = int(it.Qty)
 		}
 		dpItemSlots = append(dpItemSlots, slot)
@@ -795,11 +795,11 @@ func wdoptDoUseItem(m int) {
 		if wdoptItemLocationEvent(m, slot) {
 			wdoptUseItemCharge(m, slot)
 		} else {
-			rec := wpcvwItemRec(int(wpcvwGetItem(p, slot).ID))
+			rec := itemRec(int(wpcvwGetItem(p, slot).ID))
 			switch {
 			case rec.Unk28 != 0:
 				level, spell := int(rec.Unk28)/256, int(rec.Unk28)%256
-				if wpcvwSpells[spell].Target == 1 {
+				if spellTable[spell].Target == 1 {
 					refreshAllWindows()
 					if dpTarget = wdoptChooseTarget(2032); dpTarget == -1 {
 						spell = -1
@@ -851,7 +851,7 @@ func wdoptDoCastSpell(m int) {
 	if s != -1 {
 		level, spell := s/256, s%256
 		p := &party[m]
-		sp := &wpcvwSpells[spell]
+		sp := &spellTable[spell]
 		p.SP[sp.Realm].Cur -= int16(int(sp.Cost) * level)
 		wdoptApplySpell(m, spell, level, dpTarget)
 		if p.Stamina -= int16(random(level) + int(sp.Level) + level); p.Stamina < 0 {

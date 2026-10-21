@@ -54,8 +54,8 @@ func canEquipItem(m, pos int, out *[10]int) int {
 		if slot != pos {
 			continue
 		}
-		rec := wpcvwItemRec(int(it.ID))
-		if testBit(wpcvwMask16(rec.ClassMask), int(p.Class)) && testBit(wpcvwMask16(rec.RaceMask), int(p.Race)) &&
+		rec := itemRec(int(it.ID))
+		if testBit(mask16(rec.ClassMask), int(p.Class)) && testBit(mask16(rec.RaceMask), int(p.Race)) &&
 			testBit([]byte{rec.SexMask, rec.Flags}, int(p.Sex)) {
 			out[n] = i
 			n++
@@ -281,10 +281,10 @@ func doEquipItems(sheet, menu *Window, m int) {
 			setCursor(sheet, 21, cand[k]+9)
 			putChar(sheet, 100, 5)
 			printString(sheet, pvItemNames[cand[k]], 4)
-			wpcvwRegion(k, sx+21, sy+cand[k]+9, sx+36, sy+cand[k]+9)
+			setRegion(k, sx+21, sy+cand[k]+9, sx+36, sy+cand[k]+9)
 		}
-		wpcvwRegion(n, int(menu.X)+cx, int(menu.Y)+cy, len(cancel)+int(menu.X)+cx-1, int(menu.Y)+cy)
-		wpcvwEndRegions(n + 1)
+		setRegion(n, int(menu.X)+cx, int(menu.Y)+cy, len(cancel)+int(menu.X)+cx-1, int(menu.Y)+cy)
+		endRegions(n + 1)
 		sel := -1
 		for {
 			if !mousePresent {
@@ -326,7 +326,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 			i := cand[sel]
 			p.Equipped[s] = uint8(i)
 			p.Items[i].Flags |= 1
-			rec := wpcvwItemRec(int(p.Items[i].ID))
+			rec := itemRec(int(p.Items[i].ID))
 			power[s] = int(rec.Unk68)
 			if s <= 1 {
 				h := &p.Hands[s]
