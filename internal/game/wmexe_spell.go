@@ -55,6 +55,9 @@ func spellAnimation(g, i, kind int, flash bool) {
 // playSpellAnimation (play_spell_animation, WMEXE 695e) draws the three steps of spell
 // kind cast by fighter i of group g at group tg, member ti.
 func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
+	if dtLog != nil {
+		return
+	}
 	if g == 0 && fighter(g, i).B31 == 0 {
 		return
 	}

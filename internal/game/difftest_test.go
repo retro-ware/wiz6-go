@@ -7,10 +7,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime/debug"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/retro-ware/wiz6-go/internal/dbs"
 )
 
 // Differential tests: each case in testdata/diff/FUNC.json.gz was produced by running the
@@ -31,6 +34,15 @@ type diffCase struct {
 // diffFuncs runs the Go port of each tested original function.
 var diffFuncs = map[string]func(a []int) int{
 	"f7ddc": func(a []int) int { return damageRoll(a[0], a[1], a[2], a[3], a[4], a[5], a[6]) },
+	"f4c48": func(a []int) int { doAttack(actor(), a[0], a[1]); return 0 },
+	"f47a3": func(a []int) int {
+		var fx attackFx
+		for k := range fx {
+			fx[k] = uint8(a[2+k])
+		}
+		applyHitEffects(actor(), fx, a[0], a[1])
+		return 0
+	},
 	"f4572": func(a []int) int { return fatigueMod(a[0], a[1], a[2]) },
 	"f77d4": func(a []int) int { mexeRaiseSkill(a[0], a[1], a[2]); return 0 },
 	"f7254": func(a []int) int { reduceStamina(fighter(a[0], a[1]), a[2]); return 0 },
@@ -66,7 +78,9 @@ var diffRoots = map[string]any{
 	"actMember": &actMember, "actGroup": &actGroup, "monsterGroupCount": &monsterGroupCount,
 	"mexeMsgMode": &mexeMsgMode, "hdr": &hdr, "viewPosGroup": &viewPosGroup,
 	"monsterJitterX": &monsterJitterX, "monsterJitterY": &monsterJitterY,
-	"animCycle": &animCycle, "mexeEffect": &mexeEffect,
+	"animCycle": &animCycle, "mexeEffect": &mexeEffect, "mexeBackfire": &mexeBackfire, "mexeDelayed": &mexeDelayed,
+	"partyCounters": &partyCounters, "g4352": &g4352, "initiative": &initiative, "g4fcc": &g4fcc,
+	"combatOver": &combatOver, "viewRowsOpen": &viewRowsOpen,
 	"monsterGroups": &monsterGroups, "groupMonsterRec": &groupMonsterRec,
 }
 
@@ -123,6 +137,13 @@ func resetDiffState() {
 	for g := range monsterGroups {
 		monsterGroups[g] = &MonsterGroup{}
 		groupMonsterRec[g] = &MonsterRec{}
+	}
+	if scen == nil {
+		dir := os.Getenv("WIZ6_DATA")
+		if dir == "" {
+			dir = "../../../wiz6-re/gog/x/app"
+		}
+		scen, _ = dbs.OpenScenario(dir) // nil: functions that read records fail
 	}
 	if partyPictureWin == nil {
 		partyPictureWin = createWindow(0, 0, 40, 5, 8, -1, 0, false)
@@ -194,7 +215,7 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 	}
 	defer func() {
 		if r := recover(); r != nil {
-			msg = fmt.Sprint("panic: ", r)
+			msg = fmt.Sprint("panic: ", r, " ", panicSite())
 		}
 	}()
 	ret := run(append([]int(nil), c.Args...))
@@ -221,4 +242,15 @@ func runDiffCase(t *testing.T, run func([]int) int, c diffCase) (msg string) {
 		diffs = append(diffs, fmt.Sprintf("log %v, want %v", log, c.Log))
 	}
 	return strings.Join(diffs, "; ")
+}
+
+// panicSite is the innermost game-code line of a panic's stack.
+func panicSite() string {
+	var at []string
+	for _, l := range strings.Split(string(debug.Stack()), "\n") {
+		if strings.Contains(l, "internal/game/") && !strings.Contains(l, "_test.go") && len(at) < 4 {
+			at = append(at, filepath.Base(strings.Fields(l)[0]))
+		}
+	}
+	return strings.Join(at, " < ")
 }

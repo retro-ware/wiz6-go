@@ -136,10 +136,10 @@ func showCombatMsg(n int) {
 // combatDelay (combat_delay, WMEXE 774b) animates the view for tenths of a second; a
 // click or Enter ends it early.
 func combatDelay(tenths int) {
+	mexeDelayed = 1
 	if dtLog != nil {
 		return
 	}
-	mexeDelayed = 1
 	flushKeys()
 	for n := tenths * 10; n > 0; n-- {
 		if checkScreenClick() {
@@ -156,6 +156,9 @@ func combatDelay(tenths int) {
 // mexeAnimateStep (animate_step, WMEXE 765a) is WPOPS's view tick plus the hit flashes and
 // their sound.
 func mexeAnimateStep() {
+	if dtLog != nil {
+		return
+	}
 	switch viewAnimState {
 	case -3:
 		drvShowWindow(pictureWin)

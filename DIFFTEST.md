@@ -25,3 +25,5 @@ Regenerate cases with `../wiz6-re/.venv/bin/python ../wiz6-re/tools/difftest/gen
 | WMEXE | fc4e7 | nextLivingMember | 1000 | match |
 | WMEXE | fc546 | nextTargetMonster | 1000 | match |
 | WMEXE | 7816 calc_spell_level_value | spellPower | 1000 | match |
+| WMEXE | 4c48 do_attack | doAttack | 1000 | match (inputs: thrown attacks need an item; the C indexes item 255 otherwise, Go guards) |
+| WMEXE | 47a3 apply_hit_effects | applyHitEffects | 1000 | match |

@@ -80,6 +80,9 @@ func startSound(slot, rate, level, flags int) {
 
 // stopSound (ROOT 3640) stops the sound playing.
 func stopSound() {
+	if dtLog != nil {
+		return
+	}
 	if voice >= 0 {
 		host.AudioStop(voice)
 		voice = -1
