@@ -28,7 +28,7 @@
 - [ ] Exploration, combat, NPCs
 
 ## Cleanup
-- [ ] Merge duplicated/prefixed functions (wpcvw*/wpops* variants), TODO(merge) globals into state.go
-- [ ] PC.Items is 22 slots (20 + 2 in Unk0E0); spriteList has 12 entries
-- [ ] fillWindow hi flag misuse in WBASE / test hooks (attribute 0x30 vs 3)
+- [x] Merge duplicated/prefixed functions (wpcvw*/wpops* variants), TODO(merge) globals into state.go
+- [x] PC.Items is 22 slots (20 + 2 in Unk0E0); spriteList has 12 entries
+- [x] fillWindow hi flag misuse in WBASE / test hooks (attribute 0x30 vs 3)
 - [ ] DOSBox-X capture harness for side-by-side comparison
