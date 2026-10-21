@@ -239,6 +239,7 @@ func keyAvailable(class int) bool {
 		keyBuf = keyBuf[1:]
 	}
 	if len(keyBuf) == 0 {
+		drv.Present() // the C draws straight to the screen: show what was drawn before waiting
 		host.Sleep()
 		return false
 	}
