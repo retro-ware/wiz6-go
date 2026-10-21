@@ -165,7 +165,7 @@ func trAnimate() {
 		animPhase = (animPhase + 1) % 2
 		animateTreasureView()
 	} else {
-		wmazeF4655()
+		idleStep()
 	}
 	trAnimCounter = (trAnimCounter + 1) % 10
 }
@@ -206,7 +206,7 @@ func trWaitMorePrompt() {
 			}
 			blink = (blink + 1) % 4
 		} else {
-			wmazeF4655()
+			idleStep()
 		}
 		trAnimCounter = (trAnimCounter + 1) % 10
 	}
@@ -318,7 +318,7 @@ func getChestInput(keys string, regions []byte) int {
 				blinkSelection()
 			}
 		} else {
-			wmazeF4655()
+			idleStep()
 		}
 		trAnimCounter = (trAnimCounter + 1) % 10
 	}

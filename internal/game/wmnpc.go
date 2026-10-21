@@ -760,7 +760,7 @@ func npcMenuSelect(win *Window, firstMsg int, enabled []int, x0, y0, width, rows
 		setClickRegion(n+1, 255, 0, 0, 0)
 		sel = -1
 	}
-	plain := func() { wmazeF5a9d(win, sel, width, rows, x0, y0, labels[sel]) }
+	plain := func() { redrawMenuItem(win, sel, width, rows, x0, y0, labels[sel]) }
 	for {
 		if !mousePresent {
 			if sel == -1 {

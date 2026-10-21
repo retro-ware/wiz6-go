@@ -14,7 +14,7 @@ func partyCell() int { return int(partyBlock)<<6 | int(cellY)<<3 | int(cellX) }
 // startEncounter rolls a random encounter for the party's block and enters combat
 // (state 10).
 func startEncounter(g4338v int16) {
-	g433a = wmazeF467b(wmazeF46e8(int(partyBlock)))
+	g433a = randomEncounterMonster(encounterTable(int(partyBlock)))
 	g4338 = g4338v
 	g4354 = 0
 	gameState = 10
@@ -313,7 +313,7 @@ func mazePartyMenu() {
 }
 
 // f6f30 (WMAZE) puts four glyphs of font 2 as a 2x2 block at (x, y) of win.
-func wmazeF6f30(win *Window, x, y int, a, b, c, d byte) {
+func putGlyphs2x2(win *Window, x, y int, a, b, c, d byte) {
 	setCursor(win, x, y)
 	putCharHi(win, a, 2)
 	putCharHi(win, b, 2)
@@ -323,7 +323,7 @@ func wmazeF6f30(win *Window, x, y int, a, b, c, d byte) {
 }
 
 // f6fa3 (WMAZE) puts glyphs first..first+7 of font 2 as a 4x2 block at (x, y) of win.
-func wmazeF6fa3(win *Window, x, y int, first byte) {
+func putGlyphs4x2(win *Window, x, y int, first byte) {
 	setCursor(win, x, y)
 	for i := range byte(4) {
 		putCharHi(win, first+i, 2)
@@ -453,15 +453,15 @@ func mazeMainLoop() {
 			g4f88 = (g4f88 + 1) % 2
 			deferWindowDraw(g4fb0)
 			if g4f88 == 0 {
-				wmazeF6f30(g4fb0, 13, 1, 5, 6, 7, 8)
-				wmazeF6f30(g4fb0, 10, 3, 1, 13, 3, 14)
-				wmazeF6fa3(g4fb0, 12, 3, 17)
-				wmazeF6f30(g4fb0, 16, 3, 15, 10, 16, 12)
+				putGlyphs2x2(g4fb0, 13, 1, 5, 6, 7, 8)
+				putGlyphs2x2(g4fb0, 10, 3, 1, 13, 3, 14)
+				putGlyphs4x2(g4fb0, 12, 3, 17)
+				putGlyphs2x2(g4fb0, 16, 3, 15, 10, 16, 12)
 			} else {
-				wmazeF6f30(g4fb0, 13, 1, 5, 6, 7, 8)
-				wmazeF6f30(g4fb0, 10, 3, 1, 2, 3, 4)
-				wmazeF6fa3(g4fb0, 12, 3, 25)
-				wmazeF6f30(g4fb0, 16, 3, 9, 10, 11, 12)
+				putGlyphs2x2(g4fb0, 13, 1, 5, 6, 7, 8)
+				putGlyphs2x2(g4fb0, 10, 3, 1, 2, 3, 4)
+				putGlyphs4x2(g4fb0, 12, 3, 25)
+				putGlyphs2x2(g4fb0, 16, 3, 9, 10, 11, 12)
 			}
 			resumeWindowDraw(g4fb0)
 			refreshWindow(g4fb0)
@@ -620,7 +620,7 @@ func fleeParty(steps int) {
 			side = 1
 		}
 		steps--
-		if steps <= 0 || wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), int(cellEventIndex)) != -1 {
+		if steps <= 0 || findCellEvent(int(cellX), int(cellY), int(partyBlock), int(cellEventIndex)) != -1 {
 			break
 		}
 	}

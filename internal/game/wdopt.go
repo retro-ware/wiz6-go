@@ -56,7 +56,7 @@ func viewAnimStep() {
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {
-		wmazeF4655()
+		idleStep()
 	}
 	dpAnimCount = (dpAnimCount + 1) % 10
 }
@@ -88,7 +88,7 @@ func getMenuChoiceView(keys string) int {
 				blinkCursor()
 			}
 		} else {
-			wmazeF4655()
+			idleStep()
 		}
 		dpAnimCount = (dpAnimCount + 1) % 10
 	}
@@ -267,19 +267,19 @@ func wdoptShowResult(msg int) {
 	eraseWindow(mainWindow, false)
 }
 
-// wdoptLockAhead is whether event ev is a lock (kind 7) on the party's facing.
-func wdoptLockAhead(ev int) bool {
+// isLockAhead is whether event ev is a lock (kind 7) on the party's facing.
+func isLockAhead(ev int) bool {
 	b := extractBits(int(uint16(mazeB.DirBits[ev])), int(partyFacing)<<1, 2)
 	return mazeB.Kind[ev] == 7 && (b == 1 || b == 2)
 }
 
 // find_lock_event (WDOPT 50e8) is the lock event on the party's cell and facing, or -1.
-func wdoptFindLockEvent() int {
+func findLockEvent() int {
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
-		if ev = wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
+		if ev = findCellEvent(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			return -1
 		}
-		if wdoptLockAhead(ev) {
+		if isLockAhead(ev) {
 			return ev
 		}
 	}
@@ -287,8 +287,8 @@ func wdoptFindLockEvent() int {
 
 // try_open_lock (WDOPT 517b) is the unlocking spell of the given power on the lock
 // ahead: it opens, resists (1) or is jammed (2), message 2113+result; -1 with no lock.
-func wdoptTryOpenLock(power int) int {
-	ev := wdoptFindLockEvent()
+func tryOpenLock(power int) int {
+	ev := findLockEvent()
 	if ev == -1 {
 		return -1
 	}
@@ -302,7 +302,7 @@ func wdoptTryOpenLock(power int) int {
 		result = 2
 	}
 	if result == 0 {
-		wmazeFce81(ev)
+		openLockAhead(ev)
 	}
 	dpResultMsg, dpResultBeep = result+2113, result
 	return 0
@@ -613,7 +613,7 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 			t.Unk026++
 		}
 	case 39:
-		wdoptTryOpenLock(power)
+		tryOpenLock(power)
 	case 60:
 		wdoptShowOverheadMap(power)
 	case 80:
@@ -634,7 +634,7 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 func wdoptItemLocationEvent(m, slot int) bool {
 	id := party[m].Items[slot].ID
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
-		if ev = wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
+		if ev = findCellEvent(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			return false
 		}
 		bits := int(uint16(mazeB.DirBits[ev]))
@@ -654,8 +654,8 @@ func wdoptItemLocationEvent(m, slot int) bool {
 			cellEventIndex = int16(ev + 1)
 			return true
 		}
-		if wdoptLockAhead(ev) && id == mazeB.Unk288[ev] {
-			wmazeFce81(ev)
+		if isLockAhead(ev) && id == mazeB.Unk288[ev] {
+			openLockAhead(ev)
 			dpResultMsg, dpResultBeep = 2113, 0
 			return true
 		}

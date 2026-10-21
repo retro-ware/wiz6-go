@@ -13,9 +13,9 @@ func byteAt(s string, i int) int {
 	return int(s[i])
 }
 
-// wmazeFb53d (WMAZE b53d): event 21, open or close a wall or door somewhere in the map,
+// wallChangeEvent (WMAZE b53d): event 21, open or close a wall or door somewhere in the map,
 // animating it when the party faces it.
-func wmazeFb53d() {
+func wallChangeEvent() {
 	ev := int(cellEventIndex)
 	bits := int(mazeB.DirBits[ev])
 	doorA := int(mazeB.Data[ev]) / 256
@@ -116,8 +116,8 @@ func wmazeFb53d() {
 	}
 }
 
-// wmazeFb9a2 (WMAZE b9a2): event 22, clear one of two level flags by chance.
-func wmazeFb9a2() {
+// clearFlagEvent (WMAZE b9a2): event 22, clear one of two level flags by chance.
+func clearFlagEvent() {
 	waitAnimating(5)
 	ev := int(cellEventIndex)
 	bits := int(mazeB.DirBits[ev])
@@ -143,8 +143,8 @@ func wmazeFb9a2() {
 	setEventFlags(extractBits(int(mazeB.DirBits[ev]), 9, 2))
 }
 
-// wmazeFbaed (WMAZE baed): event 23, change a cell's floor and feature.
-func wmazeFbaed() {
+// changeFloorEvent (WMAZE baed): event 23, change a cell's floor and feature.
+func changeFloorEvent() {
 	ev := int(cellEventIndex)
 	bits := int(mazeB.DirBits[ev])
 	cell := extractBits(bits, 6, 4)<<6 + extractBits(bits, 3, 3)<<3 + extractBits(bits, 0, 3)
@@ -318,8 +318,8 @@ func riddleEvent() {
 	resumeWindowDraw(bottomLineWin)
 }
 
-// wmazeFc363 (WMAZE c363): event 24, swap two level flags on a scenario header bit.
-func wmazeFc363() {
+// swapFlagsEvent (WMAZE c363): event 24, swap two level flags on a scenario header bit.
+func swapFlagsEvent() {
 	ev := int(cellEventIndex)
 	set := testBit(hdr.Unk140[20:], int(mazeB.Data[ev])) // DS:0x3498
 	swapLevelFlags(int(mazeB.Unk288[ev]), int(mazeB.Param[ev]), set)
@@ -459,7 +459,7 @@ func runCellEvents() {
 	g4f8a = -1
 	eventScreenDirty = 0
 	for {
-		cellEventIndex = int16(wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), int(cellEventIndex)))
+		cellEventIndex = int16(findCellEvent(int(cellX), int(cellY), int(partyBlock), int(cellEventIndex)))
 		if cellEventIndex == -1 {
 			break
 		}
@@ -469,7 +469,7 @@ func runCellEvents() {
 			doTeleportEvent()
 		case 2:
 			if mzG5034 != 0 {
-				wmazeF9f8c()
+				spinnerEvent()
 			}
 		case 3:
 			doMessageEvent()
@@ -480,7 +480,7 @@ func runCellEvents() {
 		case 6:
 			checkPartyItemEvent()
 		case 7:
-			wmazeFa5cd()
+			setDirValuesEvent()
 		case 8:
 			if mazeB.Data[cellEventIndex] > 0 {
 				showMessageText(int(mazeB.Data[cellEventIndex]), 0)
@@ -498,19 +498,19 @@ func runCellEvents() {
 		case 13:
 			riddleEvent()
 		case 16:
-			wmazeFb123()
+			textEvent()
 		case 17:
 			wmazeFa68d()
 		case 18:
 			wmazeFa385()
 		case 21:
-			wmazeFb53d()
+			wallChangeEvent()
 		case 22:
-			wmazeFb9a2()
+			clearFlagEvent()
 		case 23:
-			wmazeFbaed()
+			changeFloorEvent()
 		case 24:
-			wmazeFc363()
+			swapFlagsEvent()
 		case 25:
 			applyMemberEffects()
 		}
@@ -526,14 +526,14 @@ func runCellEvents() {
 	}
 }
 
-// wmazeFca32 (WMAZE ca32) clears bits bit and bit+1 of event ev's direction bits.
-func wmazeFca32(ev, bit int) {
+// clearDirBits (WMAZE ca32) clears bits bit and bit+1 of event ev's direction bits.
+func clearDirBits(ev, bit int) {
 	mazeB.DirBits[ev] &^= 3 << bit
 }
 
-// wmazeFca72 (WMAZE ca72): searching found a hidden door in front of the party; put it
+// revealHiddenDoor (WMAZE ca72): searching found a hidden door in front of the party; put it
 // into the walls.
-func wmazeFca72(ev int) {
+func revealHiddenDoor(ev int) {
 	x, y, blk := cellX, cellY, partyBlock
 	mx := int(mazeA.BlockX[blk]) + int(x)
 	my := int(mazeA.BlockY[blk]) + int(y)
@@ -555,7 +555,7 @@ func wmazeFca72(ev int) {
 	setDoorFeature(mx, my, 0, 0, 1)
 	redrawMazeView()
 	playSound(4)
-	wmazeFca32(ev, int(partyFacing)<<1+8)
+	clearDirBits(ev, int(partyFacing)<<1+8)
 }
 
 // tryFlagEventAt (WMAZE cc10) sets the level flag of flag event ev if it applies to the
@@ -588,12 +588,12 @@ func searchCell() {
 		waitAnimating(messageDelay)
 	}
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
-		if ev = wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
+		if ev = findCellEvent(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			break
 		}
 		k := mazeB.Kind[ev]
 		if k == 7 && extractBits(int(mazeB.DirBits[ev]), int(partyFacing)<<1+8, 2) == 2 {
-			wmazeFca72(ev)
+			revealHiddenDoor(ev)
 			return
 		}
 		if k == 8 && tryFlagEventAt(ev) {
@@ -608,16 +608,16 @@ func searchCell() {
 	eraseWindow(mainWindow, true)
 }
 
-// wmazeFce13 (WMAZE ce13) sets lock event ev's state for the party's facing to 2 (jammed).
-func wmazeFce13(ev int) {
+// jamLock (WMAZE ce13) sets lock event ev's state for the party's facing to 2 (jammed).
+func jamLock(ev int) {
 	b := int(partyFacing) << 1
 	mazeB.DirBits[ev] = mazeB.DirBits[ev]&^(1<<b) | 1<<(b+1)
 }
 
-// wmazeFce81 (WMAZE ce81): the lock ahead opens.
-func wmazeFce81(ev int) {
+// openLockAhead (WMAZE ce81): the lock ahead opens.
+func openLockAhead(ev int) {
 	curEvent[partyFacing] = 0
-	wmazeFca32(ev, int(partyFacing)<<1)
+	clearDirBits(ev, int(partyFacing)<<1)
 	playSound(4)
 }
 
@@ -715,10 +715,10 @@ func forceLock(member, ev int) int {
 	}
 	if result != 0 {
 		if random(3) == 0 {
-			wmazeFce13(ev)
+			jamLock(ev)
 		}
 	} else {
-		wmazeFce81(ev)
+		openLockAhead(ev)
 	}
 	lockResult(win, result)
 	return result
@@ -785,10 +785,10 @@ func pickLock(member, ev int) int {
 			trySkillGain(member, 15, 1)
 		}
 		if random(3) == 0 {
-			wmazeFce13(ev)
+			jamLock(ev)
 		}
 	} else {
-		wmazeFce81(ev)
+		openLockAhead(ev)
 		if thief {
 			trySkillGain(member, 15, 4)
 		}
@@ -855,7 +855,7 @@ func checkLockedDoorAt(ev int) bool {
 // handleLockedDoor (WMAZE db1e): the party tries the door or chest ahead.
 func handleLockedDoor() {
 	for ev := int(mazeB.FirstEvent[partyBlock]); ; ev++ {
-		if ev = wmazeF7bd2(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
+		if ev = findCellEvent(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			return
 		}
 		if mazeB.Kind[ev] == 3 && checkLockedDoorAt(ev) {

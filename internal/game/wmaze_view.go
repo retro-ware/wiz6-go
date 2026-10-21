@@ -66,15 +66,15 @@ func getWallInDirection(dir, block, cx, cy, x, y int) int {
 	case 1:
 		return getBitfield(mazeA.Walls1[:], cellIndex(block, cx, cy), 2)
 	case 2:
-		return wmazeF7c41(x, y, cx, cy, block)
+		return wallsSouthOf(x, y, cx, cy, block)
 	case 3:
-		return wmazeF7ca6(x, y, cx, cy, block)
+		return wallsWestOf(x, y, cx, cy, block)
 	}
 	return 0
 }
 
-// wmazeF7ade (WMAZE 7ade) is block if map position (x, y) lies in it, else -1.
-func wmazeF7ade(block, x, y int) int {
+// blockAt (WMAZE 7ade) is block if map position (x, y) lies in it, else -1.
+func blockAt(block, x, y int) int {
 	bx, by := int(mazeA.BlockX[block]), int(mazeA.BlockY[block])
 	if bx > x || bx+7 < x || by > y || by+7 < y {
 		return -1
@@ -86,13 +86,13 @@ func wmazeF7ade(block, x, y int) int {
 // *block, then the last found, then the others in turn, and sets the cell in it;
 // 1 if no block holds it.
 func moveToMazeCell(cx, cy, block *int16, x, y int) int {
-	b := wmazeF7ade(int(*block), x, y)
+	b := blockAt(int(*block), x, y)
 	if b == -1 {
-		b = wmazeF7ade(int(g4fa6), x, y)
+		b = blockAt(int(g4fa6), x, y)
 	}
 	if b == -1 {
 		for i := (int(*block) + 1) % 12; ; {
-			if b = wmazeF7ade(i, x, y); b != -1 {
+			if b = blockAt(i, x, y); b != -1 {
 				break
 			}
 			if i = (i + 1) % 12; i == int(*block) {
@@ -107,9 +107,9 @@ func moveToMazeCell(cx, cy, block *int16, x, y int) int {
 	return 0
 }
 
-// wmazeF7bd2 (WMAZE 7bd2) is the first active, not yet flagged event of block at
+// findCellEvent (WMAZE 7bd2) is the first active, not yet flagged event of block at
 // (cx, cy) from event index start on, or -1.
-func wmazeF7bd2(cx, cy, block, start int) int {
+func findCellEvent(cx, cy, block, start int) int {
 	for i := start; i < 144; i++ {
 		if int(mazeB.Unk1296[i]) != block {
 			return -1
@@ -130,8 +130,8 @@ func openEdge() int {
 	return 0
 }
 
-// wmazeF7c41 (WMAZE 7c41) is the Walls0 code of the cell south of map position (x, y).
-func wmazeF7c41(x, y, cx, cy, block int) int {
+// wallsSouthOf (WMAZE 7c41) is the Walls0 code of the cell south of map position (x, y).
+func wallsSouthOf(x, y, cx, cy, block int) int {
 	c, r, b := int16(cx), int16(cy), int16(block)
 	if moveToMazeCell(&c, &r, &b, x, y-1) != 0 {
 		return openEdge()
@@ -139,8 +139,8 @@ func wmazeF7c41(x, y, cx, cy, block int) int {
 	return getBitfield(mazeA.Walls0[:], cellIndex(int(b), int(c), int(r)), 2)
 }
 
-// wmazeF7ca6 (WMAZE 7ca6) is the Walls1 code of the cell west of map position (x, y).
-func wmazeF7ca6(x, y, cx, cy, block int) int {
+// wallsWestOf (WMAZE 7ca6) is the Walls1 code of the cell west of map position (x, y).
+func wallsWestOf(x, y, cx, cy, block int) int {
 	c, r, b := int16(cx), int16(cy), int16(block)
 	if moveToMazeCell(&c, &r, &b, x-1, y) != 0 {
 		return openEdge()
@@ -227,9 +227,9 @@ func getFrontWall(x, y, cx, cy, block int16, side int) int {
 	case 1:
 		w = getBitfield(mazeA.Walls1[:], cell, 2)
 	case 2:
-		w = wmazeF7c41(int(x), int(y), int(cx), int(cy), int(block))
+		w = wallsSouthOf(int(x), int(y), int(cx), int(cy), int(block))
 	case 3:
-		w = wmazeF7ca6(int(x), int(y), int(cx), int(cy), int(block))
+		w = wallsWestOf(int(x), int(y), int(cx), int(cy), int(block))
 	}
 	floor := getBitfield(mazeA.Floor[:], cell, 4)
 	feat := getBitfield(mazeA.Feature[:], cell, 2)
@@ -304,9 +304,9 @@ func getSideWall(x, y, cx, cy, block int16, side, turn int) int {
 	case 1:
 		w = getBitfield(mazeA.Walls1[:], cell, 2)
 	case 2:
-		w = wmazeF7c41(int(x), int(y), int(cx), int(cy), int(block))
+		w = wallsSouthOf(int(x), int(y), int(cx), int(cy), int(block))
 	case 3:
-		w = wmazeF7ca6(int(x), int(y), int(cx), int(cy), int(block))
+		w = wallsWestOf(int(x), int(y), int(cx), int(cy), int(block))
 	}
 	floor := getBitfield(mazeA.Floor[:], cell, 4)
 	if (getBitfield(mazeA.Feature[:], cell, 2)+turn)%4 == int(partyFacing) {
@@ -358,10 +358,10 @@ func pairTile(flip bool, a, b, flag int) {
 	}
 }
 
-// wmazeF85d0 (WMAZE 85d0) draws cell col of row with front wall code wall: floor,
+// drawFrontCell (WMAZE 85d0) draws cell col of row with front wall code wall: floor,
 // wall tiles and the objects for doors, stairs and features. clipL/clipR bound the
 // objects; t holds the 30 tile bases (C p14..p72), offset by the row.
-func wmazeF85d0(row, wall, col, clipL, clipR int, t ...int) {
+func drawFrontCell(row, wall, col, clipL, clipR int, t ...int) {
 	p := func(i int) int { return t[i] + row }
 	if mzG5042[row][col] == 0 {
 		pairTile(mzParity != 0, p(0), p(1), 1)
@@ -442,9 +442,9 @@ func wmazeF85d0(row, wall, col, clipL, clipR int, t ...int) {
 	pairTile((mzParity+int(animPhase))%2 != 0, p(28), p(29), 1)
 }
 
-// wmazeF8b18 (WMAZE 8b18) draws the side wall wall of row (f1, f2 frame bases of the
+// drawSideWall (WMAZE 8b18) draws the side wall wall of row (f1, f2 frame bases of the
 // side's objects); t holds the 12 tile bases (C p12..p34).
-func wmazeF8b18(row, wall, f1, f2 int, t ...int) {
+func drawSideWall(row, wall, f1, f2 int, t ...int) {
 	p := func(i int) int { return t[i] + row }
 	fl := mzParity != 0
 	if row == 3 && wall != 0 || wall == 2 || wall >= 7 {
@@ -478,8 +478,8 @@ func wmazeF8b18(row, wall, f1, f2 int, t ...int) {
 	}
 }
 
-// wmazeF8d07 (WMAZE 8d07) draws the floor and ceiling of cell col of row.
-func wmazeF8d07(row, col, a, b, c, d, e, f int) {
+// drawFloorCeiling (WMAZE 8d07) draws the floor and ceiling of cell col of row.
+func drawFloorCeiling(row, col, a, b, c, d, e, f int) {
 	fl := mzParity != 0
 	if mzG5042[row][col] == 0 {
 		pairTile(fl, a+row, b+row, 1)
@@ -494,8 +494,8 @@ func wmazeF8d07(row, col, a, b, c, d, e, f int) {
 	pairTile((mzParity+int(animPhase))%2 != 0, e+row, f+row, 1)
 }
 
-// wmazeF8df6 (WMAZE 8df6): a closed front hides the rows behind it.
-func wmazeF8df6(row, wall int) {
+// hideBehindFront (WMAZE 8df6): a closed front hides the rows behind it.
+func hideBehindFront(row, wall int) {
 	if wall != 2 && wall < 5 && mzG5066[row][1] != 1 {
 		return
 	}
@@ -511,8 +511,8 @@ func wmazeF8df6(row, wall int) {
 	}
 }
 
-// wmazeF8e59 (WMAZE 8e59): a left wall hides the left cells behind it.
-func wmazeF8e59(row, wall int) {
+// hideBehindLeft (WMAZE 8e59): a left wall hides the left cells behind it.
+func hideBehindLeft(row, wall int) {
 	if wall != 0 || mzG5066[row][1] == 1 {
 		viewDepth[row] = 0
 		mzG5072[row+1] = 0
@@ -520,8 +520,8 @@ func wmazeF8e59(row, wall int) {
 	}
 }
 
-// wmazeF8e8a (WMAZE 8e8a): a right wall hides the right cells behind it.
-func wmazeF8e8a(row, wall int) {
+// hideBehindRight (WMAZE 8e8a): a right wall hides the right cells behind it.
+func hideBehindRight(row, wall int) {
 	if wall != 0 || mzG5066[row][1] == 1 {
 		mzG5092[row] = 0
 		mzG509a[row+1] = 0
@@ -636,38 +636,38 @@ func drawMazeView() {
 		mzLeftFront = getFrontWall(x, y, cx, cy, block, -1)
 		mzRightFront = getFrontWall(x, y, cx, cy, block, 1)
 		if mzG508a[r] == 1 {
-			wmazeF85d0(r, mzFrontWall, 1, 72, 248, 122, 122, 0, 0, 91, 23, 23, 26, 26, 29, 32, 32, 29, 178, 178, 199, 199, 242, 257, 278, 278, 299, 299, 314, 314, 329, 150, 150, 214, 214)
+			drawFrontCell(r, mzFrontWall, 1, 72, 248, 122, 122, 0, 0, 91, 23, 23, 26, 26, 29, 32, 32, 29, 178, 178, 199, 199, 242, 257, 278, 278, 299, 299, 314, 314, 329, 150, 150, 214, 214)
 		}
-		wmazeF8df6(r, mzFrontWall)
+		hideBehindFront(r, mzFrontWall)
 		if mzG508a[r] == 1 {
-			wmazeF8b18(r, mzLeftWall, 7, 4, 15, 19, 83, 87, 106, 114, 193, 196, 272, 275, 293, 296)
+			drawSideWall(r, mzLeftWall, 7, 4, 15, 19, 83, 87, 106, 114, 193, 196, 272, 275, 293, 296)
 		}
-		wmazeF8e59(r, mzLeftWall)
+		hideBehindLeft(r, mzLeftWall)
 		if mzG508a[r] == 1 {
-			wmazeF8b18(r, mzRightWall, 13, 7, 19, 15, 87, 83, 110, 118, 196, 193, 275, 272, 296, 293)
+			drawSideWall(r, mzRightWall, 13, 7, 19, 15, 87, 83, 110, 118, 196, 193, 275, 272, 296, 293)
 		}
-		wmazeF8e8a(r, mzRightWall)
+		hideBehindRight(r, mzRightWall)
 		if mzG5082[r] == 1 {
-			wmazeF8d07(r, 0, 126, 146, 154, 174, 218, 238)
+			drawFloorCeiling(r, 0, 126, 146, 154, 174, 218, 238)
 		}
 		if mzG5072[r] == 1 {
-			wmazeF85d0(r, mzLeftFront, 0, 72, viewClipL[r], 130, 142, 3, 12, 94, 35, 62, 41, 68, 47, 80, 53, 74, 181, 190, 202, 211, 245, 260, 281, 290, 302, 311, 317, 326, 332, 158, 170, 222, 234)
+			drawFrontCell(r, mzLeftFront, 0, 72, viewClipL[r], 130, 142, 3, 12, 94, 35, 62, 41, 68, 47, 80, 53, 74, 181, 190, 202, 211, 245, 260, 281, 290, 302, 311, 317, 326, 332, 158, 170, 222, 234)
 		}
 		wmazeF8ebb(r, mzLeftFront)
 		if viewDepth[r] == 1 {
-			wmazeF85d0(r, mzLeftFront, 0, viewClipL[r], 248, 134, 138, 6, 9, 97, 38, 59, 44, 65, 50, 77, 56, 71, 184, 187, 205, 208, 248, 263, 284, 287, 305, 308, 320, 323, 335, 162, 166, 226, 230)
+			drawFrontCell(r, mzLeftFront, 0, viewClipL[r], 248, 134, 138, 6, 9, 97, 38, 59, 44, 65, 50, 77, 56, 71, 184, 187, 205, 208, 248, 263, 284, 287, 305, 308, 320, 323, 335, 162, 166, 226, 230)
 		}
 		wmazeF8ee8(r, mzLeftFront)
 		if mzG5092[r] == 1 {
-			wmazeF85d0(r, mzRightFront, 2, 72, viewClipR[r], 138, 134, 9, 6, 100, 59, 38, 65, 44, 71, 56, 77, 50, 187, 184, 208, 205, 251, 266, 287, 284, 308, 305, 323, 320, 338, 166, 162, 230, 226)
+			drawFrontCell(r, mzRightFront, 2, 72, viewClipR[r], 138, 134, 9, 6, 100, 59, 38, 65, 44, 71, 56, 77, 50, 187, 184, 208, 205, 251, 266, 287, 284, 308, 305, 323, 320, 338, 166, 162, 230, 226)
 		}
 		wmazeF8f1a(r, mzRightFront)
 		if mzG509a[r] == 1 {
-			wmazeF85d0(r, mzRightFront, 2, viewClipR[r], 248, 142, 130, 12, 3, 103, 62, 35, 68, 41, 74, 53, 80, 47, 190, 181, 211, 202, 254, 269, 290, 281, 311, 302, 326, 317, 341, 170, 158, 234, 222)
+			drawFrontCell(r, mzRightFront, 2, viewClipR[r], 248, 142, 130, 12, 3, 103, 62, 35, 68, 41, 74, 53, 80, 47, 190, 181, 211, 202, 254, 269, 290, 281, 311, 302, 326, 317, 341, 170, 158, 234, 222)
 		}
 		wmazeF8f4c(r, mzRightFront)
 		if mzG50a2[r] == 1 {
-			wmazeF8d07(r, 2, 146, 126, 174, 154, 238, 218)
+			drawFloorCeiling(r, 2, 146, 126, 174, 154, 238, 218)
 		}
 	}
 	for viewRow = viewRows; viewRow >= 0; viewRow-- {

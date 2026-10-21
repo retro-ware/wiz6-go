@@ -39,7 +39,7 @@ func allocMazeBuffers() {
 }
 
 // f4655 (WMAZE): one idle step between animation frames, now and then an ambient sound.
-func wmazeF4655() {
+func idleStep() {
 	if random(40) > 0 {
 		delayTick()
 		delayTick()
@@ -49,7 +49,7 @@ func wmazeF4655() {
 }
 
 // f467b (WMAZE): a random encounter monster from table t of the map.
-func wmazeF467b(t int) int {
+func randomEncounterMonster(t int) int {
 	row := random(100) % 4
 	r := random(100)
 	col := 0
@@ -72,7 +72,7 @@ func encounterByte(i int) uint8 {
 }
 
 // f46e8 (WMAZE): the encounter table of block blk, one of its two by its chance.
-func wmazeF46e8(blk int) int {
+func encounterTable(blk int) int {
 	i := 1
 	if random(100) < int(mazeA.Unk1334[blk]) {
 		i = 0
@@ -390,7 +390,7 @@ func animateStep() {
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {
-		wmazeF4655()
+		idleStep()
 	}
 	mzAnimCounter = (mzAnimCounter + 1) % 10
 }
@@ -504,7 +504,7 @@ func savePosition() {
 }
 
 // f567c (WMAZE): message msg with sound snd, held n animation waits.
-func wmazeF567c(msg, snd, n int) {
+func showMessageHeld(msg, snd, n int) {
 	showMazeMessage(msg)
 	flushKeys()
 	playSound(snd)
@@ -599,7 +599,7 @@ func moveParty(turn int) {
 		if mzG503a == 2020 {
 			snd = 2
 		}
-		wmazeF567c(int(mzG503a), snd, 2)
+		showMessageHeld(int(mzG503a), snd, 2)
 	}
 	switch curEvent[dir] {
 	case 0:
@@ -626,15 +626,15 @@ func moveParty(turn int) {
 		}
 	case 1, 2:
 		if wall == 3 && dir == int(partyFacing) {
-			wmazeF567c(2021, 2, messageDelay/2)
+			showMessageHeld(2021, 2, messageDelay/2)
 		} else {
-			wmazeF567c(int(mzG503a), 2, 2)
+			showMessageHeld(int(mzG503a), 2, 2)
 		}
 	case 3:
 		if wall == 2 {
 			tryMove(dir)
 		} else {
-			wmazeF567c(int(mzG503a), 2, 2)
+			showMessageHeld(int(mzG503a), 2, 2)
 		}
 	}
 }
@@ -642,13 +642,6 @@ func moveParty(turn int) {
 // menuCell is where entry i of a menu laid out in columns of rows entries, width apart,
 // from (x, y), sits.
 func menuCell(i, width, rows, x, y int) (int, int) { return (i/rows)*width + x, i%rows + y }
-
-// f5a9d (WMAZE): menu entry i, unhighlighted.
-func wmazeF5a9d(win *Window, i, width, rows, x, y int, s string) {
-	cx, cy := menuCell(i, width, rows, x, y)
-	setCursor(win, cx, cy)
-	printStringHi(win, s, 3)
-}
 
 // maze_menu_select (WMAZE 5ad8) shows the entries of messages msg+i for which shown[i]
 // is 1 (shown ends with -1) in columns of rows entries, width apart, from (x, y) of win,
@@ -696,7 +689,7 @@ func mazeMenuSelect(win *Window, msg int, shown []int16, x, y, width, rows, colo
 	if cancel == 1 {
 		sel = -1
 	}
-	unhi := func() { wmazeF5a9d(win, sel, width, rows, x, y, text[sel]) }
+	unhi := func() { redrawMenuItem(win, sel, width, rows, x, y, text[sel]) }
 	for {
 		if !mousePresent {
 			if sel == -1 {
@@ -759,7 +752,7 @@ func mazeMenuSelect(win *Window, msg int, shown []int16, x, y, width, rows, colo
 }
 
 // f5fa1 (WMAZE): swaps entries a and b of order and redraws both names in win.
-func wmazeF5fa1(win *Window, a, b int, order []int16) {
+func swapOrderEntries(win *Window, a, b int, order []int16) {
 	order[a], order[b] = order[b], order[a]
 	for _, i := range []int{a, b} {
 		x, y := memberCell(i)

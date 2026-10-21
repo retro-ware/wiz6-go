@@ -58,7 +58,7 @@ func mzAnimate() {
 		animPhase = (animPhase + 1) % 2
 		redrawMazeView()
 	} else {
-		wmazeF4655()
+		idleStep()
 	}
 	mzAnimCounter = (mzAnimCounter + 1) % 10
 }
@@ -136,7 +136,7 @@ func waitMorePrompt() {
 			}
 			blink = (blink + 1) % 4
 		} else {
-			wmazeF4655()
+			idleStep()
 		}
 		mzAnimCounter = (mzAnimCounter + 1) % 10
 	}
@@ -259,9 +259,9 @@ func formatDice(count, sides, base int) Dice {
 	return Dice{Base: int16(base), Count: uint8(count), Sides: uint8(sides)}
 }
 
-// wmazeF9f54 (WMAZE 9f54) is a random direction whose open[] is set, trying on from a
+// randomOpenDir (WMAZE 9f54) is a random direction whose open[] is set, trying on from a
 // random start.
-func wmazeF9f54(open *[4]int) int {
+func randomOpenDir(open *[4]int) int {
 	d := random(4)
 	for open[d] == 0 {
 		d = (d + 1) % 4
@@ -269,9 +269,9 @@ func wmazeF9f54(open *[4]int) int {
 	return d
 }
 
-// wmazeF9f8c (WMAZE 9f8c): the spinner/pusher event. Turns the party (turning on the
+// spinnerEvent (WMAZE 9f8c): the spinner/pusher event. Turns the party (turning on the
 // spot when set) and pushes it some cells, count times.
-func wmazeF9f8c() {
+func spinnerEvent() {
 	if eventData() > 0 {
 		showMazeMessage(eventData())
 		waitAnimating(messageDelay)
@@ -292,7 +292,7 @@ func wmazeF9f8c() {
 	}
 	randomDist := extractBits(bits, 14, 1)
 	for range count {
-		d := wmazeF9f54(&dirs)
+		d := randomOpenDir(&dirs)
 		if turn == 1 && d != int(partyFacing) {
 			var n int
 			if step == 1 {
@@ -451,9 +451,9 @@ func checkSecretDetect() {
 	}
 }
 
-// wmazeFa5cd (WMAZE a5cd): sets the per-direction values of the current event; a
+// setDirValuesEvent (WMAZE a5cd): sets the per-direction values of the current event; a
 // secret among them gets a detection roll.
-func wmazeFa5cd() {
+func setDirValuesEvent() {
 	if eventData() > 0 {
 		showMessageText(eventData(), 0)
 	}
@@ -473,8 +473,8 @@ func wmazeFa5cd() {
 // wmazeFa68d (WMAZE a68d) does nothing.
 func wmazeFa68d() {}
 
-// wmazeFa68e (WMAZE a68e) is the 2-bit field i of v.
-func wmazeFa68e(v, i int) int { return extractBits(v, i<<1, 2) }
+// dirField (WMAZE a68e) is the 2-bit field i of v.
+func dirField(v, i int) int { return extractBits(v, i<<1, 2) }
 
 // change_walls_event (WMAZE a6a8) sets the four walls of a cell from Param.
 func changeWallsEvent() {
@@ -486,15 +486,15 @@ func changeWallsEvent() {
 	y := int(mazeA.BlockY[blk]) + int(cy)
 	w := eventParam()
 	cell := int(blk)<<6 + int(cy)<<3 + int(cx)
-	setBitfield(mazeA.Walls0[:], cell, 2, wmazeFa68e(w, 0))
-	setBitfield(mazeA.Walls1[:], cell, 2, wmazeFa68e(w, 1))
+	setBitfield(mazeA.Walls0[:], cell, 2, dirField(w, 0))
+	setBitfield(mazeA.Walls1[:], cell, 2, dirField(w, 1))
 	if moveToMazeCell(&cx, &cy, &blk, x, y-1) == 0 {
 		cell = int(blk)<<6 + int(cy)<<3 + int(cx)
-		setBitfield(mazeA.Walls0[:], cell, 2, wmazeFa68e(w, 2))
+		setBitfield(mazeA.Walls0[:], cell, 2, dirField(w, 2))
 	}
 	if moveToMazeCell(&cx, &cy, &blk, x-1, y) == 0 {
 		cell = int(blk)<<6 + int(cy)<<3 + int(cx)
-		setBitfield(mazeA.Walls1[:], cell, 2, wmazeFa68e(w, 3))
+		setBitfield(mazeA.Walls1[:], cell, 2, dirField(w, 3))
 	}
 	if redraw == 1 {
 		redrawMazeView()
@@ -682,8 +682,8 @@ func trapEvent() {
 	mzCloseTextWin()
 }
 
-// wmazeFb123 (WMAZE b123): a text event, only facing one way if set.
-func wmazeFb123() {
+// textEvent (WMAZE b123): a text event, only facing one way if set.
+func textEvent() {
 	bits := eventBits()
 	if extractBits(bits, 6, 1) == 1 {
 		g4f8a = int16(extractBits(bits, 4, 2))
@@ -699,7 +699,7 @@ func wmazeFb123() {
 // one of encounter table Param.
 func encounterEvent() {
 	if extractBits(eventBits(), 3, 1) == 1 {
-		g433a = wmazeF467b(eventParam())
+		g433a = randomEncounterMonster(eventParam())
 	} else {
 		g433a = eventParam()
 	}
