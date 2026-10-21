@@ -471,7 +471,7 @@ func startGame(resume int) {
 func drawGauge(win *Window, x, y, cur, max, glyph int) {
 	level := 0 // max 0 would fault in the C
 	if max != 0 {
-		level = int(int32(cur)*100/int32(max)/10) + 1
+		level = int(int16(int32(cur)*100/int32(max)/10) + 1) // (int) cast, then a 16-bit +1
 	}
 	if level > 10 {
 		level = 10
