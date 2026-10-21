@@ -38,3 +38,11 @@
 2026-10-21 10:54:53 [maze] harness: scripted input (case 'keys': key_available/get_key; Go dtKeys), real message texts per spec (texts=True; Go dtTexts), char_index runs real, state now includes preset fields written back unchanged (emu tracks writes). force_lock, pick_lock, locked_door_menu, handle_locked_door match
 2026-10-21 10:55:36 [char] done: 46 functions x300, 1 port bug (extractBits), 2 harness bugs (sentinel in DS, memberPortrait width)
 2026-10-21 10:56:57 [maze] puzzle_event, riddle_event match (wait_key_animating unstubbed; string_index real)
+2026-10-21 10:59:17 [npc] WMNPC b805 stock, a69b buy, b047 pilfer match; 7f76 react (scripts) debugging; regenerating all npc cases with the stricter harness
+2026-10-21 11:08:01 [npc] 11 functions match (WPOPS 8a45 5dbb; WTREA 5f49 66b1 8583 9ab6 9601; WMNPC b805 a69b b047 7f76 — 7f76 fixed: npc text window null like the C); renamed cases pops_/trea_/npc_ prefixes, regenerating; 817e generation slow (~9s/case), next
+11:09 [maze] phase2: lock/puzzle/riddle 300/300 match; f467b/f46e8/f7020 generated, Go wrappers added, testing; f7f30/f7860 regenerating; save_game next
+2026-10-21 11:09:56 [char] regenerated all 46 char case files under the stricter harness (written-unchanged inputs); all match
+2026-10-21 11:19:00 [npc] done: 12 functions match (2 port bugs fixed), sell/give-gold/disarm open; DIFFTEST.md section added
+11:20 [maze] f467b/f46e8 300/300 match; f7020 dropped (Go hangs), open; dpResult* moved to OVL_GLOBALS WDOPT; starting save_game
+11:26 [maze] wrap-up: f7f30/f7860 open (log-only diffs), save_game emulator check open (dbs round-trip only); committed
+2026-10-21 11:41:11 [combat] full-state check on: every mapped Go field changed but not in out/state fails. All areas pass except fae49 (maze: gameState=8, case 55) and fc8eb (maze: hangs in waitKeyAnimating/riddleEvent, input exhausted - not the check). f724f/f62ce cut to 150.
