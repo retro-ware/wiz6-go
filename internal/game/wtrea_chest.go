@@ -442,23 +442,23 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 		t.Stamina = min(t.Stamina+int16(rollDice(formatDice(level<<1, 8, level))), t.StaminaMax)
 		drawMemberStatus(target)
 	case 15:
-		t.Status[3] = uint8(max(int(t.Status[3])-level*25, 0))
+		t.Status[3] = uint8(max(int(int16(int(t.Status[3])-level*25)), 0)) // C int wraps
 		drawMemberStatus(target)
 	case 26:
-		n := int(t.PoisonStr) - level
+		n := int(int16(int(t.PoisonStr) - level)) // C int wraps
 		if n <= 0 {
 			n = 0
 			t.Status[5] = 0
 		}
 		t.PoisonStr = uint8(n)
-		if n = int(t.Status[5]) - level*5; n <= 0 {
+		if n = int(int16(int(t.Status[5]) - level*5)); n <= 0 { // C int wraps
 			n = 0
 			t.PoisonStr = 0
 		}
 		t.Status[5] = uint8(n)
 		drawMemberStatus(target)
 	case 46:
-		if t.Condition == 2 && level*3 > 21-int(t.Stats[3]) {
+		if t.Condition == 2 && int(int16(level*3)) > 21-int(t.Stats[3]) { // C int wraps
 			t.Stats[3]--
 			if random(21) > int(t.Stats[3]) {
 				t.Condition = 3
@@ -469,18 +469,18 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 			drawMemberStatus(target)
 		}
 	case 57:
-		t.Status[7] = uint8(max(int(t.Status[7])-level*25, 0))
+		t.Status[7] = uint8(max(int(int16(int(t.Status[7])-level*25)), 0)) // C int wraps
 		drawMemberStatus(target)
 	case 51:
 		for _, s := range []int{1, 2, 4, 8, 9} {
-			t.Status[s] = uint8(max(int(t.Status[s])-level<<1, 0))
+			t.Status[s] = uint8(max(int(int16(int(t.Status[s])-level<<1)), 0)) // C int wraps
 		}
 		drawMemberStatus(target)
 	case 64:
 		t.HP = min(t.HP+int16(rollDice(formatDice(level, 7, level))), t.HPMax)
 		drawMemberStatus(target)
 	case 77:
-		if t.Condition == 3 && level*3 > 18-int(t.Stats[3]) {
+		if t.Condition == 3 && int(int16(level*3)) > 18-int(t.Stats[3]) { // C int wraps
 			t.Stats[3]--
 			t.Condition = 0
 			t.HP = 1
