@@ -716,8 +716,8 @@ func beginCombat() {
 	clear(picSlotLoaded[4:7]) // g4326
 	monsterJitterX[0], monsterJitterY[0] = [5]uint8{}, [5]uint8{}
 	deferWindowDraw(g4fb0)
-	combatActionWin = createWindow(0, 19, 19, 5, 11, -4, 0, false)
-	monsterListWin = createWindow(20, 19, 20, 5, 10, -1, 0, false)
+	combatActionWin = createWindow(0, 19, 19, 5, 11, borderRightEdge, 0, false)
+	monsterListWin = createWindow(20, 19, 20, 5, 10, borderNone, 0, false)
 	allyStripWin = nil
 	deferWindowDraw(monsterListWin)
 	deferWindowDraw(combatActionWin)

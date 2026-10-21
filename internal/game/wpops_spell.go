@@ -111,8 +111,8 @@ func drawBookSpellList(w *Window, realm, pos int, hi bool, n int, list []int) {
 // chooseCombatSpell (WPOPS 644a) picks a realm, a spell and its power for member m and
 // the spell's target; (power<<8)+spell, or -1.
 func chooseCombatSpell(win *Window, m int) int {
-	book := createWindow(0, 18, 23, 7, 25, -1, 0, false)
-	list := createWindow(22, 19, 18, 6, 26, -5, 0, false)
+	book := createWindow(0, 18, 23, 7, 25, borderNone, 0, false)
+	list := createWindow(22, 19, 18, 6, 26, borderTopEdge, 0, false)
 	drawBookSpellWindow(book, m)
 	drawListFrame(list, true)
 	region := func(i, x, y int) {
@@ -133,7 +133,7 @@ func chooseCombatSpell(win *Window, m int) int {
 	sp := func() int { return int(party[m].SP[realm].Cur) }
 	for chosen := false; !chosen; {
 		// The realm.
-		setClickRegion(7, 255, 0, 0, 0)
+		setClickRegion(7, clickRegionsEnd, 0, 0, 0)
 		redraw := true
 		pvBlinkWin = book
 		for {
@@ -218,7 +218,7 @@ func chooseCombatSpell(win *Window, m int) int {
 		setClickRegion(7, list.X+1, list.Y, list.X+1, list.Y)
 		setClickRegion(8, list.X+1, list.Y+4, list.X+1, list.Y+4)
 		setClickRegion(9, list.X+2, list.Y+2, list.X+19, list.Y+2)
-		setClickRegion(10, 255, 0, 0, 0)
+		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		chosen = true
 		for k := 0; k != 5; {
 			pvBlinkState = 1
@@ -279,7 +279,7 @@ func chooseCombatSpell(win *Window, m int) int {
 		region(i, i+15, 3)
 	}
 	region(maxLevel, 13, 3)
-	setClickRegion(maxLevel+1, 255, 0, 0, 0)
+	setClickRegion(maxLevel+1, clickRegionsEnd, 0, 0, 0)
 	unlight := func() {
 		setCursor(book, level+14, 3)
 		putChar(book, byte(level+23), 5)
@@ -414,9 +414,9 @@ func drawItemList(w *Window, m, pos int, hi bool, names []string, counts []int) 
 // chooseCombatItem (WPOPS 71be) picks one of member m's items to use, and the target of
 // its spell; the item, or -1.
 func chooseCombatItem(win *Window, m int) int {
-	prompt := createWindow(0, 19, 19, 5, 12, -4, 0, false)
+	prompt := createWindow(0, 19, 19, 5, 12, borderRightEdge, 0, false)
 	fillWindow(prompt, 32, 3)
-	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
+	list := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
 	fillWindow(list, 32, 3)
 	deferWindowDraw(prompt)
 	setCursor(prompt, 2, 1)
@@ -439,7 +439,7 @@ func chooseCombatItem(win *Window, m int) int {
 	setClickRegion(1, list.X+1, list.Y, list.X+1, list.Y)
 	setClickRegion(2, list.X+1, list.Y+4, list.X+1, list.Y+4)
 	setClickRegion(3, prompt.X+7, prompt.Y+3, byte(len(cancel)+int(prompt.X)+6), prompt.Y+3)
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 	for k := 0; k != 5; {
 		setCursor(prompt, 7, 3)
 		if onCancel {

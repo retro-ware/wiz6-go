@@ -315,7 +315,7 @@ func showTextPages(menu *Window, msg int) {
 	if dtLog != nil { // stubbed in the difftest
 		return
 	}
-	w := createWindow(0, 4, 40, 16, 31, -1, 0, false)
+	w := createWindow(0, 4, 40, 16, 31, borderNone, 0, false)
 	drawTextFrame(w)
 	row, prevX := 1, 1
 	for {

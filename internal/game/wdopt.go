@@ -33,20 +33,20 @@ var (
 	// The use item list (do_use_item): the slots shown (g51ba, g51b8 of them), and by
 	// slot the item's name (0x51e6) and quantity (g5346, 0 none).
 	dpItemSlots []int
-	dpItemNames [22]string
-	dpItemQty   [22]int
+	dpItemNames [itemSlots]string
+	dpItemQty   [itemSlots]int
 )
 
 // ovmain (WDOPT 4572).
 func wdoptOvmain() {
 	dpResultMsg, dpResultBeep, pvBlinkState = 0, 0, -1
-	if gameState == 19 {
+	if gameState == stateCastSpellInMaze {
 		castSpellInMaze(int(curMember))
 	}
-	if gameState == 20 {
+	if gameState == stateUseItemInMaze {
 		useItemInMaze(int(curMember))
 	}
-	gameState = 5
+	gameState = stateExplore
 }
 
 // viewAnimStep is the idle step of WDOPT's waits: every 10th call flips the animation
@@ -59,7 +59,7 @@ func viewAnimStep() {
 	} else {
 		idleStep()
 	}
-	dpAnimCount = (dpAnimCount + 1) % 10
+	dpAnimCount = (dpAnimCount + 1) % animFrameSteps
 }
 
 // get_menu_choice_blink (WDOPT 4728) waits for a key of keys (its index) or a click
@@ -71,8 +71,8 @@ func getMenuChoiceView(keys string) int {
 	}
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if c := charIndex(keys, int(uint8(getKey(1)))); c >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if c := charIndex(keys, int(uint8(getKey(keyClassMenu)))); c >= 0 {
 				return c
 			}
 			continue
@@ -92,7 +92,7 @@ func getMenuChoiceView(keys string) int {
 		} else {
 			idleStep()
 		}
-		dpAnimCount = (dpAnimCount + 1) % 10
+		dpAnimCount = (dpAnimCount + 1) % animFrameSteps
 	}
 }
 
@@ -103,7 +103,7 @@ func waitAnimatedView(ticks int) {
 		if checkScreenClick() {
 			return
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			return
 		}
 		viewAnimStep()
@@ -116,7 +116,7 @@ func wdoptChooseTarget(msg int) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	cancelText, cancelHi := getMessage(2027), getMessage(2028)
 	title := getMessage(msg)
@@ -137,7 +137,7 @@ func wdoptChooseTarget(msg int) int {
 		setClickRegion(m, win.X+byte(x), win.Y+byte(y), byte(len(memberName(m))+int(win.X)+x-1), win.Y+byte(y))
 	}
 	setClickRegion(partyCount, mainWindow.X+byte(cx), mainWindow.Y+byte(cy), byte(len(cancelHi)+int(mainWindow.X)+cx-1), mainWindow.Y+byte(cy))
-	setClickRegion(partyCount+1, 255, 0, 0, 0)
+	setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 	sel := -1
 	for {
 		if !mousePresent {
@@ -159,24 +159,24 @@ func wdoptChooseTarget(msg int) int {
 			break
 		}
 		switch c {
-		case 1:
+		case menuKeyLeft:
 			if sel != -1 && sel%2 > 0 {
 				drawMemberName(win, sel)
 				sel--
 			}
-		case 2:
+		case menuKeyUp:
 			if sel != -1 {
 				drawMemberName(win, sel)
 				if sel -= 2; sel < 0 {
 					sel = -1
 				}
 			}
-		case 3:
+		case menuKeyRight:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
 				drawMemberName(win, sel)
 				sel++
 			}
-		case 4:
+		case menuKeyDown:
 			if sel == -1 {
 				setCursor(mainWindow, cx, cy)
 				printStringHi(mainWindow, cancelText, 3)
@@ -186,7 +186,7 @@ func wdoptChooseTarget(msg int) int {
 				sel += 2
 			}
 		}
-		if c == 5 {
+		if c == menuKeyEnter {
 			break
 		}
 	}
@@ -199,42 +199,42 @@ func copyName(name string) string {
 	b := []byte(name)
 	for i, c := range b {
 		if c >= 'A' && c <= 'Z' {
-			b[i] = c + 32
+			b[i] = c + 'a' - 'A'
 		}
 	}
 	return string(b)
 }
 
 // removeItem (remove_item, WDOPT 4e09, WMNPC) removes item slot of member m: an inventory item (slot < 10)
-// is unequipped first; swag slots are 10 on.
+// is unequipped first; swag slots are packSlots on.
 func removeItem(m, slot int) {
 	p := &party[m]
-	if slot >= 10 {
+	if slot >= packSlots {
 		p.SwagCount--
-		for i := slot; i < int(p.SwagCount)+10; i++ {
+		for i := slot; i < int(p.SwagCount)+packSlots; i++ {
 			p.Items[i] = p.Items[i+1]
 		}
 		return
 	}
-	for s := 0; s < 8; s++ {
+	for s := 0; s < equipSlots; s++ {
 		if int(p.Equipped[s]) != slot {
 			continue
 		}
 		switch s {
-		case 0, 1:
+		case equipPrimary, equipSecondary:
 			clearHandAttack(m, s)
-		case 2:
-			p.AC[2] = 0
+		case equipMisc:
+			p.AC[equipMisc] = 0
 		default:
-			p.AC[s] = p.AC[0]
+			p.AC[s] = p.AC[acBase]
 		}
-		p.Equipped[s] = 255
+		p.Equipped[s] = noEquippedItem
 	}
 	p.Items[slot].ID = 0
 	p.ItemCount--
 	for i := slot; i < int(p.ItemCount); i++ {
 		p.Items[i] = p.Items[i+1]
-		for s := 0; s < 8; s++ {
+		for s := 0; s < equipSlots; s++ {
 			if int(p.Equipped[s]) == i+1 {
 				p.Equipped[s] = uint8(i)
 			}
@@ -263,16 +263,16 @@ func wdoptShowResult(msg int) {
 	refreshAllWindows()
 	printCentered(mainWindow, getMessage(msg), 0, 18)
 	if dpResultBeep != 0 {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	waitAnimatedView(messageDelay / 2)
 	eraseWindow(mainWindow, false)
 }
 
-// isLockAhead is whether event ev is a lock (kind 7) on the party's facing.
+// isLockAhead is whether event ev is a lock (eventDirValues) on the party's facing.
 func isLockAhead(ev int) bool {
 	b := extractBits(int(uint16(mazeB.DirBits[ev])), int(partyFacing)<<1, 2)
-	return mazeB.Kind[ev] == 7 && (b == 1 || b == 2)
+	return mazeB.Kind[ev] == eventDirValues && (b == 1 || b == 2)
 }
 
 // find_lock_event (WDOPT 50e8) is the lock event on the party's cell and facing, or -1.
@@ -314,13 +314,13 @@ func tryOpenLock(power int) int {
 // in direction dir.
 func wdoptMarkNeighbor(dir, v, col, row int) {
 	switch dir {
-	case 0:
+	case dirNorth:
 		row--
-	case 1:
+	case dirEast:
 		col++
-	case 2:
+	case dirSouth:
 		row++
-	case 3:
+	case dirWest:
 		col--
 	}
 	if col >= 0 && col < 5 && row >= 0 && row < 5 {
@@ -380,7 +380,7 @@ func wdoptMapCell(x, y, col, row int) {
 		dpMapFloor[col][row] = g
 	}
 	g = -1
-	switch getWallInDirection(0, int(blk), int(cx), int(cy), x, y) {
+	switch getWallInDirection(dirNorth, int(blk), int(cx), int(cy), x, y) {
 	case 1:
 		g = dpGlN1
 	case 2:
@@ -395,7 +395,7 @@ func wdoptMapCell(x, y, col, row int) {
 		dpMapNorth[col][row] = g
 	}
 	g = -1
-	switch getWallInDirection(3, int(blk), int(cx), int(cy), x, y) {
+	switch getWallInDirection(dirWest, int(blk), int(cx), int(cy), x, y) {
 	case 1:
 		g = dpGlW1
 	case 2:
@@ -512,7 +512,7 @@ func wdoptShowOverheadMap(power int) {
 		}
 	}
 	loadMonsterPicSlot(0, 4)
-	win := createWindow(dpMapX, dpMapY, cols<<1, rows<<1, 20, -1, 2, false)
+	win := createWindow(dpMapX, dpMapY, cols<<1, rows<<1, 20, borderNone, 2, false)
 	clearClickFlag()
 	flushKeys()
 	for waiting := true; waiting; {
@@ -546,7 +546,7 @@ func wdoptShowOverheadMap(power int) {
 		if checkScreenClick() {
 			waiting = false
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			waiting = false
 		}
 		// ponytail: the C loops at machine speed; a tick per frame stands in for the
@@ -568,74 +568,74 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 		return uint8(max(int(int16(int(v)-n)), 0)) // C int wraps
 	}
 	switch s {
-	case 53:
-		pc[2].A += int16(power * 50)
-		pc[2].B = int16(clampToward(power*5+70, int(pc[2].B), 0))
-	case 68:
-		pc[3].A += int16(power * 35)
-		pc[3].B = int16(clampToward((power-1)/2+1, int(pc[3].B), 0))
-	case 41:
-		pc[1].A += int16(power * 50)
-		pc[1].B = int16(clampToward((power-1)/2+1, int(pc[1].B), 0))
-	case 30:
-		pc[5].A += int16(power * 5)
-	case 38:
-		pc[0].A += int16(100 * power)
-	case 70:
-		pc[4].A += int16(power * 50)
-		pc[4].B = int16(clampToward(power*5, int(pc[4].B), 0))
-	case 10:
+	case spellDetectSecret:
+		pc[effectDetectSecret].A += int16(power * 50)
+		pc[effectDetectSecret].B = int16(clampToward(power*5+70, int(pc[effectDetectSecret].B), 0))
+	case spellEnchantedBlade:
+		pc[effectEnchantedBlade].A += int16(power * 35)
+		pc[effectEnchantedBlade].B = int16(clampToward((power-1)/2+1, int(pc[effectEnchantedBlade].B), 0))
+	case spellArmorplate:
+		pc[effectArmorplate].A += int16(power * 50)
+		pc[effectArmorplate].B = int16(clampToward((power-1)/2+1, int(pc[effectArmorplate].B), 0))
+	case spellLevitate:
+		pc[effectLevitate].A += int16(power * 5)
+	case spellDirection:
+		pc[effectDirection].A += int16(100 * power)
+	case spellMagicScreen:
+		pc[effectMagicScreen].A += int16(power * 50)
+		pc[effectMagicScreen].B = int16(clampToward(power*5, int(pc[effectMagicScreen].B), 0))
+	case spellStamina:
 		t.Stamina = min(t.Stamina+int16(rollDice(formatDice(power<<1, 8, power))), t.StaminaMax)
-	case 15:
-		t.Status[3] = sub(t.Status[3], power*25)
-	case 26:
+	case spellCureParalysis:
+		t.Status[statusParalyzed] = sub(t.Status[statusParalyzed], power*25)
+	case spellCurePoison:
 		if t.PoisonStr = sub(t.PoisonStr, power); t.PoisonStr == 0 {
-			t.Status[5] = 0
+			t.Status[statusPoisoned] = 0
 		}
-		if t.Status[5] = sub(t.Status[5], power*5); t.Status[5] == 0 {
+		if t.Status[statusPoisoned] = sub(t.Status[statusPoisoned], power*5); t.Status[statusPoisoned] == 0 {
 			t.PoisonStr = 0
 		}
-	case 46:
-		if t.Condition == 2 && int(int16(power*3)) > 21-int(t.Stats[3]) { // C int wraps
-			t.Stats[3]--
-			if random(21) <= int(t.Stats[3]) {
-				t.Condition = 0
+	case spellCureStone:
+		if t.Condition == conditionStoned && int(int16(power*3)) > 21-int(t.Stats[statVitality]) { // C int wraps
+			t.Stats[statVitality]--
+			if random(21) <= int(t.Stats[statVitality]) {
+				t.Condition = conditionOK
 			} else {
-				t.Condition, t.HP, t.Stamina = 3, 0, 0
+				t.Condition, t.HP, t.Stamina = conditionDead, 0, 0
 			}
 		}
-	case 57:
-		t.Status[7] = sub(t.Status[7], power*25)
-	case 51:
-		for _, i := range []int{1, 2, 4, 8, 9} {
+	case spellSaneMind:
+		t.Status[statusInsane] = sub(t.Status[statusInsane], power*25)
+	case spellCureLesserCnd:
+		for _, i := range []int{1, statusAsleep, 4, 8, 9} {
 			t.Status[i] = sub(t.Status[i], power<<1)
 		}
-	case 64:
+	case spellHealWounds:
 		t.HP = min(t.HP+int16(rollDice(formatDice(power, 7, power))), t.HPMax)
-	case 77:
-		if t.Condition == 3 && int(int16(power*3)) > 18-int(t.Stats[3]) { // C int wraps
-			t.Stats[3]--
-			t.Condition, t.HP, t.Stamina = 0, 1, t.StaminaMax/10
+	case spellResurrection:
+		if t.Condition == conditionDead && int(int16(power*3)) > 18-int(t.Stats[statVitality]) { // C int wraps
+			t.Stats[statVitality]--
+			t.Condition, t.HP, t.Stamina = conditionOK, 1, t.StaminaMax/10
 			t.Unk026++
 		}
-	case 39:
+	case spellOpenChest:
 		tryOpenLock(power)
-	case 60:
+	case spellMapInNPC:
 		wdoptShowOverheadMap(power)
-	case 80:
+	case spellHelpFood:
 		c := &party[caster]
 		c.Stamina = min(c.Stamina+int16(rollDice(formatDice(power, 8, power))), c.StaminaMax)
 		c.HP = min(c.HP+int16(rollDice(formatDice(power, 2, 0))), c.HPMax)
-	case 81:
+	case spellMagicFood:
 		c := &party[caster]
-		for r := range 6 {
+		for r := range realmCount {
 			c.SP[r].Cur = min(c.SP[r].Cur+int16(rollDice(formatDice(power, 10, 0))), c.SP[r].Max)
 		}
 	}
 }
 
 // check_item_location_event (WDOPT 6561) is whether item slot of member m does
-// something on the party's cell: an item event (kind 19) for it swaps its flags and plays
+// something on the party's cell: an item event (eventUseItem) for it swaps its flags and plays
 // its sound; the key of the lock ahead opens it.
 func wdoptItemLocationEvent(m, slot int) bool {
 	id := party[m].Items[slot].ID
@@ -644,7 +644,7 @@ func wdoptItemLocationEvent(m, slot int) bool {
 			return false
 		}
 		bits := int(uint16(mazeB.DirBits[ev]))
-		if mazeB.Kind[ev] == 19 && id == mazeB.Data[ev] {
+		if mazeB.Kind[ev] == eventUseItem && id == mazeB.Data[ev] {
 			setBit(levelFlags[gameStateArg][:], extractBits(bits, 0, 8), false)
 			if b := extractBits(bits, 8, 8); b != 0 {
 				setBit(levelFlags[gameStateArg][:], b, true)
@@ -706,15 +706,15 @@ func drawSlotItemList(win *Window, m, sel int, hi bool) {
 }
 
 // do_use_item (WDOPT 7860): member m picks an item and uses it: an item event or lock
-// here, the spell it holds, a flag-swapping item of this map (kind 4) or the map 8 item
-// (kind 5); otherwise "nothing happens".
+// here, the spell it holds, a flag-swapping item of this map (useSwitchMapFlags) or the map 8
+// item (useDirectionOnMap8); otherwise "nothing happens".
 func useItemInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
-	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
-	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
+	list := createWindow(20, 19, 20, 5, 20, borderTopEdge, 0, false)
 	fillWindow(list, ' ', 3)
 	title := replaceCharWithString(getMessage(2033), copyName(memberName(m)), '$')
 	showTitleText(title, 10-(len(title)+1)/2)
@@ -741,7 +741,7 @@ func useItemInMaze(m int) {
 		add(i)
 	}
 	for i := 0; i < int(p.SwagCount); i++ {
-		add(i + 10)
+		add(i + packSlots)
 	}
 	cancel := getMessage(2035)
 	sel, onCancel := 0, false
@@ -749,7 +749,7 @@ func useItemInMaze(m int) {
 	setClickRegion(1, list.X+1, list.Y, list.X+1, list.Y)
 	setClickRegion(2, list.X+1, list.Y+4, list.X+1, list.Y+4)
 	setClickRegion(3, win.X+7, win.Y+3, byte(len(cancel)+int(win.X)+6), win.Y+3)
-	setClickRegion(4, 255, 0, 0, 0)
+	setClickRegion(4, clickRegionsEnd, 0, 0, 0)
 	for {
 		setCursor(win, 7, 3)
 		if onCancel {
@@ -762,34 +762,34 @@ func useItemInMaze(m int) {
 		if menuClicked == 1 {
 			switch c {
 			case 0:
-				c = 5
+				c = menuKeyEnter
 			case 1:
-				c = 2
+				c = menuKeyUp
 			case 2:
-				c = 4
+				c = menuKeyDown
 			case 3:
-				onCancel, c = true, 5
+				onCancel, c = true, menuKeyEnter
 			}
 		}
 		switch c {
-		case 1:
+		case menuKeyLeft:
 			onCancel = true
-		case 2:
+		case menuKeyUp:
 			if onCancel {
 				onCancel = false
 			} else if sel > 0 {
 				sel--
 			}
-		case 3:
+		case menuKeyRight:
 			onCancel = false
-		case 4:
+		case menuKeyDown:
 			if onCancel {
 				onCancel = false
 			} else if sel+1 < len(dpItemSlots) {
 				sel++
 			}
 		}
-		if c == 5 {
+		if c == menuKeyEnter {
 			break
 		}
 	}
@@ -805,7 +805,7 @@ func useItemInMaze(m int) {
 			switch {
 			case rec.Spell != 0:
 				level, spell := int(rec.Spell)/256, int(rec.Spell)%256
-				if spellTable[spell].Target == 1 {
+				if spellTable[spell].Target == spellTargetMember {
 					refreshAllWindows()
 					if dpTarget = wdoptChooseTarget(2032); dpTarget == -1 {
 						spell = -1
@@ -815,7 +815,7 @@ func useItemInMaze(m int) {
 					useItemCharge(m, slot)
 					applySpellOutsideCombat(m, spell, level, dpTarget)
 				}
-			case rec.Unk69 == 4 && gameStateArg == int(rec.Damage.Base):
+			case rec.Unk69 == useSwitchMapFlags && gameStateArg == int(rec.Damage.Base):
 				// A flag item of this map: clear bit Count, set bit Sides.
 				mp := int(rec.Damage.Base)
 				setBit(levelFlags[mp][:], int(rec.Damage.Count), false)
@@ -823,9 +823,9 @@ func useItemInMaze(m int) {
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
 				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
 				useItemCharge(m, slot)
-			case rec.Unk69 == 5:
+			case rec.Unk69 == useDirectionOnMap8:
 				if gameStateArg == 8 {
-					partyCounters[0].B = 1
+					partyCounters[effectDirection].B = 1
 				} else {
 					dpResultMsg, dpResultBeep = 2055, 1
 				}
@@ -850,7 +850,7 @@ func castSpellInMaze(m int) {
 	dpKeys = getMessage(2001)
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
-	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	s := chooseSpellBook(m, func() int { return getMenuChoiceView(dpKeys) }, func(msg int) int { dpTarget = wdoptChooseTarget(msg); return dpTarget })
 	pvBlinkState = -1
@@ -862,7 +862,7 @@ func castSpellInMaze(m int) {
 		applySpellOutsideCombat(m, spell, level, dpTarget)
 		if p.Stamina -= int16(random(level) + int(sp.Level) + level); p.Stamina < 0 {
 			p.Stamina = 0
-			p.Status[2] = uint8(random(6) + 6)
+			p.Status[statusAsleep] = uint8(random(6) + 6)
 		}
 	}
 	destroyWindow(win, false)

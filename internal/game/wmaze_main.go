@@ -45,7 +45,7 @@ func idleStep() {
 		delayTick()
 		return
 	}
-	playSound(random(3) + 10)
+	playSound(random(3) + firstStepSound)
 }
 
 // f467b (WMAZE): a random encounter monster from table t of the map.

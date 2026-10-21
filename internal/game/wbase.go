@@ -411,7 +411,7 @@ func showStatusText(text string) {
 // if animated).
 func showErrorText(text string, animated bool) {
 	showStatusText(text)
-	playSound(0)
+	playSound(soundBeep)
 	if animated {
 		waitAnimatedCamp(12)
 	} else {
@@ -466,10 +466,10 @@ func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(
 				putChar(win, ' ', 1)
 				setCursor(win, x, y)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
 		case len(buf) >= maxlen:
-			playSound(0)
+			playSound(soundBeep)
 		case mode == inputPrintable && key >= ' ' && key <= maxInputChar, mode == inputDigits && key >= '0' && key <= '9':
 			buf = append(buf, byte(key))
 			putChar(win, byte(key), color)

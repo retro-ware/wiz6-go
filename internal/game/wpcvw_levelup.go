@@ -89,7 +89,7 @@ func hasPersonalSkills(m int) bool {
 // doSkillsMenu (do_skills_menu, WPCVW 929a) shows member m's skill pages until exit.
 func doSkillsMenu(menu *Window, m int) {
 	personal := hasPersonalSkills(m)
-	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
+	w := createWindow(20, 4, 20, 16, 25, borderNone, 0, false)
 	var shown [10]int
 	for pg := skillPageWeaponry; pg != skillPageCount; {
 		drawSkillsPage(w, m, pg, &shown)
@@ -206,7 +206,7 @@ func spendSkillPoints(menu *Window, m int) {
 	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	showCenteredMsg(menu, getMessage(605), true)
-	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
+	w := createWindow(20, 4, 20, 16, 25, borderNone, 0, false)
 	personal := hasPersonalSkills(m)
 	var shown [10]int
 	for pg := skillPageWeaponry; ; {
@@ -526,8 +526,8 @@ func doLevelUp(sheet, menu *Window, m int) {
 // reaches the next level.
 func checkLevelUp(m int) {
 	p := &party[m]
-	sheet := createWindow(0, 0, 40, 20, 20, -1, 0, false)
-	menu := createWindow(0, 20, 40, 4, 15, -1, 0, false)
+	sheet := createWindow(0, 0, 40, 20, 20, borderNone, 0, false)
+	menu := createWindow(0, 20, 40, 4, 15, borderNone, 0, false)
 	resumeWindowDraw(bottomLineWin)
 	eraseWindow(bottomLineWin, false)
 	b := make([]byte, dbs.Size[dbs.ClassExp]())
@@ -603,7 +603,7 @@ func calcAllowedClasses(m int) {
 func doChangeClass(sheet, menu *Window, m int) {
 	p := &party[m]
 	calcAllowedClasses(m)
-	w := createWindow(20, 4, 20, 16, 30, -1, 0, false)
+	w := createWindow(20, 4, 20, 16, 30, borderNone, 0, false)
 	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	drawPortraitFrame(w)
@@ -662,7 +662,7 @@ func doRename(w *Window, m int) {
 // portraitCount portraits (left/right) until Enter.
 func doChoosePortrait(w *Window, m int) {
 	p := &party[m]
-	pw := createWindow(20, 4, 20, 16, 30, -1, 0, false)
+	pw := createWindow(20, 4, 20, 16, 30, borderNone, 0, false)
 	fillWindow(pw, ' ', 3)
 	deferWindowDraw(pw)
 	drawPortraitFrame(pw)

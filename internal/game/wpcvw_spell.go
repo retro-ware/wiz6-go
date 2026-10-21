@@ -194,8 +194,8 @@ func chooseSheetSpell(sheet, menu *Window, m int, askPower bool) int {
 		}
 		return -1
 	}
-	book := createWindow(20, 4, 20, 16, 22, -1, 0, false)
-	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
+	book := createWindow(20, 4, 20, 16, 22, borderNone, 0, false)
+	list := createWindow(21, 7, 19, 8, 23, borderNone, 0, false)
 	done := func(v int) int {
 		pvBlinkState = -1
 		destroyWindow(book, false)

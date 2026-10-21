@@ -315,7 +315,7 @@ func trShowMessageText(msg, timed int) {
 		return
 	}
 	trTextCol, trTextRow = 0, 0
-	trTextWin = createWindow(0, 19, 40, trTextRows, 20, -1, 0, true)
+	trTextWin = createWindow(0, 19, 40, trTextRows, 20, borderNone, 0, true)
 	for {
 		s := getMessage(msg)
 		if msgNotFound {

@@ -601,9 +601,9 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 // change portrait, leave.
 func characterMenu() {
 	menuKeys = getMessage(1000)
-	sheetWin = createWindow(0, 0, 40, 20, 20, -1, 0, false)
-	promptWin = createWindow(0, 20, 40, 5, 19, -1, 0, false)
-	menuWin = createWindow(21, 7, 19, 13, 21, -1, 0, false)
+	sheetWin = createWindow(0, 0, 40, 20, 20, borderNone, 0, false)
+	promptWin = createWindow(0, 20, 40, 5, 19, borderNone, 0, false)
+	menuWin = createWindow(21, 7, 19, 13, 21, borderNone, 0, false)
 	for {
 		drawCreationScreen(sheetWin, promptWin)
 		enabled := []int{1, 1, 1, 1, 1, 1, -1}

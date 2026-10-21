@@ -229,7 +229,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 func skillPointsScreen(win *Window) {
 	fillWindow(win, ' ', 3)
 	refreshWindow(win)
-	skillWin := createWindow(20, 4, 20, 16, 25, -1, 0, false)
+	skillWin := createWindow(20, 4, 20, 16, 25, borderNone, 0, false)
 	personal := false
 	for i := firstPersonalSkill; i < firstAcademiaSkill; i++ {
 		if newPC.Skills[i] > 0 {
@@ -1005,8 +1005,8 @@ func drawSheetSpellList(w *Window, realm, sel int, cursor bool, spells []int) {
 // selectSpell (WPCMK 6800) lets the player pick a realm on the sheet and then one of its
 // known spells; the spell, or -1.
 func selectSpell(sheet, win *Window) int {
-	w := createWindow(20, 4, 20, 16, 22, -1, 0, false)
-	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
+	w := createWindow(20, 4, 20, 16, 22, borderNone, 0, false)
+	list := createWindow(21, 7, 19, 8, 23, borderNone, 0, false)
 	defer destroyWindow(list, false)
 	defer destroyWindow(w, false)
 	fillWindow(list, ' ', 3)

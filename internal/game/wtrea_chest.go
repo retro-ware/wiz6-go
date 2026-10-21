@@ -530,7 +530,7 @@ func trSetBlink(x, y int, a string, ca int, b string, cb int) {
 // (and with a targeted spell the target, trSpellTarget); level<<8 | spell, or -1.
 func chooseChestSpell(win *Window, member int) int {
 	p := &party[member]
-	book := createWindow(0, 18, 23, 7, 25, -1, 0, false)
+	book := createWindow(0, 18, 23, 7, 25, borderNone, 0, false)
 	list := createWindow(22, 19, 18, 6, 26, borderTopEdge, 0, false)
 	closeAll := func() {
 		trBlink = -1

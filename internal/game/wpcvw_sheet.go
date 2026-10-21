@@ -441,12 +441,12 @@ const (
 func viewCharacter(m int) {
 	gameState = gameStateID(returnCmd)
 	menuKeys = getMessage(300)
-	pvCardWin = createWindow(20, 4, 20, 16, 26, -1, 0, false)
+	pvCardWin = createWindow(20, 4, 20, 16, 26, borderNone, 0, false)
 	fillWindow(pvCardWin, ' ', 3)
 	deferWindowDraw(pvCardWin)
 	drawPortraitFrame(pvCardWin)
-	sheet := createWindow(0, 0, 40, 20, 20, -1, 0, false)
-	menu := createWindow(0, 20, 40, 4, 15, -1, 0, false)
+	sheet := createWindow(0, 0, 40, 20, 20, borderNone, 0, false)
+	menu := createWindow(0, 20, 40, 4, 15, borderNone, 0, false)
 	resumeWindowDraw(bottomLineWin)
 	eraseWindow(bottomLineWin, false)
 	pvNamesLoaded = false

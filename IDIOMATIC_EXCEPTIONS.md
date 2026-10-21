@@ -165,7 +165,7 @@ New names in wbase.go: `menuKeyEscape`..`menuKeyEnter` (places in menuKeys, the 
 
 ## internal/game: wmaze (wmaze, wmaze_main, wmaze_menu, wmaze_event, wmaze_lock, wmaze_view, wmaze_testhook)
 
-New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall sides), `exploreKeyForward`..`exploreKeyMenu` (places in message 2000), `event...` cell event kinds (mazeB.Kind), `mapBlocks`/`blockSize`/`mapEvents`/`blockStarts`/`animFrameSteps`, PC field indexes `conditionOK`/`conditionDead`, `statusAsleep`/`statusPoisoned`/`statusForever`, `statStrength`/`statDexterity`, `skillNoticeSecret`/`skillPickLock`, `classThief`/`classBard` (with wpcmk's `classNinja`), `soundBeep`/`soundDeathBase`; in wmaze_view.go `maxViewObjects`/`viewObjTiles`. Renamed: `mzMsg2000`/`mzMsg2001` -> `explorePrompt`/`menuPrompt`, `mzG5034` -> `mzEnteredCell`, `mzG5038` -> `mzWaitCut`, `mzG503a` -> `mzBumpMessage`, `mzG503c` -> `mzRefreshPending`, `mzG503e` -> `mzClearMessage`, `mzG5232` -> `mzNextEvent` (goldens rewritten), `mzG522c`/`mzG522e` -> `textLine`/`textLastColumn`, the view tables `mzG5042`..`mzG50b6`/`viewDepth` -> `viewNoFloor`, `viewAnimFloor`, `viewCellOpen`, `viewDrawLeftFront`, `viewDrawLeftSide`, ... (`mzParity`.. -> `viewParity`..), `wmazeF8ebb`..`wmazeF8f4c` -> `hide...Behind...`, `wmazeFa385`/`wmazeFa68d` -> `noopEvent18`/`noopEvent17`, `mzInputText` -> `inputTextAnimating`, `mzOpenTextWin`/`mzCloseTextWin` -> `openEventTextWin`/`closeEventTextWin`. `mzAnimate` duplicated `animateStep` and is gone. Game states, key codes/classes, borders, `clickRegionsEnd`, `noEquippedItem`, `inputPrintable`/`inputDigits` and `loadedSound` replace literals (wdopt.go still tests `Kind == 7`/`19` as numbers).
+New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall sides), `exploreKeyForward`..`exploreKeyMenu` (places in message 2000), `event...` cell event kinds (mazeB.Kind), `mapBlocks`/`blockSize`/`mapEvents`/`blockStarts`/`animFrameSteps`, PC field indexes `conditionOK`/`conditionDead`, `statusAsleep`/`statusPoisoned`/`statusForever`, `statStrength`/`statDexterity`, `skillNoticeSecret`/`skillPickLock`, `classThief`/`classBard` (with wpcmk's `classNinja`), `soundBeep`/`soundDeathBase`; in wmaze_view.go `maxViewObjects`/`viewObjTiles`. Renamed: `mzMsg2000`/`mzMsg2001` -> `explorePrompt`/`menuPrompt`, `mzG5034` -> `mzEnteredCell`, `mzG5038` -> `mzWaitCut`, `mzG503a` -> `mzBumpMessage`, `mzG503c` -> `mzRefreshPending`, `mzG503e` -> `mzClearMessage`, `mzG5232` -> `mzNextEvent` (goldens rewritten), `mzG522c`/`mzG522e` -> `textLine`/`textLastColumn`, the view tables `mzG5042`..`mzG50b6`/`viewDepth` -> `viewNoFloor`, `viewAnimFloor`, `viewCellOpen`, `viewDrawLeftFront`, `viewDrawLeftSide`, ... (`mzParity`.. -> `viewParity`..), `wmazeF8ebb`..`wmazeF8f4c` -> `hide...Behind...`, `wmazeFa385`/`wmazeFa68d` -> `noopEvent18`/`noopEvent17`, `mzInputText` -> `inputTextAnimating`, `mzOpenTextWin`/`mzCloseTextWin` -> `openEventTextWin`/`closeEventTextWin`. `mzAnimate` duplicated `animateStep` and is gone. Game states, key codes/classes, borders, `clickRegionsEnd`, `noEquippedItem`, `inputPrintable`/`inputDigits` and `loadedSound` replace literals (wdopt.go's `Kind == 7`/`19` now `eventDirValues`/`eventUseItem`).
 
 ### Hex/binary literals in code
 
@@ -176,7 +176,7 @@ New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall s
 - The compass names of `dirNorth`..`dirWest` assume y grows northwards; only the axis (0 y+1, 1 x+1, ...) is certain.
 - `g4f86`, `g4f88` (arrow pad turns/side-steps), `g4f8a` (the facing an event wants), `g4fa6` (last found block), `g363e` (door opening frame), `g4338`/`g4354`/`g433a` (combat entry parameters), `g4fb0`: core state, see the core section.
 - `mazeB.Unk288`, `scenarioHdr.Unk140`, `event288()`: dbs fields of unknown meaning.
-- Condition values other than 0 and 3 (2 is cured by event 25's bit 5), `Status[3]` and the other status slots, `Resist[...]` indexes, `partyCounters[0]`/`[2]`/`[5]` (effects: levitation-like, detect secret, trap ward by their use): left as numbers.
+- Condition values other than 0 and 3 (2 is cured by event 25's bit 5), `Status[3]` and the other status slots, `Resist[...]` indexes, `partyCounters[0]`/`[2]`/`[5]` (effects: levitation-like, detect secret, trap ward by their use): left as numbers. Correction: the character section's `effect...` names are right, [0] is `effectDirection` (spell 38; its B is also the map 8 item's flag) and [5] `effectLevitate` (spell 30, which wards traps).
 - Wall codes (0 open, 1/3 doors, 2 wall, 4..14 features), floor feature codes 1..15 (getFrontWall, sideFeature, tryMove, searchCell's 5, setDoorFeature's 7), map numbers (`gameStateArg == 1, 2, 5, 8, 10, 12, ...` for pits, edges and special cells), encounter odds (74, 92, 975/990, 995), menu entry indexes of mazePartyMenu/diskOptionsMenu/lockedDoorMenu and the event bit field positions in `extractBits(bits, n, w)`: the original's map data and layout, not named.
 - Message numbers (2000.., 2100.., 5231.., 10000), sound numbers, window positions/priorities, colours (incl. printString's -5 highlight), fonts, glyph numbers (gauges 86/99, portraits 72, class 58, condition 37, lock frame glyphs, arrow pad glyphs in putGlyphs2x2/4x2), click region rectangles, MAZEDATA tile numbers (the drawFrontCell/drawSideWall/drawFloorCeiling argument lists, 344..361, frame offsets 10, 13, 15, 18) and the view clip tables: the original's arguments with no name of their own.
 - `noopEvent17`/`noopEvent18`: empty in the original; what the kinds are is unknown.
@@ -253,7 +253,7 @@ New names, from the game's messages (MSG.DBS 100+, 120+, 140+, 351+, 1550+, 3050
 
 - `Resist[0..13]` indexes in the race and stat bonuses (addNewPCResistance/addResistance) and `resistTables`/`classResists`: which element each is was not checked; left as numbers.
 - `Status[1]`, `[4]`, `[6]`, `[8]`, `[9]` (spell 51 and the sheet's glyphs), `PC.Flags` bits 0..2 (drawStatsPanel's glyph 10), Item.Flags 16/32 and ItemRec.Flags 16/32 (copied through), `Hand.B0C`/`B0D`, `ItemRec.Unk62`/`Unk63`/`Unk68`/`Unk69`/`Unk73`, `PC.Unk026`: meaning not known.
-- `effect...`: partyCounters indexes named by the spell castSpell sets each with; wmaze's section guessed [0] and [5] differently (levitation-like, trap ward). state.go's `Spell.Books` comment says "2 alchemist 1 psionic", but chooseStartingSpell/learnNewSpell use bit 1 for the alchemist book and 2 for the psionic one (`spellBookBits`).
+- `effect...`: partyCounters indexes named by the spell castSpell sets each with; wmaze's section guessed [0] and [5] differently (levitation-like, trap ward); these names are right (spells 38 and 30 set them), and that note is corrected. state.go's `Spell.Books` comment said "2 alchemist 1 psionic"; chooseStartingSpell/learnNewSpell use bit 1 for the alchemist book and 2 for the psionic one (`spellBookBits`), and the comment is fixed.
 - Item types 0..2 (WEAPON S/E/T), 6..10 (armour), 12..16 (magical, special) stay numbers in the type switches; `useDirectionOnMap8`/`useReadWithItem388` and the item ids 388/395/403, maps 8, text messages: the original's data.
 - The class/race rule tables (HP, to-hit and skill rolls, attack steps in setClassAttackCounts, rank levels, resistance growth level 16, karma 9, monk AC cap 20, equip power stat cap 20, `p.Level < 250`), the load percentages of getLoadCategory, the weapon icon table of weaponSkill and canEquipItem's launcher/ammunition icons (11/22, 13/23, 12/83): game rules and data, left as numbers.
 - Message numbers, sound 1 (the adjust click), colours, window positions/priorities, glyph and icon numbers (frames, cursor marks 98/100/99/23, gauges 86/99, portraits 72, class 58), click region indexes and rectangles: the original's arguments, as elsewhere.
@@ -306,3 +306,24 @@ No identifiers renamed (the loot/chest/tr... state names are in the parity golde
 - markChestOpened reads the cell event's packed DirBits with extractBits (bits 0..7, 9..10, 11), as WMAZE does.
 - giveItemToMember duplicates WMNPC's npcGiveItemToMember (both overlays carry it); kept separate for the qty differences.
 - Spell choices packed as `level<<8 + spell`, as in WPCVW/WPOPS.
+
+## internal/game: wdopt (wdopt, wdopt_spell)
+
+No identifiers renamed (the dp... state and wdopt... helpers are already descriptive; no golden changes). New name: `eventUseItem` (19, check_item_location_event's item event) in wmaze.go's `event...` set. Game states, `keyClassMenu`/`keyEnter`, `menuKey...` (the 2001 menu's results), `animFrameSteps`, `borderNone`/`borderRightEdge`/`borderTopEdge`, `clickRegionsEnd`, `noEquippedItem`, `equip...`/`acBase`, `packSlots`/`itemSlots`, `soundBeep`, `eventDirValues`, `dir...`, the castSpell `spell...`/`effect...` names, `condition...`, `status...`, `statVitality`, `spellTargetMember`, `realmCount`, `maxPower` and `use...` (ItemRec.Unk69) replace literals. copyName's `+ 32` is `+ 'a' - 'A'`.
+
+### Hex/binary literals in code
+
+- None.
+
+### Unclear names kept
+
+- Spells 39 and 60 use the existing `spellOpenChest` and `spellMapInNPC` names (the unlocking and the overhead map spell); no outside-combat names of their own.
+- spellCureLesserCnd's statuses 1, 4, 8, 9 (only 2 `statusAsleep` named), `t.Unk026` (raised by resurrection), `mazeB.Unk288` (the lock's key item).
+- Floor codes 1/2 (stairs), 7 (door), 13/14 (dark, void) in wdoptMapCell, map numbers (`gameStateArg` 0..12, map 8's item), lock DirBits values 1/2 and the Param level bits: the map data, as in wmaze.
+- The overhead map's glyph numbers (1..20), pixel offsets and clip bounds (72, 239, 248), waitAnimatedView's `ticks *= 5` steps per tick, message numbers (2001, 2027.., 2113.., 3950.., 4000+), window positions/priorities, colours, click region indexes: the original's arguments.
+
+### Low-level code kept
+
+- `int16` wrap casts (`// C int wraps`) and `int8(getKey(...))`: kept for parity.
+- extractBits/getBitfield/testBit on the map's packed DirBits and cell arrays, as in WMAZE.
+- chooseSpellBook duplicates WPCVW/WPOPS's spell book (each overlay carries one); spell choices packed as `level<<8 + spell`.

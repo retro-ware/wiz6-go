@@ -190,7 +190,7 @@ const (
 func doSwagMenu(sheet, menu *Window, m int) {
 	p := &party[m]
 	loaded := false
-	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
+	w := createWindow(20, 4, 20, 16, 25, borderNone, 0, false)
 	for {
 		fillWindow(w, 0, 1)
 		f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
@@ -575,7 +575,7 @@ func printCipher(w *Window, v, color int) {
 func showItemInfo(menu *Window, m, i, power int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
-	w := createWindow(20, 8, 20, 12, 25, -1, 0, false)
+	w := createWindow(20, 8, 20, 12, 25, borderNone, 0, false)
 	fillWindow(w, 0, 1)
 	f := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	f(0, 0, 21)

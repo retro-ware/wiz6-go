@@ -57,7 +57,7 @@ type Item struct {
 	Type   uint8 // +4 item record +60
 	Icon   uint8 // +5 item record +61
 	Qty    uint8 // +6 charges / count
-	Flags  uint8 // +7 bit0 equipped, bit3 identified/tested
+	Flags  uint8 // +7 bit0 equipped, bit3 two-handed (wpcvw itemTwoHanded)
 }
 
 // Hand is one weapon hand (16 bytes, party+0xf0+16*h), rebuilt from the

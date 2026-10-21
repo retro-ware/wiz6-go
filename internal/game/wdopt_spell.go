@@ -8,8 +8,8 @@ import "strings"
 // spell cast on a member also asks chooseTarget(2030) for it, -1 cancelling.
 func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) int {
 	p := &party[m]
-	win := createWindow(0, 18, 23, 7, 25, -1, 0, false)
-	list := createWindow(22, 19, 18, 6, 26, -5, 0, false)
+	win := createWindow(0, 18, 23, 7, 25, borderNone, 0, false)
+	list := createWindow(22, 19, 18, 6, 26, borderTopEdge, 0, false)
 	done := func() {
 		pvBlinkState = -1
 		destroyWindow(win, false)
@@ -18,7 +18,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	drawBookSpellWindow(win, m)
 	drawListFrame(list, true)
 	realm := 0
-	for i := range 6 {
+	for i := range realmCount {
 		x, y := i/3*6+1, i%3<<1+1
 		setClickRegion(i, win.X+byte(x), win.Y+byte(y), win.X+byte(x), win.Y+byte(y))
 	}
@@ -27,7 +27,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	var count, sel int
 	for {
 		// The realm.
-		setClickRegion(7, 255, 0, 0, 0)
+		setClickRegion(7, clickRegionsEnd, 0, 0, 0)
 		redraw := true
 		pvBlinkWin = win
 		for {
@@ -55,19 +55,19 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 			c := input()
 			if menuClicked == 1 {
 				if c == realm {
-					c = 5
+					c = menuKeyEnter
 				} else {
 					unhighlightBookRealm(win, realm)
-					if c < 6 {
-						realm, c = c, 0
+					if c < realmCount {
+						realm, c = c, menuKeyEscape
 					} else {
-						realm, c, count = -1, 5, -1
+						realm, c, count = -1, menuKeyEnter, -1
 					}
 				}
 				redraw = true
 			} else {
 				switch c {
-				case 1:
+				case menuKeyLeft:
 					if realm == -1 {
 						unhighlightBookRealm(win, realm)
 						realm, redraw = 4, true
@@ -75,12 +75,12 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 						unhighlightBookRealm(win, realm)
 						realm, redraw = realm-3, true
 					}
-				case 2:
+				case menuKeyUp:
 					if realm != -1 && realm%3 > 0 {
 						unhighlightBookRealm(win, realm)
 						realm, redraw = realm-1, true
 					}
-				case 3:
+				case menuKeyRight:
 					if realm != -1 {
 						unhighlightBookRealm(win, realm)
 						redraw = true
@@ -88,14 +88,14 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 							realm = -1
 						}
 					}
-				case 4:
+				case menuKeyDown:
 					if realm != -1 && realm%3+1 < 3 {
 						unhighlightBookRealm(win, realm)
 						realm, redraw = realm+1, true
 					}
 				}
 			}
-			if c == 5 && count != 0 {
+			if c == menuKeyEnter && count != 0 {
 				break
 			}
 		}
@@ -113,7 +113,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 		setClickRegion(7, list.X+1, list.Y, list.X+1, list.Y)
 		setClickRegion(8, list.X+1, list.Y+4, list.X+1, list.Y+4)
 		setClickRegion(9, list.X+2, list.Y+2, list.X+19, list.Y+2)
-		setClickRegion(10, 255, 0, 0, 0)
+		setClickRegion(10, clickRegionsEnd, 0, 0, 0)
 		for {
 			pvBlinkState = 1
 			pvBlinkText[1] = getMessage(spells[sel] + 4000)
@@ -130,31 +130,31 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 			if menuClicked == 1 {
 				switch c {
 				case 0, 1, 2, 3, 4, 5:
-					realm, c = c, 1
+					realm, c = c, menuKeyLeft
 				case 6:
 					done()
 					return -1
 				case 7:
-					c = 2
+					c = menuKeyUp
 				case 8:
-					c = 4
+					c = menuKeyDown
 				case 9:
-					c = 5
+					c = menuKeyEnter
 				}
 			}
 			switch c {
-			case 1:
+			case menuKeyLeft:
 				back = true
-			case 2:
+			case menuKeyUp:
 				if sel > 0 {
 					sel--
 				}
-			case 4:
+			case menuKeyDown:
 				if sel+1 < count {
 					sel++
 				}
 			}
-			if c == 5 || back {
+			if c == menuKeyEnter || back {
 				break
 			}
 		}
@@ -173,12 +173,12 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	refreshWindow(list)
 	pvBlinkWin = win
 	level := 1
-	maxLevel := min(max(int(p.Level)-int(sp.Level)+1, 1), 6)
+	maxLevel := min(max(int(p.Level)-int(sp.Level)+1, 1), maxPower)
 	for i := range maxLevel {
 		setClickRegion(i, win.X+byte(i)+15, win.Y+3, win.X+byte(i)+15, win.Y+3)
 	}
 	setClickRegion(maxLevel, win.X+13, win.Y+3, win.X+13, win.Y+3)
-	setClickRegion(maxLevel+1, 255, 0, 0, 0)
+	setClickRegion(maxLevel+1, clickRegionsEnd, 0, 0, 0)
 	unmark := func() { // the level's digit back to plain
 		setCursor(win, level+14, 3)
 		putChar(win, byte(level+23), 5)
@@ -213,28 +213,28 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 		c := input()
 		if menuClicked == 1 {
 			if c+1 == level {
-				c = 5
+				c = menuKeyEnter
 			} else {
 				unmark()
 				level = 0
 				if c < maxLevel {
 					level = c + 1
 				}
-				c = 0
+				c = menuKeyEscape
 				if level == 0 {
-					c = 5
+					c = menuKeyEnter
 				}
 			}
 			redraw = true
 		} else {
 			switch c {
-			case 1:
+			case menuKeyLeft:
 				if level > 0 {
 					unmark()
 					level--
 					redraw = true
 				}
-			case 3:
+			case menuKeyRight:
 				if level == 0 {
 					unhighlightBookRealm(win, -1)
 					clearWindowArea(win, 13, 1, 20, 1)
@@ -248,7 +248,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 				}
 			}
 		}
-		if c == 5 && int(p.SP[realm].Cur) >= cost {
+		if c == menuKeyEnter && int(p.SP[realm].Cur) >= cost {
 			break
 		}
 	}
@@ -256,7 +256,7 @@ func chooseSpellBook(m int, input func() int, chooseTarget func(msg int) int) in
 	if level == 0 {
 		return -1
 	}
-	if sp.Target == 1 {
+	if sp.Target == spellTargetMember {
 		refreshAllWindows()
 		if chooseTarget(2030) == -1 {
 			return -1

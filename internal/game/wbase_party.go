@@ -592,7 +592,7 @@ func doGameConfiguration() {
 				if v := int(scenarioHdr.Delay) + d; v >= 0 && v <= math.MaxUint8 {
 					scenarioHdr.Delay = uint8(v)
 				} else {
-					playSound(0)
+					playSound(soundBeep)
 				}
 				delaySetting = int16(scenarioHdr.Delay)
 			case 2:
@@ -600,7 +600,7 @@ func doGameConfiguration() {
 			case 3:
 				scenarioHdr.Input = uint8((int(scenarioHdr.Input) + d + 2) % 2)
 			case 4, 6, 7:
-				playSound(0)
+				playSound(soundBeep)
 			case 5:
 				clearWindowArea(win, 19, 1, 38, 1)
 				setCursor(win, 19, 1)

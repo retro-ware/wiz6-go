@@ -81,6 +81,7 @@ const (
 	eventText          = 16
 	eventNoop17        = 17
 	eventNoop18        = 18
+	eventUseItem       = 19 // an item used on the cell (WDOPT check_item_location_event)
 	eventWallChange    = 21
 	eventClearFlag     = 22
 	eventChangeFloor   = 23

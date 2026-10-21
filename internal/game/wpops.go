@@ -317,8 +317,8 @@ func getCombatInput() int {
 	}
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if k := charIndex(combatKeys, getKey(1)); k >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if k := charIndex(combatKeys, getKey(keyClassMenu)); k >= 0 {
 				return k
 			}
 			continue
@@ -365,7 +365,7 @@ func selectMonsterGroup(win *Window, msg, rng, sel int) int {
 		setClickRegion(i, list.X, list.Y+byte(i), list.X+19, list.Y+byte(i))
 	}
 	setClickRegion(count, win.X+7, win.Y+3, byte(len(cancel)+int(win.X)+6), win.Y+3)
-	setClickRegion(count+1, 255, 0, 0, 0)
+	setClickRegion(count+1, clickRegionsEnd, 0, 0, 0)
 	cancelOn := func() {
 		setCursor(win, 7, 3)
 		printStringHi(win, cancel, 3)
@@ -447,7 +447,7 @@ func selectPartyMember(msg int) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, 32, 3)
 	clickText, keyText := getMessage(3607), getMessage(3608)
 	printCombatPrompt(getMessage(msg), 5)
@@ -469,7 +469,7 @@ func selectPartyMember(msg int) int {
 	}
 	setClickRegion(partyCount, mainWindow.X+byte(cx), mainWindow.Y+byte(cy),
 		byte(len(keyText)+int(mainWindow.X)+cx-1), mainWindow.Y+byte(cy))
-	setClickRegion(partyCount+1, 255, 0, 0, 0)
+	setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 	sel := -1
 	for {
 		if !mousePresent {
@@ -1071,8 +1071,8 @@ func startCombatRound() {
 	eraseCursorMark(bottomLineWin, false)
 	if monsterGroups[allyGroup].Count > 0 {
 		destroyWindow(pictureWin, false)
-		pictureWin = createWindow(9, 4, 22, 12, 2, -1, 2, false)
-		allyStripWin = createWindow(9, 16, 22, 2, 16, -1, 0, false)
+		pictureWin = createWindow(9, 4, 22, 12, 2, borderNone, 2, false)
+		allyStripWin = createWindow(9, 16, 22, 2, 16, borderNone, 0, false)
 		drawAllyGroup()
 	}
 	choosePartyActions(combatActionWin)
@@ -1080,7 +1080,7 @@ func startCombatRound() {
 		destroyWindow(allyStripWin, false)
 		allyStripWin = nil
 		destroyWindow(pictureWin, false)
-		pictureWin = createWindow(9, 4, 22, 14, 2, -1, 2, false)
+		pictureWin = createWindow(9, 4, 22, 14, 2, borderNone, 2, false)
 		viewAnimState = viewAnimMaze
 		for {
 			animateCombatStep()

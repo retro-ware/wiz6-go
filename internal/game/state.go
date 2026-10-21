@@ -233,7 +233,7 @@ type Spell struct {
 	Cost   uint8 // +2 g00e0: spell points per power level
 	B3     uint8 // +3
 	Target uint8 // +4 g00e2: 1 cast on a chosen member
-	Books  uint8 // +5 g00e3: bit per spell book (8 mage 4 priest 2 alchemist 1 psionic)
+	Books  uint8 // +5 g00e3: bit per spell book (8 mage 4 priest 1 alchemist 2 psionic, spellBookBits)
 }
 
 // spellTable (ROOT spell_table): the 82 spells.
