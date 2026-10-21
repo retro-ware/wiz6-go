@@ -49,7 +49,7 @@ autotype -w $WAIT -p $PACE ${AT[*]}
 dx-capture /V wroot.exe
 exit
 C
-SDL_VIDEODRIVER=dummy timeout -s KILL $((LIMIT+30)) dosbox-x -conf "$OUT/work/dos.conf" \
+SDL_VIDEODRIVER=dummy timeout -s KILL $((LIMIT*3+60)) dosbox-x -conf "$OUT/work/dos.conf" \
   -nogui -nomenu -exit -fastlaunch -time-limit $LIMIT >"$OUT/work/dos.log" 2>&1 || true
 # The capture splits into one AVI per video mode; walk them to map program time to file time.
 for i in $(seq 0 $((N-1))); do
@@ -92,3 +92,7 @@ for i in $(seq 0 $((N-1))); do
   echo "$p ${KEYS[$i]} ${n%% *} ${s%% *}" >> "$OUT/report.txt"
 done
 cat "$OUT/report.txt"
+for f in SAVEGAME.DBS PCFILE.DBS; do
+  [ -f "$OUT/work/dos/$f" ] && [ -f "$OUT/work/godata/$f" ] && \
+    echo "$f: $(cmp -l "$OUT/work/dos/$f" "$OUT/work/godata/$f" 2>&1 | wc -l | tr -d ' ') bytes differ" | tee -a "$OUT/report.txt"
+done
