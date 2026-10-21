@@ -111,12 +111,24 @@ func drawAllyGroup() {
 	resumeWindowDraw(w)
 }
 
+// MonsterPicRec.Frames entry and MonsterPicRec.Unk309 indexes.
+const (
+	frameDepth       = 0
+	frameTile        = 1 // the picture frame drawn
+	frameMinTicks    = 2 // ticks = random(frameRandomTicks) + frameMinTicks
+	frameRandomTicks = 3
+
+	picJitterX = 1 // Unk309: random x jitter range
+	picJitterY = 2 // Unk309: random y jitter range
+	picLayers  = 3 // Unk309: layer count
+)
+
 // animRunLength is Unk114[seq] of the picture; seq 9 runs into the next field.
 func animRunLength(p *MonsterPicRec, seq int) int {
 	if seq < len(p.Unk114) {
 		return int(p.Unk114[seq])
 	}
-	return int(p.Quads[0][0])
+	return int(p.Frames[0][0])
 }
 
 // buildMonsterAnimFrames (build_monster_anim_frames, WPOPS 48e4; WMEXE 5fa0, WMELE
@@ -134,7 +146,7 @@ func buildMonsterAnimFrames(g, col int) []byte {
 	}
 	c := &grp.Members[m]
 	var frames []byte
-	for layer := 0; layer < int(p.Unk309[3]); layer++ {
+	for layer := 0; layer < int(p.Unk309[picLayers]); layer++ {
 		st := &monsterFrames[col][layer]
 		var frame int
 		if c.Condition == conditionDown || c.Status[statusParalyzed] > 0 || c.Status[statusAsleep] > 0 {
@@ -151,11 +163,11 @@ func buildMonsterAnimFrames(g, col int) []byte {
 					frame = int(p.SeqStartFrame[seq])
 				}
 				st[1] = uint8(frame)
-				ticks = random(int(p.Quads[frame][3])) + int(p.Quads[frame][2])
+				ticks = random(int(p.Frames[frame][frameRandomTicks])) + int(p.Frames[frame][frameMinTicks])
 			}
 			st[2] = uint8(ticks)
 		}
-		f := p.Quads[frame][1]
+		f := p.Frames[frame][frameTile]
 		if picSlotMonster[slot] == 40 && layer == 4 {
 			f = 0
 		}
@@ -212,11 +224,11 @@ func queueMonsterSpriteNoShift(row, col int) {
 	}
 	mirror := col % 2
 	if random(10) == 9 {
-		monsterJitterX[row][col] = uint8(random(int(p.Unk309[1])))
-		monsterJitterY[row][col] = uint8(random(int(p.Unk309[2])))
+		monsterJitterX[row][col] = uint8(random(int(p.Unk309[picJitterX])))
+		monsterJitterY[row][col] = uint8(random(int(p.Unk309[picJitterY])))
 	}
 	f := int(frames[0])
-	depth := int(p.Quads[f][0])
+	depth := int(p.Frames[f][frameDepth])
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}
@@ -672,7 +684,7 @@ func choosePartyActions(win *Window) {
 					}
 				}
 			}
-			if member >= 3 && p.Hands[0].B0D == 0 && c.Stance != stanceHidden {
+			if member >= 3 && p.Hands[0].Range == 0 && c.Stance != stanceHidden {
 				enabled[actionAttack] = 0
 			}
 			enabled[11] = -1
@@ -728,7 +740,7 @@ func choosePartyActions(win *Window) {
 						choice = menuSelect(win, 3050, attacks[:], 3, 1, 8, 3, 5, 0, getCombatInput)
 					}
 					if choice != -1 {
-						rng := int(p.Hands[0].B0D)
+						rng := int(p.Hands[0].Range)
 						if rng == 2 && choice != 4 {
 							rng = 0
 						}
@@ -808,7 +820,7 @@ func choosePartyActions(win *Window) {
 						switch t := p.Items[ammo].Type; {
 						case t == 2 || t == 12 || t == 16:
 							c.SecondAttack = 4
-						case t < 2 && (p.Hands[1].B0D == 1 || member < 3 && target < 3):
+						case t < 2 && (p.Hands[1].Range == 1 || member < 3 && target < 3):
 							var b int
 							for tries := 0; ; {
 								b = pickRandomSetBit(p.Hands[1].Flags)
@@ -916,8 +928,8 @@ func chooseGroupActions(group, targetGroup int) {
 	grp, rec := monsterGroups[group], groupMonsterRec[group]
 	for i := 0; i < int(grp.Count); i++ {
 		m := &grp.Members[i]
-		power := max(random(10)+int(m.B41)+int(rec.Unk211[0]), 1)
-		step := power / int(rec.Unk211[2])
+		power := max(random(10)+int(m.B41)+int(rec.Unk211[monAttackPower]), 1)
+		step := power / int(rec.Unk211[monSecondaryAttacks])
 		if rec.Flags&2 != 0 {
 			m.B35[1] = 1
 		}
@@ -934,7 +946,7 @@ func chooseGroupActions(group, targetGroup int) {
 			}
 		}
 		for s := range 4 {
-			if int(rec.Unk211[2]) <= s || uint8(m.Condition) >= conditionDown || m.Status[statusParalyzed] > 0 || m.Status[statusAsleep] > 0 {
+			if int(rec.Unk211[monSecondaryAttacks]) <= s || uint8(m.Condition) >= conditionDown || m.Status[statusParalyzed] > 0 || m.Status[statusAsleep] > 0 {
 				m.Plan[s] = 0
 			} else {
 				m.Plan[s] = int8(power)
@@ -949,13 +961,13 @@ func chooseGroupActions(group, targetGroup int) {
 				break
 			}
 		}
-		if random(100) < int(rec.Unk168[0]) {
+		if random(100) < int(rec.Unk168[monCastChance]) {
 			act = actionCast
 			m.Plan[planAction] = actionCast
 			roll, limit, spell := random(100), 5, -1
 			for k := 0; spell == -1; k++ {
 				if roll < limit {
-					spell = int(rec.Unk138[k])
+					spell = int(rec.Spells[k])
 				}
 				switch {
 				case limit < 15:
@@ -981,10 +993,10 @@ func chooseGroupActions(group, targetGroup int) {
 			}
 			m.Choice = int16(lv<<8 + spell)
 		}
-		if act == -1 && random(100) < int(rec.Unk168[2]) {
+		if act == -1 && random(100) < int(rec.Unk168[monBreathChance]) {
 			act = actionBreath
 			m.Plan[planAction] = actionBreath
-			m.Choice = int16(rec.Unk211[5])
+			m.Choice = int16(rec.Unk211[monBreath])
 		}
 		if act == -1 {
 			reach := 0
@@ -1042,7 +1054,7 @@ func chooseMonsterActions() {
 	monsterGroups[0].Count = uint8(partyCount)
 	allies := monsterGroups[allyGroup].Count > 0
 	for g := 1; g <= monsterGroupCount; g++ {
-		if !allies || random(4) != 1 || groupMonsterRec[g].Unk208 == 22 {
+		if !allies || random(4) != 1 || groupMonsterRec[g].Class == 22 {
 			chooseGroupActions(g, 0)
 		} else {
 			chooseGroupActions(g, allyGroup)

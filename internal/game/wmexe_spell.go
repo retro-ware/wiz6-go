@@ -93,7 +93,7 @@ func playSpellAnimation(g, i, kind, row, tg, ti int, flash bool) {
 	p := &monsterPics[pic]
 	q := int(p.SeqStartFrame[frame])
 	for s := 0; s < 3; s++ {
-		f := byte(int(p.Quads[q][1]) + step[s])
+		f := byte(int(p.Frames[q][frameTile]) + step[s])
 		viewAnimState = viewAnimMaze
 		mexeAnimateStep()
 		at := kind*24 + side*12 + mirror*6 + s*2
@@ -165,7 +165,7 @@ func doCastAction(c *Combatant) int {
 		cl := party[actMember].Class
 		silenceable = !(cl == classAlchemist || cl == classRanger || cl == classNinja)
 	} else {
-		k := groupMonsterRec[actGroup].Unk208
+		k := groupMonsterRec[actGroup].Class
 		silenceable = !(k == 5 || k == 4 || k == 13)
 	}
 	checkMiscast(sp)
@@ -255,7 +255,7 @@ func doUseItemAction(c *Combatant) {
 		} else {
 			mexeVerb = getMessage(3316)
 		}
-		if rec.Unk69 == 7 {
+		if rec.UseAction == 7 {
 			g4352 = 1
 			skill = -1
 			mexeVerb = getMessage(3312)
@@ -780,11 +780,11 @@ func doCastSpell(c *Combatant, spell, power int) {
 		hitDamage(tg, -(power + 1), 1, 7, power, 12, mod)
 	case 67, 75:
 		spellAnimation(tg, 0, 2, true)
-		kind, msg := uint8(20), 3493
+		kind, msg := uint8(classUndead), 3493
 		if spell == 75 {
 			kind, msg = 21, 3497
 		}
-		if groupMonsterRec[tg].Unk208 == kind {
+		if groupMonsterRec[tg].Class == kind {
 			mod += (int(c.Level) - int(fighter(tg, ti).Level)) * 3
 		} else {
 			mod = -100
@@ -826,7 +826,7 @@ func doCastSpell(c *Combatant, spell, power int) {
 		sideGroups(other, func(g int) { groupStatus(g, 3486, 11, 3, mod, true, power, power, power) })
 	case 79:
 		spellAnimation(tg, ti, 4, false)
-		k := groupMonsterRec[tg].Unk208
+		k := groupMonsterRec[tg].Class
 		if !(k == 22 && g4352 != 0 || k == 20 || k == 21) {
 			mod = -100
 		}
@@ -895,22 +895,22 @@ func doCastSpell(c *Combatant, spell, power int) {
 			}
 		}
 	case 53:
-		partyCounters[2].A += int16(power * 50)
+		partyCounters[2].Duration += int16(power * 50)
 		partyCounters[2].B = int16(clampToward(power*5+70, int(partyCounters[2].B), 0))
 	case 68:
-		partyCounters[3].A += int16(power * 35)
+		partyCounters[3].Duration += int16(power * 35)
 		partyCounters[3].B = int16(clampToward((power-1)/2+1, int(partyCounters[3].B), 0))
 	case 41:
-		partyCounters[1].A += int16(power * 50)
+		partyCounters[1].Duration += int16(power * 50)
 		partyCounters[1].B = int16(clampToward((power-1)/2+1, int(partyCounters[1].B), 0))
 	case 30:
-		partyCounters[5].A += int16(power * 5)
+		partyCounters[5].Duration += int16(power * 5)
 	case 38:
-		partyCounters[0].A += int16(100 * power)
+		partyCounters[0].Duration += int16(100 * power)
 	case 70:
 		raiseWard(&own.Wards[4], power*10)
 		if actGroup == 0 {
-			partyCounters[4].A += int16(power * 50)
+			partyCounters[4].Duration += int16(power * 50)
 			partyCounters[4].B = int16(clampToward(power*10, int(partyCounters[4].B), 0))
 		}
 	}

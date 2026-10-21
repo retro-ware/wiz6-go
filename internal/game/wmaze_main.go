@@ -476,9 +476,9 @@ func getMazeInput(keys string) int {
 func tickEffectTimers(n int) {
 	for i := range partyCounters {
 		c := &partyCounters[i]
-		c.A -= int16(n)
-		if c.A <= 0 {
-			c.A = 0
+		c.Duration -= int16(n)
+		if c.Duration <= 0 {
+			c.Duration = 0
 			if i != 0 {
 				c.B = 0
 			}

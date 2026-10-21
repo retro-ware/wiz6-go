@@ -63,12 +63,12 @@ type Item struct {
 // Hand is one weapon hand (16 bytes, party+0xf0+16*h), rebuilt from the
 // equipped weapon's item record on equip.
 type Hand struct {
-	Damage Dice     // +0x0 item +24; bare hand {0,2,2}
-	Data   [8]uint8 // +0x4 item +46..53; Data[6] (+0xa) is crit chance
-	B0C    uint8    // +0xc item +65
-	B0D    uint8    // +0xd item +64
-	ToHit  int8     // +0xe -5*item +71
-	Flags  uint8    // +0xf item +72; 32 bare, |64 martial arts
+	Damage     Dice     // +0x0 item +24; bare hand {0,2,2}
+	HitEffects [8]uint8 // +0x4 item +46..53; HitEffects[6] (+0xa) is crit chance
+	PoisonStr  uint8    // +0xc item +65, poison strength
+	Range      uint8    // +0xd item +64; reach (0: front row only)
+	ToHit      int8     // +0xe -5*item +71
+	Flags      uint8    // +0xf item +72; 32 bare, |64 martial arts
 }
 
 // SpellPoints is one realm's pool (party+0x28+4*realm).
@@ -189,8 +189,8 @@ type SaveState struct {
 
 // PartyCounter is one g4ec8 entry (party-wide timed effect: value, duration).
 type PartyCounter struct {
-	A int16 // +0 g4ec8[i]
-	B int16 // +2 g4eca[i]
+	Duration int16 // +0 g4ec8[i]
+	B        int16 // +2 g4eca[i]
 }
 
 // SaveGame is NEWGAME.DBS / SAVEGAME.DBS (49856 + 432*PartyCount bytes).
@@ -266,32 +266,32 @@ type ClassExp struct {
 
 // ItemRec (type 1, 74 bytes).
 type ItemRec struct {
-	Name       [16]uint8 // +0  "unidentified\0identified"
-	Price      int32     // +16
-	Charges    Dice      // +20 quantity roll
-	Damage     Dice      // +24 -> Hand.Damage
-	Spell      int16     // +28 power<<8 | spell
-	Weight     int16     // +30 tenths
-	SkillBonus [14]uint8 // +32 add_skill_bonus, [1..13]
-	HandData   [8]uint8  // +46 -> Hand.Data
-	ClassMask  uint16    // +54
-	RaceMask   uint16    // +56
-	SexMask    uint8     // +58
-	Flags      uint8     // +59
-	Type       uint8     // +60
-	Icon       uint8     // +61
-	Unk62      uint8     // +62
-	Unk63      uint8     // +63
-	HandD      uint8     // +64 -> Hand.B0D
-	HandC      uint8     // +65 -> Hand.B0C
-	Regen      uint8     // +66 -> PC.Regen (max)
-	Drain      uint8     // +67 -> PC.Drain
-	Unk68      uint8     // +68
-	Unk69      uint8     // +69
-	AC         uint8     // +70
-	ToHitPen   uint8     // +71 Hand.ToHit -= 5*x
-	HandFlags  uint8     // +72 -> Hand.Flags (sometimes read as int16 with +73)
-	Unk73      uint8     // +73
+	Name          [16]uint8 // +0  "unidentified\0identified"
+	Price         int32     // +16
+	Charges       Dice      // +20 quantity roll
+	Damage        Dice      // +24 -> Hand.Damage
+	Spell         int16     // +28 power<<8 | spell
+	Weight        int16     // +30 tenths
+	SkillBonus    [14]uint8 // +32 add_skill_bonus, [1..13]
+	HitEffects    [8]uint8  // +46 -> Hand.HitEffects
+	ClassMask     uint16    // +54
+	RaceMask      uint16    // +56
+	SexMask       uint8     // +58
+	Flags         uint8     // +59
+	Type          uint8     // +60
+	Icon          uint8     // +61
+	IdentifyLevel uint8     // +62
+	Curse         uint8     // +63
+	Range         uint8     // +64 -> Hand.Range, reach
+	PoisonStr     uint8     // +65 -> Hand.PoisonStr
+	Regen         uint8     // +66 -> PC.Regen (max)
+	Drain         uint8     // +67 -> PC.Drain
+	Power         uint8     // +68
+	UseAction     uint8     // +69
+	AC            uint8     // +70
+	ToHitPen      uint8     // +71 Hand.ToHit -= 5*x
+	HandFlags     uint8     // +72 -> Hand.Flags (sometimes read as int16 with +73)
+	Unk73         uint8     // +73
 }
 
 // MapA (type 2, 1346 bytes, maze_data): geometry and encounters of one map.
@@ -330,11 +330,11 @@ type MapB struct {
 
 // MonsterAttack is one of a monster's three attacks (16 bytes, mon+68+16*i).
 type MonsterAttack struct {
-	Damage Dice     // +0
-	Unk4   [9]uint8 // +4
-	Range  uint8    // +13 reach; <=1 melee only
-	ToHit  int8     // +14
-	Effect uint8    // +15 bitset
+	Damage     Dice     // +0
+	HitEffects [9]uint8 // +4 as Hand.HitEffects, [8] poison strength
+	Range      uint8    // +13 reach; <=1 melee only
+	ToHit      int8     // +14
+	Effect     uint8    // +15 bitset
 }
 
 // MonsterRec (type 4, 222 bytes; group_monster_rec[g]).
@@ -348,9 +348,9 @@ type MonsterRec struct {
 	Stamina    Dice             // +124
 	AttackKind [3]uint8         // +128 msg 3371+
 	AttackVerb [3]uint8         // +131 msg 3799+
-	Unk134     uint8            // +134
-	Unk135     [3]uint8         // +135 summed in attack
-	Unk138     [10]uint8        // +138
+	Strength   uint8            // +134
+	Stats      [3]uint8         // +135 intelligence, dexterity, speed
+	Spells     [10]uint8        // +138
 	Resist     [14]uint8        // +148
 	Treasure   [2]uint8         // +162 treasure ids
 	Companion  [2]uint8         // +164 monster id
@@ -358,11 +358,11 @@ type MonsterRec struct {
 	Unk168     [4]uint8         // +168
 	Unk172     [18]uint8        // +172
 	AC         [8]uint8         // +190
-	Unk198     [10]uint8        // +198
-	Unk208     uint8            // +208
+	KindAC     [10]uint8        // +198
+	Class      uint8            // +208
 	Pic        uint8            // +209 monster pic (via f4858)
 	Sound      uint8            // +210
-	Unk211     [9]uint8         // +211 [2] (+213) is a divisor
+	Unk211     [9]uint8         // +211 [0] attack power, [1] primary attacks, [2] secondary, [3] sex, [4] regen, [5] breath, [7] kill flag
 	Flags      uint8            // +220
 	Unk221     uint8            // +221
 }
@@ -375,16 +375,16 @@ type NPCEntry struct {
 
 // NPCRec (type 5, 142 bytes; WMNPC DS:0x5146).
 type NPCRec struct {
-	Name     [16]uint8   // +0x00
-	Entries  [8]NPCEntry // +0x10
-	Topics   [20]int16   // +0x40 message ids
-	Unk68    [9]int16    // +0x68
-	Gold     int32       // +0x7a g51c0
-	Scripts  [8]uint8    // +0x7e event script ids (npcRunScript)
-	Unk86    [5]uint8    // +0x86
-	Treasure uint8       // +0x8b g51d1
-	Disarm   int8        // +0x8c spell_disarm_result
-	Unk8D    uint8       // +0x8d
+	Name       [16]uint8   // +0x00
+	Entries    [8]NPCEntry // +0x10
+	Topics     [20]int16   // +0x40 message ids
+	Msgs       [9]int16    // +0x68
+	Gold       int32       // +0x7a g51c0
+	Scripts    [8]uint8    // +0x7e event script ids (npcRunScript)
+	Unk86      [5]uint8    // +0x86
+	Treasure   uint8       // +0x8b g51d1
+	Disarm     int8        // +0x8c spell_disarm_result
+	TradeFlags uint8       // +0x8d
 }
 
 // EventOp is one step of an event script.
@@ -425,7 +425,7 @@ type MonsterPicRec struct {
 	SeqCount      [10]uint8     // +94 per layer: sequences to pick from
 	SeqStartFrame [10]uint8     // +104 per sequence: first frame
 	Unk114        [9]uint8      // +114
-	Quads         [40][4]uint8  // +123
+	Frames        [40][4]uint8  // +123
 	Unk283        uint8         // +283
 	Offsets       [2][5][2]int8 // +284 g37fa
 	Unk304        [2]uint8      // +304

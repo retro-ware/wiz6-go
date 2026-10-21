@@ -435,20 +435,20 @@ func castChestSpell(member, spell, level, target int, win, trapWin *Window) {
 	t := &party[target]
 	switch spell {
 	case spellDetectSecret:
-		c[effectDetectSecret].A += int16(level * 50)
+		c[effectDetectSecret].Duration += int16(level * 50)
 		c[effectDetectSecret].B = int16(clampToward(level*5+70, int(c[effectDetectSecret].B), 0))
 	case spellEnchantedBlade:
-		c[effectEnchantedBlade].A += int16(level * 35)
+		c[effectEnchantedBlade].Duration += int16(level * 35)
 		c[effectEnchantedBlade].B = int16(clampToward((level-1)/2+1, int(c[effectEnchantedBlade].B), 0))
 	case spellArmorplate:
-		c[effectArmorplate].A += int16(level * 50)
+		c[effectArmorplate].Duration += int16(level * 50)
 		c[effectArmorplate].B = int16(clampToward((level-1)/2+1, int(c[effectArmorplate].B), 0))
 	case spellLevitate:
-		c[effectLevitate].A += int16(level * 5)
+		c[effectLevitate].Duration += int16(level * 5)
 	case spellDirection:
-		c[effectDirection].A += int16(100 * level)
+		c[effectDirection].Duration += int16(100 * level)
 	case spellMagicScreen:
-		c[effectMagicScreen].A += int16(level * 50)
+		c[effectMagicScreen].Duration += int16(level * 50)
 		c[effectMagicScreen].B = int16(clampToward(level*5, int(c[effectMagicScreen].B), 0))
 	case spellOpenChest:
 		trySpellDisarm(win, trapWin, member, level)

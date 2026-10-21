@@ -146,6 +146,7 @@ const (
 	classBishop       = 9
 	classLord         = 10
 	classSamurai      = 11
+	classUndead       = 20 // a monster class (MonsterRec.Class): DISPEL UNDEAD
 	classCount        = 14
 	soundBeep         = 0
 	soundDeathBase    = 8 // plus Sex

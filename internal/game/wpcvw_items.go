@@ -8,8 +8,8 @@ import "strconv"
 func clearHandAttack(m, h int) {
 	p := &party[m]
 	hd := &p.Hands[h]
-	hd.B0D, hd.B0C = 0, 0
-	hd.Data = [8]uint8{}
+	hd.Range, hd.PoisonStr = 0, 0
+	hd.HitEffects = [8]uint8{}
 	hd.ToHit = 0
 	hd.Damage = Dice{Base: 0, Count: bareHandDamage, Sides: bareHandDamage}
 	hd.Flags = handPunch
@@ -18,7 +18,7 @@ func clearHandAttack(m, h int) {
 	if p.Class == classNinja || p.Class == classMonk {
 		hd.Damage.Sides = uint8(hand/3 + 2)
 		hd.Flags |= handKick
-		hd.Data[handCritical] = uint8(kiri + 5)
+		hd.HitEffects[handCritical] = uint8(kiri + 5)
 		return
 	}
 	if hand > 0 {
@@ -26,7 +26,7 @@ func clearHandAttack(m, h int) {
 		hd.Flags |= handKick
 	}
 	if kiri > 0 {
-		hd.Data[handCritical] = uint8(kiri)
+		hd.HitEffects[handCritical] = uint8(kiri)
 	}
 }
 
@@ -483,7 +483,7 @@ func doMergeItems(sheet, menu *Window, m int) {
 	drawSheet(sheet, menu, m)
 }
 
-// ItemRec.Unk69 values: what using an item does instead of casting its spell.
+// ItemRec.UseAction values: what using an item does instead of casting its spell.
 const (
 	useReadWithItem    = 1 // pick an item to read (395, 403) with this one
 	useShowText        = 2 // show the text pages of message Price
@@ -494,16 +494,16 @@ const (
 )
 
 // useItemOnSheet (do_use_item, WPCVW 8fbf) uses item i of member m: the item record's
-// Unk69 picks a reading or key action, else Spell is a spell it casts.
+// UseAction picks a reading or key action, else Spell is a spell it casts.
 func useItemOnSheet(sheet, menu *Window, m, i int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
-	if rec.Unk69 > 0 {
+	if rec.UseAction > 0 {
 		pickedIs := func(id int16) bool {
 			j := chooseItem(sheet, menu, 408, m, false)
 			return j >= 0 && p.Items[j].ID == id // the C reads slot -1 on cancel
 		}
-		switch rec.Unk69 {
+		switch rec.UseAction {
 		case useReadWithItem:
 			j := chooseItem(sheet, menu, 408, m, false)
 			if j >= 0 && p.Items[j].ID == 395 {
@@ -571,7 +571,7 @@ func printCipher(w *Window, v, color int) {
 
 // showItemInfo (WPCVW b6c4) shows item i of member m in a window: unidentified (power 0)
 // its kind, who may use it, its attack flags, hands and weight; identified with spell
-// power, its damage, bonuses, powers and resistances, if power*3 beats its Unk62.
+// power, its damage, bonuses, powers and resistances, if power*3 beats its IdentifyLevel.
 func showItemInfo(menu *Window, m, i, power int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
@@ -710,7 +710,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 		putChar(w, '.', 9)
 		printInt(w, int(rec.Weight)%10, 1, 9)
 
-	case power*3 > int(rec.Unk62):
+	case power*3 > int(rec.IdentifyLevel):
 		row := 3
 		if damage {
 			setCursor(w, 1, 3)
@@ -747,11 +747,11 @@ func showItemInfo(menu *Window, m, i, power int) {
 			printString(w, strconv.Itoa(d), 5)
 			row = 5
 		}
-		if rec.Unk63 != 0 {
+		if rec.Curse != 0 {
 			setCursor(w, 1, row)
 			printString(w, getMessage(465), 3)
 			setCursor(w, 15, row)
-			printCipher(w, int(rec.Unk63), 1)
+			printCipher(w, int(rec.Curse), 1)
 			row++
 		}
 		if rec.Spell != 0 {
@@ -768,17 +768,17 @@ func showItemInfo(menu *Window, m, i, power int) {
 		if row > 3 && row < 8 {
 			row++
 		}
-		if rec.Unk68 != 0 {
+		if rec.Power != 0 {
 			setCursor(w, 1, row)
 			printString(w, getMessage(469), 7)
 			setCursor(w, 15, row)
-			printCipher(w, int(rec.Unk68), 1)
+			printCipher(w, int(rec.Power), 1)
 			row++
 		}
 		if specials {
 			n := 0
 			for b := 0; b < 8; b++ {
-				if rec.HandData[b] > 0 {
+				if rec.HitEffects[b] > 0 {
 					setCursor(w, n/3<<3+3, n%3+row)
 					printString(w, getMessage(b+470), 5)
 					n++

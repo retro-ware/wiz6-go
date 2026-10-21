@@ -254,7 +254,7 @@ func resetCombatValues(m int) {
 	}
 }
 
-// The special powers (ItemRec.Unk68) doEquipItems may invoke.
+// The special powers (ItemRec.Power) doEquipItems may invoke.
 const (
 	powerLastStat         = statCount // 1..statCount raise stat power-1
 	powerPrimaryAttacks   = 9
@@ -358,19 +358,19 @@ func doEquipItems(sheet, menu *Window, m int) {
 			p.Equipped[s] = uint8(i)
 			p.Items[i].Flags |= itemEquipped
 			rec := itemRec(int(p.Items[i].ID))
-			power[s] = int(rec.Unk68)
+			power[s] = int(rec.Power)
 			if s <= equipSecondary {
 				h := &p.Hands[s]
 				p.AC[acHands] -= rec.AC
-				h.B0D = rec.HandD
-				h.Data = rec.HandData
+				h.Range = rec.Range
+				h.HitEffects = rec.HitEffects
 				kiri := int(p.Skills[skillKirijutsu]) / 5
 				if p.Class == classMonk || p.Class == classNinja {
-					h.Data[handCritical] += uint8(kiri + 5)
+					h.HitEffects[handCritical] += uint8(kiri + 5)
 				} else if kiri > 0 {
-					h.Data[handCritical] += uint8(kiri)
+					h.HitEffects[handCritical] += uint8(kiri)
 				}
-				h.B0C = rec.HandC
+				h.PoisonStr = rec.PoisonStr
 				if rec.Type == itemTypeMissile {
 					h.ToHit = -int8(rec.ToHitPen) * 5
 				} else {

@@ -11,7 +11,7 @@ import (
 // A topic word is stored with a mark that gives its plural: "word%" adds S, "word@" is the
 // same, "word^nsuffix" drops n letters and adds suffix. Its first message character - 32
 // is a delta: a negative one makes it an alias of an earlier topic. The NPC's own topics
-// (from message Unk68[0], step 5) come first, then the common ones (8000, step 5); topic
+// (from message Msgs[npcTopicsBase], step 5) come first, then the common ones (8000, step 5); topic
 // k's answers are messages base+1..base+4.
 
 // Word lists, by fbf7f's list number.
@@ -83,9 +83,9 @@ type npcTalkState struct {
 
 // npcLoadVocabulary (WMNPC d46f) loads the words the NPC knows (d2d3, d392, d3f3, d431).
 func npcLoadVocabulary() {
-	npcInterj = [2]int{int(npcRec.Unk68[2]), int(npcRec.Unk68[3])}
+	npcInterj = [2]int{int(npcRec.Msgs[npcInterjections]), int(npcRec.Msgs[npcInterjections+1])}
 	npcVocab, npcVocabRef = npcVocab[:0], npcVocabRef[:0]
-	for i, base := range []int{int(npcRec.Unk68[0]), 8000} {
+	for i, base := range []int{int(npcRec.Msgs[npcTopicsBase]), 8000} {
 		for msg := base; ; msg += 5 {
 			s := getMessage(msg)
 			if msgNotFound {
@@ -126,7 +126,7 @@ func npcLoadVocabulary() {
 // npcTopicMsg (WMNPC cdb0) is the first message of topic k.
 func npcTopicMsg(k int) int {
 	if k < npcVocabOwn {
-		return k*5 + int(npcRec.Unk68[0])
+		return k*5 + int(npcRec.Msgs[npcTopicsBase])
 	}
 	return (k-npcVocabOwn)*5 + 8000
 }
@@ -219,11 +219,11 @@ func npcSwapPair(s string) string {
 // npcAnswerWord is topic k's word as the NPC says it.
 func npcAnswerWord(k, plural int) string { return npcSwapPair(npcTopicWord(k, plural)) }
 
-// npcRumor (WMNPC c16d) is one of the NPC's rumours (message Unk68[4]: two count bytes,
+// npcRumor (WMNPC c16d) is one of the NPC's rumours (message Msgs[npcRumors]: two count bytes,
 // then "rumour/rumour/..."): mode 0 one of the first ones, 1 one of the rest. The rumour
 // also becomes the topic.
 func npcRumor(mode int) string {
-	s := getMessage(int(npcRec.Unk68[4]))
+	s := getMessage(int(npcRec.Msgs[npcRumors]))
 	if len(s) < 2 {
 		return ""
 	}
@@ -513,7 +513,7 @@ func npcAnswer() {
 	case 0, 1, 2, 3:
 		if tk.verb == 0 {
 			if q && k == 0 && (ask[0] || ask[1]) {
-				if npcRec.Unk68[4] > 0 {
+				if npcRec.Msgs[npcRumors] > 0 {
 					npcSay(1617, npcRumor(0))
 				} else {
 					npcSay(1638, "")

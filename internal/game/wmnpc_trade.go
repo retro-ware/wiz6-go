@@ -16,7 +16,7 @@ func npcApplySpell(caster, s, power, target int) {
 	switch s {
 	case spellLockInNPC, spellMapInNPC: // the lock and map spells do nothing here
 	case spellCharmNPC:
-		if npcRec.Unk8D&npcCharmProof != 0 || random(100) > int(int16(power*10+(int(c.Level)-npcLevel())*5+25)) { // C int wraps
+		if npcRec.TradeFlags&npcCharmProof != 0 || random(100) > int(int16(power*10+(int(c.Level)-npcLevel())*5+25)) { // C int wraps
 			npcNoticeName(1544, false)
 		} else {
 			npcNoticeName(1543, false)
@@ -25,7 +25,7 @@ func npcApplySpell(caster, s, power, target int) {
 		return
 	case spellDrawRumor:
 		var s string
-		if npcRec.Unk8D&npcRumorProof != 0 || random(int(c.Level)/2+power*3) < npcLevel() {
+		if npcRec.TradeFlags&npcRumorProof != 0 || random(int(c.Level)/2+power*3) < npcLevel() {
 			s = getMessage(1545)
 		} else {
 			rumor := npcRumor(1) // before message 1546, as the C
@@ -267,7 +267,7 @@ func npcPriceWares() {
 		if stackable[w.Type] == 1 {
 			price *= int32(w.Qty)
 		}
-		w.Price = int32(npcRec.Unk68[5]) * price / 100
+		w.Price = int32(npcRec.Msgs[npcSellPct]) * price / 100
 		w.Icon = rec.Icon
 		w.Class, w.Race, w.Sex = rec.ClassMask, rec.RaceMask, rec.SexMask
 	}
@@ -415,13 +415,13 @@ func npcSellItem(win *Window, m, slot int) int {
 	} else {
 		price = price * 100 / int32(full) * int32(qty) / 100
 	}
-	price = int32(npcRec.Unk68[6]) * price / 100
-	accepted := id == int(npcRec.Unk68[7]) || id == int(npcRec.Unk68[8])
+	price = int32(npcRec.Msgs[npcBuyPct]) * price / 100
+	accepted := id == int(npcRec.Msgs[npcAccepted]) || id == int(npcRec.Msgs[npcAccepted+1])
 	switch {
 	case rec.Flags&itemImportant != 0 && !accepted:
 		npcRefuse(1529)
 		return 0
-	case price <= 0 && id != int(npcRec.Unk68[7]):
+	case price <= 0 && id != int(npcRec.Msgs[npcAccepted]):
 		npcRefuse(1518)
 		return 0
 	case it.Flags&itemEquipped != 0:
@@ -500,7 +500,7 @@ func npcGiveGold(win *Window, m int) int {
 	}
 	id := int(it.ID)
 	rec := itemRec(id)
-	if rec.Flags&itemImportant != 0 && id != int(npcRec.Unk68[7]) && id != int(npcRec.Unk68[8]) {
+	if rec.Flags&itemImportant != 0 && id != int(npcRec.Msgs[npcAccepted]) && id != int(npcRec.Msgs[npcAccepted+1]) {
 		npcRefuse(1529)
 		return 0
 	}
@@ -522,7 +522,7 @@ const (
 // npcTrade (WMNPC aeb5): member m buys, sells or gives until done, the panels showing gold.
 func npcTrade(m int) {
 	enabled := []int{1, 1, 1, 1, -1}
-	if npcRec.Unk8D&npcNoBuySell != 0 {
+	if npcRec.TradeFlags&npcNoBuySell != 0 {
 		enabled[0], enabled[1] = 0, 0
 	}
 	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)

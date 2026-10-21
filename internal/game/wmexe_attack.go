@@ -45,14 +45,14 @@ func pickWeighted(w []uint8) int {
 	return 4
 }
 
-// attackFx is an attack's hit effect chances (8) and its drain strength: Hand.Data and
-// B0C, or MonsterAttack.Unk4.
+// attackFx is an attack's hit effect chances (8) and its poison strength: Hand.HitEffects
+// and PoisonStr, or MonsterAttack.HitEffects.
 type attackFx [9]uint8
 
 func handFx(h *Hand) attackFx {
 	var fx attackFx
-	copy(fx[:8], h.Data[:])
-	fx[8] = h.B0C
+	copy(fx[:hitPoisonStr], h.HitEffects[:])
+	fx[hitPoisonStr] = h.PoisonStr
 	return fx
 }
 
@@ -117,7 +117,7 @@ func killCombatant(g, i int) {
 			party[actMember].Kills++
 		}
 		if rec := groupMonsterRec[g]; rec.Flags&1 != 0 {
-			setBit(scenarioHdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
+			setBit(scenarioHdr.Unk140[globalFlagsOffset:], int(rec.Unk211[monKillFlag]), true) // DS:0x3498
 		}
 		if c.Pos != -1 {
 			flashOffView(c, 0)
@@ -534,7 +534,9 @@ func doAttack(c *Combatant, slot, kind int) {
 
 	t := fighter(tg, ti)
 	tRec := groupMonsterRec[tg]
-	sum := func(r *MonsterRec) int { return int(r.Unk135[2]) + int(r.Unk135[1]) + int(r.Unk135[0]) }
+	sum := func(r *MonsterRec) int {
+		return int(r.Stats[monSpeed]) + int(r.Stats[monDexterity]) + int(r.Stats[monIntelligence])
+	}
 	statDiff := (sum(tRec) - sum(atkRec)) / 2
 	bonus := int(c.B40)
 	var toHit, ac, acArea, mult int
@@ -594,7 +596,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			useActorItemCharge(item)
 		}
 		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.B38)
-		if partyCounters[3].A > 0 {
+		if partyCounters[3].Duration > 0 {
 			def += int(partyCounters[3].B)
 		}
 		ac = int(int8(tRec.AC[0])) + def
@@ -603,7 +605,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		a := &atkRec.Attacks[slot]
 		toHit = fatigueMod(0, int(c.Stamina), int(c.StaminaMax)) + int(c.B39)*5 + int(a.ToHit) + statDiff
 		dice = a.Damage
-		copy(fx[:], a.Unk4[:])
+		copy(fx[:], a.HitEffects[:])
 		if thrownOrBash {
 			bonus = 0
 		}
@@ -612,7 +614,7 @@ func doAttack(c *Combatant, slot, kind int) {
 			loadAC = getLoadCategory(ti).AC
 		}
 		def := fatigueMod(1, int(t.Stamina), int(t.StaminaMax)) + int(t.B38)
-		if tg == 0 && partyCounters[1].A > 0 {
+		if tg == 0 && partyCounters[1].Duration > 0 {
 			def -= int(partyCounters[1].B)
 		}
 		ac = int(int8(tRec.AC[0])) + def + loadAC
@@ -642,14 +644,14 @@ func doAttack(c *Combatant, slot, kind int) {
 		ac += 4
 	}
 	strength := 0
-	if atkRec.Unk134 > 15 {
+	if atkRec.Strength > 15 {
 		strength++
 	}
-	if atkRec.Unk134 > 17 {
+	if atkRec.Strength > 17 {
 		strength++
 	}
 	bonus += strength
-	swings := min(max(random(int(atkRec.Unk211[1])-int(t.B41)/10)+1, 1), 4)
+	swings := min(max(random(int(atkRec.Unk211[monPrimaryAttacks])-int(t.B41)/10)+1, 1), 4)
 	switch kind {
 	case 1:
 		ac -= 2
@@ -739,7 +741,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		if !quiet {
 			playSound(6)
 		}
-		if tRec.Unk208 == 22 && spell == -1 {
+		if tRec.Class == 22 && spell == -1 {
 			// Only the right weapon (item 458) once g4352 is set touches this kind.
 			if actGroup == 0 {
 				e := party[actMember].Equipped[slot]
@@ -764,7 +766,7 @@ func doAttack(c *Combatant, slot, kind int) {
 		default:
 			printMsgCentered(3302, 4, 3)
 			playSound(7)
-			if tRec.Unk208 == 17 {
+			if tRec.Class == 17 {
 				mexeName = getMessage(area + 3330)
 			} else {
 				mexeName = getMessage(area + 3320)
@@ -799,7 +801,7 @@ func doAttack(c *Combatant, slot, kind int) {
 					drawCardX(ti, true)
 				}
 				combatDelay(int(delaySetting) / 4)
-				if tRec.Unk208 != 22 {
+				if tRec.Class != 22 {
 					applyHitEffects(c, fx, tg, ti)
 				}
 			}
@@ -825,15 +827,15 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 		}
 		pow := int(c.Level)/3 + 1
 		switch k {
-		case 0:
+		case handSleep:
 			statusEffect(g, i, 3474, 9, statusAsleep, mod, pow, 2, pow, 0)
-		case 1:
+		case handParalyze:
 			statusEffect(g, i, 3475, 4, 3, mod, pow*pow*2, 5, pow, 0)
-		case 2:
-			statusEffect(g, i, 3477, 6, statusPoisoned, mod, pow*10, 2, int(fx[8]), 0)
-		case 3:
+		case handPoison:
+			statusEffect(g, i, 3477, 6, statusPoisoned, mod, pow*10, 2, int(fx[hitPoisonStr]), 0)
+		case handStone:
 			damageEffect(g, i, 3485, 11, conditionDown, mod, 0)
-		case 5:
+		case handDrain:
 			if actGroup == 0 {
 				break
 			}
@@ -878,7 +880,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 			if fighter(g, i).HP <= 0 {
 				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
 			}
-		case 6:
+		case handCritical:
 			r := 13
 			if g == 0 {
 				r = 11
@@ -889,7 +891,7 @@ func applyHitEffects(c *Combatant, fx attackFx, g, i int) {
 				combatDelay(int(delaySetting) / 4)
 				damageEffect(g, i, 3486, 0, conditionDead, mod, 0)
 			}
-		case 7:
+		case handKnockout:
 			statusEffect(g, i, 3484, 9, statusAsleep, mod, pow*2, 3, pow, 0)
 		}
 	}
@@ -901,5 +903,5 @@ func kindAC(rec *MonsterRec, k int) int {
 	if k < 0 {
 		return int(int8(rec.AC[8+k]))
 	}
-	return int(int8(rec.Unk198[k]))
+	return int(int8(rec.KindAC[k]))
 }

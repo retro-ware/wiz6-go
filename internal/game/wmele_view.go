@@ -41,14 +41,14 @@ func queueMonsterSprite(row, col, dx int) {
 	}
 	mirror := col % 2
 	if random(10) == 9 {
-		monsterJitterX[row][col] = uint8(random(int(p.Unk309[1])))
-		monsterJitterY[row][col] = uint8(random(int(p.Unk309[2])))
+		monsterJitterX[row][col] = uint8(random(int(p.Unk309[picJitterX])))
+		monsterJitterY[row][col] = uint8(random(int(p.Unk309[picJitterY])))
 	}
 	f := int(frames[0])
 	if p.Unk309[0] != 0 {
 		dx = 0
 	}
-	depth := int(p.Quads[f][0])
+	depth := int(p.Frames[f][frameDepth])
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}

@@ -321,7 +321,7 @@ func riddleEvent() {
 // swapFlagsEvent (WMAZE c363): event 24, swap two level flags on a scenario header bit.
 func swapFlagsEvent() {
 	ev := int(cellEventIndex)
-	set := testBit(scenarioHdr.Unk140[20:], int(mazeB.Data[ev])) // DS:0x3498
+	set := testBit(scenarioHdr.Unk140[globalFlagsOffset:], int(mazeB.Data[ev])) // DS:0x3498
 	swapLevelFlags(int(mazeB.Unk288[ev]), int(mazeB.Param[ev]), set)
 	setEventFlags(extractBits(int(mazeB.DirBits[ev]), 0, 2))
 }

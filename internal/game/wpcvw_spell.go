@@ -73,20 +73,20 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 	lower := func(v *uint8, by int) { *v = uint8(max(int(int16(int(*v)-by)), 0)) } // C int wraps
 	switch s {
 	case spellDetectSecret:
-		c[effectDetectSecret].A += int16(power * 50)
+		c[effectDetectSecret].Duration += int16(power * 50)
 		c[effectDetectSecret].B = int16(clampToward(power*5+70, int(c[effectDetectSecret].B), 0))
 	case spellEnchantedBlade:
-		c[effectEnchantedBlade].A += int16(power * 35)
+		c[effectEnchantedBlade].Duration += int16(power * 35)
 		c[effectEnchantedBlade].B = int16(clampToward((power-1)/2+1, int(c[effectEnchantedBlade].B), 0))
 	case spellArmorplate:
-		c[effectArmorplate].A += int16(power * 50)
+		c[effectArmorplate].Duration += int16(power * 50)
 		c[effectArmorplate].B = int16(clampToward((power-1)/2+1, int(c[effectArmorplate].B), 0))
 	case spellLevitate:
-		c[effectLevitate].A += int16(power * 5)
+		c[effectLevitate].Duration += int16(power * 5)
 	case spellDirection:
-		c[effectDirection].A += int16(100 * power)
+		c[effectDirection].Duration += int16(100 * power)
 	case spellMagicScreen:
-		c[effectMagicScreen].A += int16(power * 50)
+		c[effectMagicScreen].Duration += int16(power * 50)
 		c[effectMagicScreen].B = int16(clampToward(power*5, int(c[effectMagicScreen].B), 0))
 	case spellStamina:
 		q.Stamina = min(q.Stamina+int16(rollDice(formatDice(power<<1, 8, power))), q.StaminaMax)

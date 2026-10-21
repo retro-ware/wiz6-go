@@ -569,20 +569,20 @@ func applySpellOutsideCombat(caster, s, power, target int) {
 	}
 	switch s {
 	case spellDetectSecret:
-		pc[effectDetectSecret].A += int16(power * 50)
+		pc[effectDetectSecret].Duration += int16(power * 50)
 		pc[effectDetectSecret].B = int16(clampToward(power*5+70, int(pc[effectDetectSecret].B), 0))
 	case spellEnchantedBlade:
-		pc[effectEnchantedBlade].A += int16(power * 35)
+		pc[effectEnchantedBlade].Duration += int16(power * 35)
 		pc[effectEnchantedBlade].B = int16(clampToward((power-1)/2+1, int(pc[effectEnchantedBlade].B), 0))
 	case spellArmorplate:
-		pc[effectArmorplate].A += int16(power * 50)
+		pc[effectArmorplate].Duration += int16(power * 50)
 		pc[effectArmorplate].B = int16(clampToward((power-1)/2+1, int(pc[effectArmorplate].B), 0))
 	case spellLevitate:
-		pc[effectLevitate].A += int16(power * 5)
+		pc[effectLevitate].Duration += int16(power * 5)
 	case spellDirection:
-		pc[effectDirection].A += int16(100 * power)
+		pc[effectDirection].Duration += int16(100 * power)
 	case spellMagicScreen:
-		pc[effectMagicScreen].A += int16(power * 50)
+		pc[effectMagicScreen].Duration += int16(power * 50)
 		pc[effectMagicScreen].B = int16(clampToward(power*5, int(pc[effectMagicScreen].B), 0))
 	case spellStamina:
 		t.Stamina = min(t.Stamina+int16(rollDice(formatDice(power<<1, 8, power))), t.StaminaMax)
@@ -815,7 +815,7 @@ func useItemInMaze(m int) {
 					useItemCharge(m, slot)
 					applySpellOutsideCombat(m, spell, level, dpTarget)
 				}
-			case rec.Unk69 == useSwitchMapFlags && gameStateArg == int(rec.Damage.Base):
+			case rec.UseAction == useSwitchMapFlags && gameStateArg == int(rec.Damage.Base):
 				// A flag item of this map: clear bit Count, set bit Sides.
 				mp := int(rec.Damage.Base)
 				setBit(levelFlags[mp][:], int(rec.Damage.Count), false)
@@ -823,7 +823,7 @@ func useItemInMaze(m int) {
 				setBit(levelFlags[mp][:], int(rec.Damage.Sides), true)
 				setBit(scenarioHdr.LevelFlags[mp][:], int(rec.Damage.Sides), true)
 				useItemCharge(m, slot)
-			case rec.Unk69 == useDirectionOnMap8:
+			case rec.UseAction == useDirectionOnMap8:
 				if gameStateArg == 8 {
 					partyCounters[effectDirection].B = 1
 				} else {

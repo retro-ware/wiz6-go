@@ -101,7 +101,30 @@ const (
 	npcMenuLeave
 )
 
-// npcReact's event kinds (NPCRec.Entries B[2]).
+// NPCEntry.B indexes.
+const (
+	reactB      = 0 // matched with npcReact's b
+	reactC      = 1 // matched with npcReact's c
+	reactKind   = 2 // an npcReact... kind
+	reactScript = 3 // the event script run
+)
+
+// NPCRec.Msgs and NPCRec.Unk86 indexes.
+const (
+	npcTopicsBase    = 0 // vocabulary/topic message base
+	npcGreeting      = 1
+	npcInterjections = 2 // two: [2], [3]
+	npcRumors        = 4
+	npcSellPct       = 5 // percent on the wares' price
+	npcBuyPct        = 6 // percent offered for an item
+	npcAccepted      = 7 // two item ids: [7], [8]
+
+	npcFightMonster = 0 // Unk86: the encounter monster on a fight
+	npcPic          = 1 // Unk86: the NPC's picture
+	npcLevelIndex   = 3 // Unk86: the NPC's level
+)
+
+// npcReact's event kinds (NPCEntry.B[reactKind]).
 const (
 	npcReactItemGiven    = 1
 	npcReactGoldGiven    = 2
@@ -161,7 +184,7 @@ const (
 	npcOpPicAlt
 )
 
-// NPCRec.Unk8D bits.
+// NPCRec.TradeFlags bits.
 const (
 	npcNoBuySell  = 2 // the trade menu offers no buying or selling
 	npcCharmProof = 4 // spell 50 fails
@@ -169,22 +192,23 @@ const (
 )
 
 const (
-	spellCharmNPC  = 50 // adds to npcCharm
-	spellDrawRumor = 56 // the NPC tells a rumour
-	spellLockInNPC = 39 // with spellMapInNPC: does nothing in a meeting
-	spellMapInNPC  = 60
-	itemCurseWard  = 245 // spares the party op 31's curse
-	itemEquipped   = 1   // an item's Flags bit
-	itemImportant  = 2   // an item record's Flags bit: the NPC takes it only as Unk68[7]/[8]
-	packSlots      = 10  // Items[0..9] the pack, Items[10..] the swag
-	itemSlots      = 22
-	maxStackQty    = 250
-	maxStat        = 18
-	maxAttitude    = 100
-	minAttitude    = -100
-	mapFlagCount   = 79 // map flags 1..78 a script can set
-	npcFlagCount   = 15 // NPC flags 1..14
-	npcFlagsOffset = 28 // scenarioHdr.Unk140: the NPCs' flag pairs start here
+	spellCharmNPC     = 50 // adds to npcCharm
+	spellDrawRumor    = 56 // the NPC tells a rumour
+	spellLockInNPC    = 39 // with spellMapInNPC: does nothing in a meeting
+	spellMapInNPC     = 60
+	itemCurseWard     = 245 // spares the party op 31's curse
+	itemEquipped      = 1   // an item's Flags bit
+	itemImportant     = 2   // an item record's Flags bit: the NPC takes it only as Msgs[npcAccepted]/[npcAccepted+1]
+	packSlots         = 10  // Items[0..9] the pack, Items[10..] the swag
+	itemSlots         = 22
+	maxStackQty       = 250
+	maxStat           = 18
+	maxAttitude       = 100
+	minAttitude       = -100
+	mapFlagCount      = 79 // map flags 1..78 a script can set
+	npcFlagCount      = 15 // NPC flags 1..14
+	globalFlagsOffset = 20 // scenarioHdr.Unk140: the global flags (DS:0x3498)
+	npcFlagsOffset    = 28 // scenarioHdr.Unk140: the NPCs' flag pairs start here
 )
 
 // npcRecord reads scenario record idx of type typ.
@@ -199,7 +223,7 @@ func npcRecord[T any](typ, idx int) T {
 func npcName() string { return cstr(npcRec.Name[:]) }
 
 // npcLevel is the NPC's level (g51cf), at least 1 where the C divides by it.
-func npcLevel() int { return int(npcRec.Unk86[3]) }
+func npcLevel() int { return int(npcRec.Unk86[npcLevelIndex]) }
 
 // npcAttitude is member m's attitude to the NPC (g4550).
 func npcAttitude(m int) *int8 { return &party[m].NPCAttitude[npcID] }
@@ -218,7 +242,7 @@ func npcChooseFrames(slot, col int) {
 		return
 	}
 	p := &monsterPics[slot]
-	for i := 0; i < int(p.Unk309[3]); i++ {
+	for i := 0; i < int(p.Unk309[picLayers]); i++ {
 		var seq, step int
 		if p.Unk309[0] > 0 && p.Unk309[0] != 255 {
 			seq, step = int(p.Unk309[0])/25, int(p.Unk309[0])%25
@@ -231,7 +255,7 @@ func npcChooseFrames(slot, col int) {
 		}
 		f := &monsterFrames[col][i]
 		f[0], f[1] = uint8(seq), uint8(step)
-		f[2] = uint8(random(int(p.Quads[step][3])) + int(p.Quads[step][2]))
+		f[2] = uint8(random(int(p.Frames[step][frameRandomTicks])) + int(p.Frames[step][frameMinTicks]))
 	}
 }
 
@@ -241,7 +265,7 @@ func npcChooseFrames(slot, col int) {
 func npcBuildFrames(slot, col int) []byte {
 	p := &monsterPics[slot]
 	var frames []byte
-	for layer := 0; layer < int(p.Unk309[3]); layer++ {
+	for layer := 0; layer < int(p.Unk309[picLayers]); layer++ {
 		st := &monsterFrames[col][layer]
 		step := int(st[1])
 		ticks := int(st[2]) - 1
@@ -258,10 +282,10 @@ func npcBuildFrames(slot, col int) []byte {
 				step = int(p.SeqStartFrame[seq])
 			}
 			st[1] = uint8(step)
-			ticks = random(int(p.Quads[step][3])) + int(p.Quads[step][2])
+			ticks = random(int(p.Frames[step][frameRandomTicks])) + int(p.Frames[step][frameMinTicks])
 		}
 		st[2] = uint8(ticks)
-		f := p.Quads[step][1]
+		f := p.Frames[step][frameTile]
 		switch picSlotMonster[slot] {
 		case 40:
 			if layer == 4 {
@@ -304,14 +328,14 @@ func npcQueueSprite(row, col, dx int) {
 	}
 	mirror := col % 2
 	if random(10) == 9 {
-		monsterJitterX[row][col] = uint8(random(int(p.Unk309[1])))
-		monsterJitterY[row][col] = uint8(random(int(p.Unk309[2])))
+		monsterJitterX[row][col] = uint8(random(int(p.Unk309[picJitterX])))
+		monsterJitterY[row][col] = uint8(random(int(p.Unk309[picJitterY])))
 	}
 	f := int(frames[0])
 	if p.Unk309[0] != 0 {
 		dx = 0
 	}
-	depth := int(p.Quads[f][0])
+	depth := int(p.Frames[f][frameDepth])
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col])
 	}
@@ -1167,7 +1191,7 @@ func npcShowNPC() {
 	if dtLog != nil { // the difftest stubs it
 		return
 	}
-	npcLoadPic(int(npcRec.Unk86[1]), 4)
+	npcLoadPic(int(npcRec.Unk86[npcPic]), 4)
 	viewPosGroup[0][0] = 4
 	npcChooseFrames(4, 0)
 	switch s := int(npcRec.Disarm); {
@@ -1192,7 +1216,7 @@ func npcMainMenu() {
 	enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, -1}
 	title := getMessage(1510)
 	win := createWindow(0, 19, 19, 5, 18, borderRightEdge, 0, false)
-	if g := npcRec.Unk68[1]; g > 0 {
+	if g := npcRec.Msgs[npcGreeting]; g > 0 {
 		npcShowMessageText(int(g), 0)
 	}
 	m := 0
@@ -1303,7 +1327,7 @@ func npcMainMenu() {
 
 // npcStartFight sets up a combat with the NPC's monster.
 func npcStartFight() {
-	g433a = int(npcRec.Unk86[0])
+	g433a = int(npcRec.Unk86[npcFightMonster])
 	g4338, g4354 = 1, 0
 	gameState = stateBeginCombat
 	returnCmd = int16(stateNPC)
@@ -1666,23 +1690,23 @@ func npcReact(m, kind, a int, b, c uint8) int {
 		npcGoldGiven += int32(a)<<8 + int32(b)
 	}
 	for _, e := range npcRec.Entries {
-		if int(e.B[2]) != kind {
+		if int(e.B[reactKind]) != kind {
 			continue
 		}
 		if kind == npcReactGoldGiven {
-			if int32(e.A)<<8+int32(e.B[0]) > npcGoldGiven {
+			if int32(e.A)<<8+int32(e.B[reactB]) > npcGoldGiven {
 				continue
 			}
 			npcGoldGiven = 0
-			return npcRunScript(m, int(e.B[3]))
+			return npcRunScript(m, int(e.B[reactScript]))
 		}
 		if kind == npcReactItemGiven && e.A == 0 {
 			a = 0
 		}
-		if int(e.A) != a && a != 0 || e.B[0] != b && b != 0 || e.B[1] != c && c != 0 {
+		if int(e.A) != a && a != 0 || e.B[reactB] != b && b != 0 || e.B[reactC] != c && c != 0 {
 			continue
 		}
-		return npcRunScript(m, int(e.B[3]))
+		return npcRunScript(m, int(e.B[reactScript]))
 	}
 	return 0
 }

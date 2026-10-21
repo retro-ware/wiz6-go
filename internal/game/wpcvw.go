@@ -78,11 +78,19 @@ const (
 	itemTypeMisc     = 5 // the first of the armour types, misc. item .. boots
 	itemTypeShield   = 11
 
-	// Hand.Flags attack kinds (bit b is message 3050+b) and the Hand.Data powers
-	// (message 470+i).
+	// Hand.Flags attack kinds (bit b is message 3050+b) and the Hand.HitEffects
+	// powers (message 470+i; MonsterAttack.HitEffects too, [8] its poison strength).
 	handPunch    = 32
 	handKick     = 64
+	handSleep    = 0
+	handParalyze = 1
+	handPoison   = 2
+	handStone    = 3
+	handShred    = 4
+	handDrain    = 5
 	handCritical = 6
+	handKnockout = 7
+	hitPoisonStr = 8
 
 	// Spell books: PC.SpellsLearn indexes.
 	bookMage      = 0

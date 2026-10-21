@@ -560,8 +560,8 @@ func initResistsHandsAC() {
 	}
 	for h := range newPC.Hands {
 		hd := &newPC.Hands[h]
-		hd.B0D, hd.B0C = 0, 0
-		hd.Data = [8]uint8{}
+		hd.Range, hd.PoisonStr = 0, 0
+		hd.HitEffects = [8]uint8{}
 		hd.ToHit = 0
 		hd.Damage = Dice{Base: 0, Count: bareHandDamage, Sides: bareHandDamage}
 		hd.Flags = handPunch // bare hand
@@ -572,14 +572,14 @@ func initResistsHandsAC() {
 	if newPC.Class == classNinja || newPC.Class == classMonk {
 		h0.Damage.Sides = uint8(hands/3 + 2)
 		h0.Flags |= handKick
-		h0.Data[handCritical] = uint8(kiri + 5)
+		h0.HitEffects[handCritical] = uint8(kiri + 5)
 	} else {
 		if hands > 0 {
 			h0.Damage.Sides = uint8(hands/4 + 1)
 			h0.Flags |= handKick
 		}
 		if kiri > 0 {
-			h0.Data[handCritical] = uint8(kiri)
+			h0.HitEffects[handCritical] = uint8(kiri)
 		}
 	}
 	if newPC.Stats[statStrength] > highStat {

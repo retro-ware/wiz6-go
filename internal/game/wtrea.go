@@ -149,7 +149,7 @@ func animateChestTrap(member, anim, step int) int {
 		right, mirror = 1, 1-mirror
 	}
 	p := &monsterPics[slot]
-	frame := p.Quads[p.SeqStartFrame[sub]][1] + uint8(step)
+	frame := p.Frames[p.SeqStartFrame[sub]][frameTile] + uint8(step)
 	pos := trTrapPos[anim][1][right][step]
 	drv.DrawFrames(slot, int(pos[0]), int(pos[1]), trViewLeft, trViewRight, mirror, false, []byte{frame})
 	return step + 1

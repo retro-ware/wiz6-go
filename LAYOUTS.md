@@ -65,7 +65,7 @@ The C names fields after PC 0, as `pc_xxx`, `party + K` or `0x43e8 + K`. The mem
 | 0x40+8i +5 | `.Items[i].Icon` |
 | 0x40+8i +6 | `.Items[i].Qty` |
 | 0x40+8i +7 | `.Items[i].Flags` |
-| 0xf0+16h | `.Hands[h]` (+0 Damage, +4 Data, +0xc B0C, +0xd B0D, +0xe ToHit, +0xf Flags) |
+| 0xf0+16h | `.Hands[h]` (+0 Damage, +4 HitEffects, +0xc PoisonStr, +0xd Range, +0xe ToHit, +0xf Flags) |
 | 0x110 | `.Equipped` |
 | 0x118 | `.SpellsLearn` |
 | 0x11c | `.SpellRegen` |
@@ -144,6 +144,6 @@ Where a pointer to the buffer is passed on (`f1234(&l76)`), the callee's `pN` is
 
 ## Uncertain fields
 
-- These names are guesses: `PC.Unk026`, `Hand.B0C` and `Hand.B0D`, `ItemRec.HandD` and `HandC`, `MapA.Feature`, `SpecialCells` and `SolidCells`, `MapB.Data` and `Unk288`, `MonsterAttack.Range`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `B24` to `B41`.
+- These names are guesses: `PC.Unk026`, `MapA.Feature`, `SpecialCells` and `SolidCells`, `MapB.Data` and `Unk288`, `MonsterAttack.Range`, `NPCRec.Entries`, `TreasureEntry.A` and `B`, and the `Combatant` fields `B24` to `B41`.
 - Every `UnkXX` field is unknown. Name it when a translated function makes its meaning clear.
 - The race and spell tables are static data in the ROOT or overlay data segments, not scenario records. They are not typed here. Their layout is in the per-image `data.c`. The spell table has 6-byte entries at 0xde.

@@ -430,7 +430,7 @@ func showMemberNotice(m int) {
 // check_secret_detect (WMAZE a4f5) lets the members, in random order, try to notice a
 // secret; the first who does says so.
 func checkSecretDetect() {
-	if partyCounters[2].A > 0 && random(100) < int(partyCounters[2].B) {
+	if partyCounters[2].Duration > 0 && random(100) < int(partyCounters[2].B) {
 		g4f86 = 1
 	}
 	var tried [6]bool
@@ -654,7 +654,7 @@ func trapEvent() {
 	count := extractBits(bits, 4, 4)
 	warded := extractBits(bits, 12, 1)
 	noDamage := extractBits(bits, 15, 1)
-	if warded != 0 && partyCounters[5].A > 0 {
+	if warded != 0 && partyCounters[5].Duration > 0 {
 		noDamage = 1
 		s := getMessage(2056)
 		clearWindow(textWin, false)

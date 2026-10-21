@@ -257,11 +257,11 @@ func queueCombatantSprite(row, col int) {
 	}
 	mirror := col % 2
 	if random(10) == 9 {
-		monsterJitterX[row][col] = uint8(random(int(p.Unk309[1])))
-		monsterJitterY[row][col] = uint8(random(int(p.Unk309[2])))
+		monsterJitterX[row][col] = uint8(random(int(p.Unk309[picJitterX])))
+		monsterJitterY[row][col] = uint8(random(int(p.Unk309[picJitterY])))
 	}
 	f := int(frames[0])
-	depth := int(p.Quads[f][0])
+	depth := int(p.Frames[f][frameDepth])
 	if depth == 0 {
 		depth = int(viewDepthBase[row*5+col]) - g
 	}
@@ -510,12 +510,30 @@ func mexeSwapMembers(i, j int) {
 	combatDelay(3)
 }
 
+// MonsterRec.Stats, MonsterRec.Unk168 and MonsterRec.Unk211 indexes.
+const (
+	monIntelligence = 0
+	monDexterity    = 1
+	monSpeed        = 2
+
+	monCastChance   = 0 // Unk168: percent chance to cast
+	monBreathChance = 2 // Unk168: percent chance to breathe
+
+	monAttackPower      = 0 // Unk211: PC.AttackPower
+	monPrimaryAttacks   = 1 // Unk211: swings per attack
+	monSecondaryAttacks = 2 // Unk211: planned swings
+	monSex              = 3
+	monRegen            = 4
+	monBreath           = 5 // Unk211: the breath (actionBreath choice)
+	monKillFlag         = 7 // Unk211: global flag set when a Flags&1 monster dies
+)
+
 // fillPartyRecord copies member m's attributes into the party's monster record
 // (group_monster_rec[0]), which the attack code reads like a monster's.
 func fillPartyRecord(m int, acSum bool) {
 	r, p := groupMonsterRec[0], &party[m]
-	r.Unk134 = p.Stats[statStrength]
-	r.Unk135 = [3]uint8{p.Stats[statIntelligence], p.Stats[statDexterity], p.Stats[statSpeed]}
+	r.Strength = p.Stats[statStrength]
+	r.Stats = [3]uint8{p.Stats[statIntelligence], p.Stats[statDexterity], p.Stats[statSpeed]}
 	r.Resist = p.Resist
 	r.AC = p.AC
 	if acSum {
@@ -527,9 +545,9 @@ func fillPartyRecord(m int, acSum bool) {
 			}
 		}
 	}
-	r.Unk211[0], r.Unk211[2], r.Unk211[1] = p.AttackPower, p.SecondaryAttacks, p.PrimaryAttacks
-	r.Unk211[3] = p.Sex
-	r.Unk208 = p.Class
+	r.Unk211[monAttackPower], r.Unk211[monSecondaryAttacks], r.Unk211[monPrimaryAttacks] = p.AttackPower, p.SecondaryAttacks, p.PrimaryAttacks
+	r.Unk211[monSex] = p.Sex
+	r.Class = p.Class
 }
 
 // nextLivingMember (fc4e7, WMEXE) is a standing member next to member i (the one
@@ -772,7 +790,7 @@ func doHide(c *Combatant) {
 	if actGroup == 0 {
 		chance = int(party[actMember].Level) + int(party[actMember].Skills[skillHide]) + 50
 		for g := 1; g <= monsterGroupCount; g++ {
-			chance -= int(monsterGroups[g].Count) + int(groupMonsterRec[g].HP.Count) + int(groupMonsterRec[g].Unk135[0])
+			chance -= int(monsterGroups[g].Count) + int(groupMonsterRec[g].HP.Count) + int(groupMonsterRec[g].Stats[monIntelligence])
 		}
 	} else {
 		chance = int(c.Level)*5 + 50
@@ -805,7 +823,7 @@ func doRunAway(c *Combatant) {
 	chance := int(c.Level) + 90
 	for g := 1; g <= monsterGroupCount; g++ {
 		r := groupMonsterRec[g]
-		chance = chance - int(r.HP.Count)*int(monsterGroups[g].Count) - (int(r.Unk135[2])-int(groupMonsterRec[actGroup].Unk135[2]))*2
+		chance = chance - int(r.HP.Count)*int(monsterGroups[g].Count) - (int(r.Stats[monSpeed])-int(groupMonsterRec[actGroup].Stats[monSpeed]))*2
 	}
 	if g4354 == 1 {
 		chance = 0

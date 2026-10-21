@@ -199,7 +199,7 @@ func fillPartyGroup() {
 	grp := monsterGroups[0]
 	grp.Count = uint8(partyCount)
 	grp.Wards = [6]int8{}
-	if partyCounters[4].A > 0 {
+	if partyCounters[4].Duration > 0 {
 		grp.Wards[4] = int8(partyCounters[4].B)
 	}
 	grp.CloudPower = [4]uint8{}
@@ -216,12 +216,12 @@ func fillPartyGroup() {
 }
 
 // picFrameSteps is MonsterPicRec byte 114+f, the step count of frame f (the table runs
-// on into Quads for f = 9).
+// on into Frames for f = 9).
 func picFrameSteps(p *MonsterPicRec, f int) int {
 	if f < len(p.Unk114) {
 		return int(p.Unk114[f])
 	}
-	return int(p.Quads[0][f-len(p.Unk114)])
+	return int(p.Frames[0][f-len(p.Unk114)])
 }
 
 // chooseMonsterFrames (choose_monster_frames, WMELE 4f02) starts the animation of every
@@ -229,7 +229,7 @@ func picFrameSteps(p *MonsterPicRec, f int) int {
 func chooseMonsterFrames(g, pos int) {
 	pic := int(monsterGroups[g].PicSlot)
 	p := &monsterPics[pic]
-	for i := 0; int(p.Unk309[3]) > i; i++ {
+	for i := 0; int(p.Unk309[picLayers]) > i; i++ {
 		var frame, step int
 		if p.Unk309[0] > 0 && p.Unk309[0] != 255 && picSlotMonster[pic] != 46 && picSlotMonster[pic] != 36 {
 			frame, step = int(p.Unk309[0])/25, int(p.Unk309[0])%25
@@ -242,7 +242,7 @@ func chooseMonsterFrames(g, pos int) {
 		}
 		f := &monsterFrames[pos][i]
 		f[0], f[1] = uint8(frame), uint8(step)
-		f[2] = uint8(random(int(p.Quads[step][3])) + int(p.Quads[step][2]))
+		f[2] = uint8(random(int(p.Frames[step][frameRandomTicks])) + int(p.Frames[step][frameMinTicks]))
 	}
 }
 
@@ -312,7 +312,7 @@ func updateCombatant(g, i, regen, drain int) bool {
 				c.Pos = -1
 			}
 			if rec := groupMonsterRec[g]; rec.Flags&1 != 0 {
-				setBit(scenarioHdr.Unk140[20:], int(rec.Unk211[7]), true) // DS:0x3498
+				setBit(scenarioHdr.Unk140[globalFlagsOffset:], int(rec.Unk211[monKillFlag]), true) // DS:0x3498
 			}
 		}
 	}
@@ -345,7 +345,7 @@ func updateGroup(g int) {
 	n := 0
 	for i := 0; int(grp.Count) > i; i++ {
 		if uint8(grp.Members[i].Condition) < conditionDead {
-			updateCombatant(g, i, int(groupMonsterRec[g].Unk211[4]), 0)
+			updateCombatant(g, i, int(groupMonsterRec[g].Unk211[monRegen]), 0)
 		}
 		if uint8(grp.Members[i].Condition) < conditionDead {
 			grp.Members[n] = grp.Members[i]
@@ -453,11 +453,11 @@ func advanceMonsterGroups() {
 				p = int(int16(p + int(c.HP) - hurt))
 			}
 		}
-		if rec.Unk168[0] > 0 {
-			p /= int(rec.Unk168[0])/10 + 1
+		if rec.Unk168[monCastChance] > 0 {
+			p /= int(rec.Unk168[monCastChance])/10 + 1
 		}
-		if rec.Unk168[2] > 0 {
-			p = int(int16(int32(p)*int32(rec.Unk168[2])/100 + int32(p)))
+		if rec.Unk168[monBreathChance] > 0 {
+			p = int(int16(int32(p)*int32(rec.Unk168[monBreathChance])/100 + int32(p)))
 		}
 		if rec.Unk168[3] > 0 {
 			p = int(int16(int32(p)*int32(rec.Unk168[3])/100 + int32(p)))
@@ -671,11 +671,11 @@ func tickCombatEffects() {
 			}
 		}
 	}
-	if partyCounters[4].A > 0 {
+	if partyCounters[4].Duration > 0 {
 		partyCounters[4].B = int16(uint8(monsterGroups[0].Wards[4]))
 	}
 	if partyCounters[4].B <= 0 {
-		partyCounters[4].A, partyCounters[4].B = 0, 0
+		partyCounters[4].Duration, partyCounters[4].B = 0, 0
 	}
 }
 

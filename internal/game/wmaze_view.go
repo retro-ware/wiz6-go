@@ -588,7 +588,7 @@ func drawViewFrame() {
 		case 5:
 			tile, frame = 358, int(animPhase)+1
 		}
-		if partyCounters[i].A > 0 {
+		if partyCounters[i].Duration > 0 {
 			tile += frame
 		}
 		drvMazeTile(tile, 0, -1)
