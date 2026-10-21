@@ -69,6 +69,12 @@ func field(t *testing.T, path string) reflect.Value {
 }
 
 func getInt(v reflect.Value) int64 {
+	if v.Kind() == reflect.Bool {
+		if v.Bool() {
+			return 1
+		}
+		return 0
+	}
 	if v.CanInt() {
 		return v.Int()
 	}
@@ -76,6 +82,10 @@ func getInt(v reflect.Value) int64 {
 }
 
 func setInt(v reflect.Value, n int64) {
+	if v.Kind() == reflect.Bool {
+		v.SetBool(n != 0)
+		return
+	}
 	if v.CanInt() {
 		v.SetInt(n)
 	} else {

@@ -207,6 +207,9 @@ func drawCharacterSheet() {
 
 // drawStats (WPCMK 7068) draws the eight stats, the bonus points, HP and stamina.
 func drawStats() {
+	if dtLog != nil {
+		return
+	}
 	w := sheetWin
 	for i := range 8 {
 		printMsgAt(i+204, w, 1, i+5, 5)
