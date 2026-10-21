@@ -13,11 +13,11 @@ func partyCell() int { return int(partyBlock)<<6 | int(cellY)<<3 | int(cellX) }
 
 // startEncounter rolls a random encounter for the party's block and enters combat
 // (state 10).
-func startEncounter(g4338v int16) {
+func startEncounter(fixed int16) {
 	g433a = randomEncounterMonster(encounterTable(int(partyBlock)))
-	g4338 = g4338v
+	g4338 = fixed
 	g4354 = 0
-	gameState = 10
+	gameState = stateBeginCombat
 }
 
 // reorder_party (WMAZE 606f) lets the player pick the members in their new order.
@@ -56,7 +56,7 @@ func reorderParty() {
 // down by rate, and with spells the spell points.
 func healMember(m, hpRoll, staminaPct, rate, spells int) {
 	pc := &party[m]
-	if pc.Condition >= 3 {
+	if pc.Condition >= conditionDead {
 		return
 	}
 	pc.HP += int16(random(hpRoll) + int(pc.Regen)*rate - int(pc.Drain)*rate - int(pc.PoisonStr)*rate)
@@ -66,14 +66,14 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 	if pc.HP <= 0 {
 		pc.HP = 0
 		pc.Stamina = 0
-		pc.Condition = 3
-		playSound(int(pc.Sex) + 8)
+		pc.Condition = conditionDead
+		playSound(int(pc.Sex) + soundDeathBase)
 		drawMemberStatus(m)
 		return
 	}
 	if pc.Stamina <= 0 {
 		pc.Stamina = 0
-		pc.Status[2] = uint8(random(6) + 6)
+		pc.Status[statusAsleep] = uint8(random(6) + 6)
 	}
 	if staminaPct > 0 {
 		n := int(int16(int32(pc.StaminaMax) * int32(staminaPct) / 100))
@@ -83,7 +83,7 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 		}
 	}
 	for i := range 10 {
-		if v := int(pc.Status[i]); v > 0 && v != 255 {
+		if v := int(pc.Status[i]); v > 0 && v != statusForever {
 			v = int(int16(v - rate)) // C int wraps
 			if v < 0 {
 				v = 0
@@ -91,8 +91,8 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 			pc.Status[i] = uint8(v)
 		}
 	}
-	if pc.Status[5] == 0 || pc.PoisonStr == 0 {
-		pc.Status[5] = 0
+	if pc.Status[statusPoisoned] == 0 || pc.PoisonStr == 0 {
+		pc.Status[statusPoisoned] = 0
 		pc.PoisonStr = 0
 	}
 	if spells > 0 {
@@ -114,7 +114,7 @@ func healMember(m, hpRoll, staminaPct, rate, spells int) {
 // interrupts it.
 func restParty() bool {
 	showMazeMessage(2036)
-	mzG5038 = 0
+	mzWaitCut = 0
 	hours := 8
 	s := &saveState
 	s.RestBankMinutes += s.Minutes - s.LastRestMinutes
@@ -126,9 +126,9 @@ func restParty() bool {
 		s.RestBankMinutes -= 240
 	}
 	s.LastRestMinutes = s.Minutes
-	for hours > 0 && mzG5038 == 0 && gameState == 5 {
+	for hours > 0 && mzWaitCut == 0 && gameState == stateExplore {
 		for m := 0; m < partyCount; m++ {
-			party[m].Status[2] = 10
+			party[m].Status[statusAsleep] = 10
 			drawMemberStatus(m)
 		}
 		waitAnimating(10)
@@ -141,13 +141,13 @@ func restParty() bool {
 				roll = int(party[m].RestHPRoll) + 1
 			}
 			healMember(m, roll, int(party[m].RestStaminaPct), 6, 1)
-			party[m].Status[2] = uint8(random(5))
+			party[m].Status[statusAsleep] = uint8(random(5))
 			if party[m].PoisonStr > 0 {
 				party[m].PoisonStr--
 			}
 		}
 		full--
-		party[random(partyCount)].Status[2] = 0
+		party[random(partyCount)].Status[statusAsleep] = 0
 		safe := 975
 		if scenarioHdr.Level == 1 {
 			safe = 990
@@ -155,13 +155,13 @@ func restParty() bool {
 		if random(1000) >= safe {
 			return true
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
-			mzG5038 = 1
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
+			mzWaitCut = 1
 		}
 	}
 	for m := 0; m < partyCount; m++ {
 		if int32(party[m].Stamina) > int32(party[m].StaminaMax)*3/4 {
-			party[m].Status[2] = 0
+			party[m].Status[statusAsleep] = 0
 		}
 		drawMemberStatus(m)
 	}
@@ -172,9 +172,9 @@ func restParty() bool {
 // it beeps if not.
 func isMemberAble(m int) bool {
 	pc := &party[m]
-	ok := pc.Condition == 0 && pc.Status[2] == 0 && pc.Status[3] == 0
+	ok := pc.Condition == conditionOK && pc.Status[statusAsleep] == 0 && pc.Status[3] == 0
 	if !ok {
-		playSound(0)
+		playSound(soundBeep)
 	}
 	return ok
 }
@@ -182,7 +182,7 @@ func isMemberAble(m int) bool {
 // show_error (WMAZE 6631) shows s with a beep.
 func showError(s string) {
 	showMazeText(s)
-	playSound(0)
+	playSound(soundBeep)
 	waitAnimating(messageDelay)
 }
 
@@ -228,29 +228,29 @@ func saveGame() int {
 
 // disk_options_menu (WMAZE 6bcd): save, save and quit, quit, cancel, or the options.
 func diskOptionsMenu() {
-	win := createWindow(0, 19, 40, 5, 20, -1, 0, false)
+	win := createWindow(0, 19, 40, 5, 20, borderNone, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
 	refreshAllWindows()
-	mzG503c = 1
+	mzRefreshPending = 1
 	showMazeMessage(2200)
 	// The C's l36[3] and l36[6] are its locals l30 (0) and l24 (-1, the end).
 	enabled := []int{1, 1, 1, 0, 1, 1, -1}
-	choice := menuSelectCancel(win, 2201, enabled, 1, 1, 20, 3, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
+	choice := menuSelectCancel(win, 2201, enabled, 1, 1, 20, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:
 		saveGame()
 	case 1:
 		if saveGame() != -1 {
-			gameState = 7
+			gameState = stateResetPartyScreen
 		}
 	case 2:
-		gameState = 7
+		gameState = stateResetPartyScreen
 	case 4:
-		gameState = 24
-		returnCmd = 25
+		gameState = stateGameConfiguration
+		returnCmd = int16(stateEnterMap)
 	}
 	eraseCursorMark(bottomLineWin, false)
 }
@@ -258,16 +258,16 @@ func diskOptionsMenu() {
 // maze_party_menu (WMAZE 6cf8): search, the member actions, locks, reorder, rest, disk.
 func mazePartyMenu() {
 	if dtLog != nil { // the difftest's stub ends the main loop
-		gameState = 0
+		gameState = stateLoadData // any state but stateExplore
 		return
 	}
 	deferWindowDraw(g4fb0)
-	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 20, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
 	refreshAllWindows()
-	mzG503c = 1
+	mzRefreshPending = 1
 	setCursor(mainWindow, 3, 0)
 	printMessage(2002, mainWindow, 18)
 	mainWindow.CurX++
@@ -276,7 +276,7 @@ func mazePartyMenu() {
 	if partyCount < 2 {
 		enabled[5] = 0 // the C's l26 is enabled[5]
 	}
-	choice := menuSelectCancel(win, 2005, enabled, 1, 1, 7, 3, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
+	choice := menuSelectCancel(win, 2005, enabled, 1, 1, 7, 3, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 	destroyWindow(win, false)
 	switch choice {
 	case 0:
@@ -285,20 +285,20 @@ func mazePartyMenu() {
 	case 1:
 		if curMember = int16(choosePartyMember(2026, 1)); curMember != -1 {
 			tickEffectTimers(1)
-			gameState = 17
-			returnCmd = 5
+			gameState = stateViewCharacter
+			returnCmd = int16(stateExplore)
 		}
 	case 2:
 		if curMember = int16(choosePartyMember(2029, 1)); curMember != -1 && isMemberAble(int(curMember)) {
 			tickEffectTimers(1)
-			gameState = 19
-			returnCmd = 5
+			gameState = stateCastSpellInMaze
+			returnCmd = int16(stateExplore)
 		}
 	case 3:
 		if curMember = int16(choosePartyMember(2031, 1)); curMember != -1 && isMemberAble(int(curMember)) && party[curMember].ItemCount > 0 {
 			tickEffectTimers(1)
-			gameState = 20
-			returnCmd = 5
+			gameState = stateUseItemInMaze
+			returnCmd = int16(stateExplore)
 		}
 	case 4:
 		handleLockedDoor()
@@ -344,14 +344,14 @@ func mazeMainLoop() {
 	if cellEventIndex >= 0 && int16(mazeB.FirstEvent[partyBlock]) > cellEventIndex {
 		cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
 	}
-	if returnCmd != 23 {
+	if returnCmd != int16(stateFlee) {
 		floodMarkCells(int(partyBlock), int(cellX), int(cellY), 0)
 	}
 	initMazeScreen()
 	refreshAllWindows()
-	returnCmd = 5
-	gameState = 5
-	mzG503e = 1
+	returnCmd = int16(stateExplore)
+	gameState = stateExplore
+	mzClearMessage = 1
 	for {
 		if mzRedrawView == 1 {
 			redrawMazeView()
@@ -360,9 +360,9 @@ func mazeMainLoop() {
 			startEncounter(1)
 			return
 		}
-		if testBit(eventCells[:], partyCell()) && mzG5034 == 1 {
+		if testBit(eventCells[:], partyCell()) && mzEnteredCell == 1 {
 			runCellEvents()
-			if gameState != 5 {
+			if gameState != stateExplore {
 				return
 			}
 		}
@@ -371,7 +371,7 @@ func mazeMainLoop() {
 		if s.Minutes%10 == 5 {
 			for m := 0; m < partyCount; m++ {
 				pc := &party[m]
-				if pc.Condition >= 3 {
+				if pc.Condition >= conditionDead {
 					continue
 				}
 				spells := 0
@@ -387,15 +387,15 @@ func mazeMainLoop() {
 		}
 		well, asleep := 0, 0
 		for m := 0; m < partyCount; m++ {
-			if party[m].Condition == 0 {
+			if party[m].Condition == conditionOK {
 				well++
 			}
-			if party[m].Status[2] > 0 || party[m].Status[3] > 0 {
+			if party[m].Status[statusAsleep] > 0 || party[m].Status[3] > 0 {
 				asleep++
 			}
 		}
 		if well == 0 {
-			gameState = 8
+			gameState = stateGraveyard
 			return
 		}
 		if asleep == partyCount && restParty() {
@@ -403,57 +403,57 @@ func mazeMainLoop() {
 			return
 		}
 		mzRedrawView = 0
-		mzG5034 = 0
+		mzEnteredCell = 0
 		if random(1000) >= 995 {
 			startEncounter(0)
 			return
 		}
-		if mzG503c == 1 {
+		if mzRefreshPending == 1 {
 			refreshAllWindows()
-			mzG503c = 0
+			mzRefreshPending = 0
 		}
 		switch {
 		case (gameStateArg == 5 || gameStateArg == 12 && partyBlock > 8) && testBit(mazeA.SpecialCells[:], partyCell()):
 			eraseWindow(mainWindow, true)
 			delayLong()
 			showMazeMessage(2023)
-			mzG503e = 1
+			mzClearMessage = 1
 		case gameStateArg == 8 && partyCounters[0].B == 1:
 			eraseWindow(mainWindow, true)
 			delayLong()
 			showMazeMessage(2054)
-			mzG503e = 1
-		case mzG503e == 1:
+			mzClearMessage = 1
+		case mzClearMessage == 1:
 			eraseWindow(mainWindow, true)
-			mzG503e = 0
+			mzClearMessage = 0
 		}
 		setClickRegion(0, 33, 20, 34, 21)
 		setClickRegion(1, 36, 22, 37, 23)
 		setClickRegion(2, 32, 22, 35, 23)
 		setClickRegion(3, 30, 22, 31, 23)
 		setClickRegion(4, 21, 20, 27, 23)
-		setClickRegion(5, 255, 0, 0, 0)
-		switch in := getMazeInput(mzMsg2000); in {
-		case 0:
+		setClickRegion(5, clickRegionsEnd, 0, 0, 0)
+		switch in := getMazeInput(explorePrompt); in {
+		case exploreKeyForward:
 			mzAnimCounter = 0
 			moveParty(0)
 			tickEffectTimers(1)
-		case 1, 3:
+		case exploreKeyTurnRight, exploreKeyTurnLeft:
 			mzAnimCounter = 0
 			if g4f88 == 0 {
-				partyFacing = (partyFacing + int16(in)) % 4
+				partyFacing = (partyFacing + int16(in)) % dirCount
 				mzRedrawView = 1
 				if partyFacing == g4f8a {
-					mzG5034 = 1
+					mzEnteredCell = 1
 					cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
 				}
-			} else if in == 3 {
+			} else if in == exploreKeyTurnLeft {
 				moveParty(-1)
 			} else {
 				moveParty(1)
 			}
 			tickEffectTimers(1)
-		case 2: // switch the arrow pad between turning and side-stepping
+		case exploreKeyToggleTurn: // switch the arrow pad between turning and side-stepping
 			g4f88 = (g4f88 + 1) % 2
 			deferWindowDraw(g4fb0)
 			if g4f88 == 0 {
@@ -470,10 +470,10 @@ func mazeMainLoop() {
 			resumeWindowDraw(g4fb0)
 			refreshWindow(g4fb0)
 			mzRedrawView = 1
-		case 4:
+		case exploreKeyMenu:
 			mazePartyMenu()
 		}
-		if gameState != 5 {
+		if gameState != stateExplore {
 			return
 		}
 	}
@@ -548,21 +548,21 @@ func showFleeingMsg() bool {
 // flee_party (WMAZE 7868) makes the party flee up to steps cells (game state 23).
 func fleeParty(steps int) {
 	var visited [96]byte
-	returnCmd = 23
-	gameState = 5
+	returnCmd = int16(stateFlee)
+	gameState = stateExplore
 	eraseWindow(mainWindow, false)
 	shown := false
 	setBit(visited[:], partyCell(), true)
 	away := partyFacing
 	if int16(gameStateArg) == saveState.SavedMap {
-		away = (saveState.SavedFacing + 2) % 4
+		away = (saveState.SavedFacing + 2) % dirCount
 	}
 	turn := int16(1)
 	if (partyFacing+3)%4 == away {
 		turn = 3
 	}
 	for partyFacing != away {
-		partyFacing = (partyFacing + turn) % 4
+		partyFacing = (partyFacing + turn) % dirCount
 		redrawMazeView()
 		if !shown {
 			shown = showFleeingMsg()
@@ -574,9 +574,9 @@ func fleeParty(steps int) {
 		back := false
 		savePosition()
 		if side != -1 && random(4) == 0 {
-			partyFacing = (partyFacing + side) % 4
+			partyFacing = (partyFacing + side) % dirCount
 			if tryStep(visited[:]) {
-				partyFacing = (partyFacing + 2) % 4
+				partyFacing = (partyFacing + 2) % dirCount
 				if tryStep(visited[:]) {
 					partyFacing = saveState.SavedFacing
 				} else {
@@ -599,11 +599,11 @@ func fleeParty(steps int) {
 			if random(2) == 0 {
 				t = 1
 			}
-			partyFacing = (t + partyFacing) % 4
+			partyFacing = (t + partyFacing) % dirCount
 			if !tryStep(visited[:]) {
 				showPrevPosition()
 			} else {
-				partyFacing = (partyFacing + 2) % 4
+				partyFacing = (partyFacing + 2) % dirCount
 				if !tryStep(visited[:]) {
 					showPrevPosition()
 				} else {

@@ -84,27 +84,27 @@ func encounterTable(blk int) int {
 // of the cells joined to (x, y) in block; clearing also drops the block's start points
 // there.
 func floodMarkCells(block, x, y, v int) {
-	x = (x + 8) % 8
-	y = (y + 8) % 8
+	x = (x + blockSize) % blockSize
+	y = (y + blockSize) % blockSize
 	c := cellIndex(block, x, y)
 	if b2i(testBit(reachableCells[:], c)) == v {
 		return
 	}
 	setBit(reachableCells[:], c, v != 0)
 	if v == 0 {
-		for i := 0; i < 5; i++ {
-			sx := getBitfield(mazeA.StartX[:], block*5+i, 3)
-			sy := getBitfield(mazeA.StartY[:], block*5+i, 3)
+		for i := 0; i < blockStarts; i++ {
+			sx := getBitfield(mazeA.StartX[:], block*blockStarts+i, 3)
+			sy := getBitfield(mazeA.StartY[:], block*blockStarts+i, 3)
 			if sx == x && sy == y {
-				setBitfield(mazeA.StartX[:], block*5+i, 3, 0)
-				setBitfield(mazeA.StartY[:], block*5+i, 3, 0)
+				setBitfield(mazeA.StartX[:], block*blockStarts+i, 3, 0)
+				setBitfield(mazeA.StartY[:], block*blockStarts+i, 3, 0)
 			}
 		}
 	}
-	if getBitfield(mazeA.Walls0[:], c, 2) == 0 && y < 7 {
+	if getBitfield(mazeA.Walls0[:], c, 2) == 0 && y < blockSize-1 {
 		floodMarkCells(block, x, y+1, v)
 	}
-	if getBitfield(mazeA.Walls1[:], c, 2) == 0 && x < 7 {
+	if getBitfield(mazeA.Walls1[:], c, 2) == 0 && x < blockSize-1 {
 		floodMarkCells(block, x+1, y, v)
 	}
 	if y > 0 && getBitfield(mazeA.Walls0[:], cellIndex(block, x, y)-8, 2) == 0 {
@@ -128,17 +128,17 @@ func loadMazeLevel(m int) {
 	gameStateArg = m
 	ensureDiskFor(2, gameStateArg)
 	if gameStateArg < 0 {
-		gameState = 7
+		gameState = stateResetPartyScreen
 		return
 	}
 	reloadMapA, reloadMapB = true, true
 	allocMazeBuffers()
 	levelFlags[gameStateArg] = scenarioHdr.LevelFlags[gameStateArg]
-	returnCmd = 5
+	returnCmd = int16(stateExplore)
 	g4f8a = -1
 	eventCells = [96]byte{}
 	cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
-	for blk := 0; blk < 12; blk++ {
+	for blk := 0; blk < mapBlocks; blk++ {
 		for e := int(mazeB.FirstEvent[blk]); e < 144 && int(mazeB.Block[e]) == blk; e++ {
 			if mazeB.Kind[e] > 0 {
 				setBit(eventCells[:], blk<<6|int(mazeB.Y[e])<<3|int(mazeB.X[e]), true)
@@ -146,10 +146,10 @@ func loadMazeLevel(m int) {
 		}
 	}
 	reachableCells = [96]byte{}
-	for i := 0; i < 5; i++ {
-		for blk := 0; blk < 12; blk++ {
-			x := getBitfield(mazeA.StartX[:], blk*5+i, 3)
-			y := getBitfield(mazeA.StartY[:], blk*5+i, 3)
+	for i := 0; i < blockStarts; i++ {
+		for blk := 0; blk < mapBlocks; blk++ {
+			x := getBitfield(mazeA.StartX[:], blk*blockStarts+i, 3)
+			y := getBitfield(mazeA.StartY[:], blk*blockStarts+i, 3)
 			if x+y > 0 {
 				floodMarkCells(blk, x, y, 1)
 			}
@@ -158,7 +158,7 @@ func loadMazeLevel(m int) {
 	if gameStateArg != 8 {
 		partyCounters[0].B = 0
 	}
-	gameState = 5
+	gameState = stateExplore
 }
 
 // draw_vital_bar_m (WMAZE 4ac7) draws a three-cell vertical gauge of cur/max at (x, y) of
@@ -220,7 +220,7 @@ func drawMemberStatus(m int) {
 		}
 	}
 	g := conditionGlyph[pc.Condition]
-	if g == 0 && pc.Status[2] > 0 {
+	if g == 0 && pc.Status[statusAsleep] > 0 {
 		g = 1
 	}
 	if g < 2 && pc.Status[3] > 0 {
@@ -245,7 +245,7 @@ func drawMemberStatus(m int) {
 	}
 	setCursor(win, x+3, y+1)
 	for i := 0; i < 2; i++ {
-		if e := pc.Equipped[i]; e != 255 && pc.Items[e].ID > 0 {
+		if e := pc.Equipped[i]; e != noEquippedItem && pc.Items[e].ID > 0 {
 			putCharHi(win, pc.Items[e].Icon+1, 4)
 		} else {
 			putCharHi(win, byte(i+37), 4)
@@ -258,13 +258,13 @@ func drawMemberStatus(m int) {
 // init_maze_screen (WMAZE 4e89) reads the key prompts, draws the panels and resets the
 // view animation.
 func initMazeScreen() {
-	mzMsg2000 = getMessage(2000)
-	mzMsg2001 = getMessage(2001)
+	explorePrompt = getMessage(2000)
+	menuPrompt = getMessage(2001)
 	for m := 0; m < partyCount; m++ {
 		drawMemberStatus(m)
 	}
 	mzRedrawView = 1
-	mzG5034 = 1
+	mzEnteredCell = 1
 	mzAnimCounter = 0
 	animPhase = 0
 	g363e = 0
@@ -288,7 +288,7 @@ func choosePartyMember(msg, cancel int) int {
 	if partyCount < 2 {
 		return 0
 	}
-	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 25, borderRightEdge, 0, false)
 	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
@@ -319,10 +319,10 @@ func choosePartyMember(msg, cancel int) int {
 		printStringHi(win, memberName(m), 3)
 		setClickRegion(m, win.X+byte(x), win.Y+byte(y), byte(len(memberName(m))+int(win.X)+x-1), win.Y+byte(y))
 	}
-	setClickRegion(partyCount, 255, 0, 0, 0)
+	setClickRegion(partyCount, clickRegionsEnd, 0, 0, 0)
 	if cancel == 1 {
 		setClickRegion(partyCount, mainWindow.X+byte(exitX), mainWindow.Y+byte(exitY), byte(len(exitLo)+int(mainWindow.X)+exitX-1), mainWindow.Y+byte(exitY))
-		setClickRegion(partyCount+1, 255, 0, 0, 0)
+		setClickRegion(partyCount+1, clickRegionsEnd, 0, 0, 0)
 	}
 	sel := 0
 	if cancel == 1 {
@@ -339,21 +339,21 @@ func choosePartyMember(msg, cancel int) int {
 				printString(win, memberName(sel), -5)
 			}
 		}
-		k := getMazeInput(mzMsg2001)
+		k := getMazeInput(menuPrompt)
 		if menuClicked == 1 {
 			sel = -1
 			if k < partyCount {
 				sel = k
 			}
-			k = 5
+			k = menuKeyEnter
 		} else {
 			switch k {
-			case 1:
+			case menuKeyLeft:
 				if sel != -1 && sel%2 > 0 {
 					drawMemberName(win, sel)
 					sel--
 				}
-			case 2:
+			case menuKeyUp:
 				if sel != -1 {
 					if sel-2 >= 0 {
 						drawMemberName(win, sel)
@@ -363,12 +363,12 @@ func choosePartyMember(msg, cancel int) int {
 						sel = -1
 					}
 				}
-			case 3:
+			case menuKeyRight:
 				if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
 					drawMemberName(win, sel)
 					sel++
 				}
-			case 4:
+			case menuKeyDown:
 				if sel == -1 {
 					setCursor(mainWindow, exitX, exitY)
 					printStringHi(mainWindow, exitHi, 3)
@@ -379,7 +379,7 @@ func choosePartyMember(msg, cancel int) int {
 				}
 			}
 		}
-		if k == 5 {
+		if k == menuKeyEnter {
 			break
 		}
 	}
@@ -399,11 +399,11 @@ func animateStep() {
 	} else {
 		idleStep()
 	}
-	mzAnimCounter = (mzAnimCounter + 1) % 10
+	mzAnimCounter = (mzAnimCounter + 1) % animFrameSteps
 }
 
 // wait_animating_m (WMAZE 533b) waits n*5 animation steps; a click or Enter cuts it short
-// and sets g5038.
+// and sets mzWaitCut.
 func waitAnimating(n int) {
 	if dtLog != nil { // stubbed in the difftest
 		return
@@ -411,11 +411,11 @@ func waitAnimating(n int) {
 	flushKeys()
 	for n *= 5; n > 0; n-- {
 		if checkScreenClick() {
-			mzG5038 = 1
+			mzWaitCut = 1
 			return
 		}
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
-			mzG5038 = 1
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
+			mzWaitCut = 1
 			return
 		}
 		animateStep()
@@ -437,10 +437,10 @@ func killParty(msg int) {
 	redrawMazeView()
 	showMazeMessage(msg)
 	for m := 0; m < partyCount; m++ {
-		if party[m].Condition < 3 {
+		if party[m].Condition < conditionDead {
 			playSound(int(party[m].Sex) + 8)
 		}
-		party[m].Condition = 3
+		party[m].Condition = conditionDead
 		party[m].HP = 0
 		party[m].Stamina = 0
 		drawMemberStatus(m)
@@ -448,7 +448,7 @@ func killParty(msg int) {
 	}
 	waitAnimating(messageDelay << 1)
 	eraseWindow(mainWindow, true)
-	gameState = 8
+	gameState = stateGraveyard
 }
 
 // get_maze_input (WMAZE 5534) animates the view until a key in keys (its index) or a
@@ -456,8 +456,8 @@ func killParty(msg int) {
 func getMazeInput(keys string) int {
 	menuClicked = 0
 	for {
-		if keyAvailable(1) {
-			if i := strings.IndexByte(keys, byte(getKey(1))); i >= 0 {
+		if keyAvailable(keyClassMenu) {
+			if i := strings.IndexByte(keys, byte(getKey(keyClassMenu))); i >= 0 {
 				return i
 			}
 			continue
@@ -488,17 +488,17 @@ func tickEffectTimers(n int) {
 
 // step_position (WMAZE 55ef) moves the party's map position n steps towards dir.
 func stepPosition(dir int, n int16) {
-	mzG5034 = 1
+	mzEnteredCell = 1
 	curEvent = [4]int16{}
 	g4f86 = 0
 	switch dir {
-	case 0:
+	case dirNorth:
 		partyY += n
-	case 1:
+	case dirEast:
 		partyX += n
-	case 2:
+	case dirSouth:
 		partyY -= n
-	case 3:
+	case dirWest:
 		partyX -= n
 	}
 }
@@ -530,8 +530,8 @@ func restorePosition() {
 	partyBlock = s.SavedBlock
 	partyFacing = s.SavedFacing
 	moveToMazeCell(&cellX, &cellY, &partyBlock, int(partyX), int(partyY))
-	mzG503a = 2053
-	mzG5034 = 0
+	mzBumpMessage = 2053
+	mzEnteredCell = 0
 }
 
 // try_move (WMAZE 56f4) steps the party towards dir and handles falling off the map and
@@ -601,15 +601,15 @@ func tryMove(dir int) int {
 // move_party (WMAZE 5949) moves the party one step towards facing+turn, handling walls,
 // doors and the current cell's event direction.
 func moveParty(turn int) {
-	mzG503a = 2020
-	dir := (int(partyFacing) + turn + 4) % 4
+	mzBumpMessage = 2020
+	dir := (int(partyFacing) + turn + dirCount) % dirCount
 	wall := getWallInDirection(dir, int(partyBlock), int(cellX), int(cellY), int(partyX), int(partyY))
 	bump := func() {
 		snd := 0
-		if mzG503a == 2020 {
+		if mzBumpMessage == 2020 {
 			snd = 2
 		}
-		showMessageHeld(int(mzG503a), snd, 2)
+		showMessageHeld(int(mzBumpMessage), snd, 2)
 	}
 	switch curEvent[dir] {
 	case 0:
@@ -631,20 +631,20 @@ func moveParty(turn int) {
 				return
 			}
 		}
-		if mzG5034 == 0 {
+		if mzEnteredCell == 0 {
 			bump()
 		}
 	case 1, 2:
 		if wall == 3 && dir == int(partyFacing) {
 			showMessageHeld(2021, 2, messageDelay/2)
 		} else {
-			showMessageHeld(int(mzG503a), 2, 2)
+			showMessageHeld(int(mzBumpMessage), 2, 2)
 		}
 	case 3:
 		if wall == 2 {
 			tryMove(dir)
 		} else {
-			showMessageHeld(int(mzG503a), 2, 2)
+			showMessageHeld(int(mzBumpMessage), 2, 2)
 		}
 	}
 }

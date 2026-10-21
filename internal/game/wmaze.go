@@ -7,13 +7,13 @@ import "github.com/retro-ware/wiz6-go/internal/drv"
 
 // ovmain (WMAZE 4572): flee (23), load the map game_state_arg (6), explore (5).
 func wmazeOvmain() {
-	if gameState == 23 {
+	if gameState == stateFlee {
 		fleeParty(random(10) + 4)
 	}
-	if gameState == 6 {
+	if gameState == stateLoadMap {
 		loadMazeLevel(gameStateArg)
 	}
-	if gameState == 5 {
+	if gameState == stateExplore {
 		mazeMainLoop()
 	}
 }
@@ -21,21 +21,21 @@ func wmazeOvmain() {
 // WMAZE data segment (bss 0x501e..0x5240). The view's own tables (0x5040..0x5228) live
 // in wmaze_view.go.
 var (
-	mzMsg2000, mzMsg2001 string // g501e, g5028: messages 2000 and 2001 (get_maze_input prompts)
+	explorePrompt, menuPrompt string // g501e, g5028: messages 2000 and 2001 (get_maze_input prompts)
 
-	mzRedrawView  int16 // g5032: redraw the view at the top of the main loop
-	mzG5034       int16 // g5034
-	mzAnimCounter int16 // g5036: counts to 10 between animation frames
-	mzG5038       int16 // g5038
-	mzG503a       int16 // g503a: message id (2020, 2053)
-	mzG503c       int16 // g503c
-	mzG503e       int16 // g503e
+	mzRedrawView     int16 // g5032: redraw the view at the top of the main loop
+	mzEnteredCell    int16 // g5034: the party entered the cell (its events may run)
+	mzAnimCounter    int16 // g5036: counts to 10 between animation frames
+	mzWaitCut        int16 // g5038: a click or Enter cut wait_animating_m short
+	mzBumpMessage    int16 // g503a: the bump message id (2020, 2053)
+	mzRefreshPending int16 // g503c: refresh all windows at the next main loop turn
+	mzClearMessage   int16 // g503e: erase the main window at the next main loop turn
 
 	textWin          *Window  // g522a: the event text window (rows 19..23)
-	mzG522c          int16    // g522c: lines on the text page
-	mzG522e          int16    // g522e
+	textLine         int16    // g522c: the next line on the text page
+	textLastColumn   int16    // g522e: the last line's column ('^')
 	eventScreenDirty int16    // event_screen_dirty
-	mzG5232          int16    // g5232
+	mzNextEvent      int16    // g5232: step to the next event record after the current one
 	lockTumblers     [6]int16 // lock_tumblers (12 bytes)
 )
 
@@ -43,3 +43,73 @@ var (
 func drvMazeTile(tile, flag, mirror int) { drv.MazeTile(tile, flag, mirror) }         // drv_op_c6
 func drvShowWindow(w *Window)            { drv.ShowWindow(winRect(w)) }               // drv_op_c2
 func drvFillBack(w *Window, v int)       { drv.FillWorkBuffer(winRect(w), uint8(v)) } // drv_op_be
+
+// Directions as party_facing and the walls count them (the compass names take y as
+// growing northwards).
+const (
+	dirNorth = iota // y+1
+	dirEast         // x+1
+	dirSouth        // y-1
+	dirWest         // x-1
+	dirCount
+)
+
+// The places of the keys in explorePrompt (message 2000), as get_maze_input returns them.
+const (
+	exploreKeyForward    = iota
+	exploreKeyTurnRight  // or step right
+	exploreKeyToggleTurn // the arrow pad turns or side-steps
+	exploreKeyTurnLeft   // or step left
+	exploreKeyMenu
+)
+
+// Cell event kinds (mazeB.Kind), as run_cell_events dispatches them.
+const (
+	eventTeleport      = 1
+	eventSpinner       = 2
+	eventMessage       = 3 // also a locked chest
+	eventEncounter     = 4
+	eventNPC           = 5
+	eventCheckItem     = 6
+	eventDirValues     = 7 // also hidden doors and locks
+	eventSecret        = 8
+	eventTrap          = 9
+	eventChangeWalls   = 10
+	eventSetFlag       = 11
+	eventPuzzle        = 12
+	eventRiddle        = 13
+	eventText          = 16
+	eventNoop17        = 17
+	eventNoop18        = 18
+	eventWallChange    = 21
+	eventClearFlag     = 22
+	eventChangeFloor   = 23
+	eventSwapFlags     = 24
+	eventMemberEffects = 25
+)
+
+// Map layout: 12 blocks of 8x8 cells, 144 event records, 5 start points per block.
+const (
+	mapBlocks      = 12
+	blockSize      = 8
+	mapEvents      = 144
+	blockStarts    = 5
+	animFrameSteps = 10 // idle steps between animation frames (mzAnimCounter)
+)
+
+// PC fields as WMAZE reads them.
+const (
+	conditionOK       = 0
+	conditionDead     = 3 // and worse
+	statusAsleep      = 2
+	statusPoisoned    = 5 // with PoisonStr
+	statusForever     = 255
+	statStrength      = 0
+	statDexterity     = 4
+	skillNoticeSecret = 11 // check_secret_detect's skill
+	skillPickLock     = 15
+	classThief        = 3
+	classBard         = 6
+	soundBeep         = 0
+	soundDeathBase    = 8 // plus Sex
+)

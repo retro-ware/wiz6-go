@@ -44,7 +44,7 @@ func mzWins() {
 
 // mzPrompts sets init_maze_screen's key sets (the cases set the C's).
 func mzPrompts() {
-	mzMsg2000, mzMsg2001 = string(messageDBS.Get(2000)), string(messageDBS.Get(2001))
+	explorePrompt, menuPrompt = string(messageDBS.Get(2000)), string(messageDBS.Get(2001))
 }
 
 // mazeRoots: the globals their cases name.
@@ -56,8 +56,8 @@ var mazeRoots = map[string]any{
 	"magicWordTyped": &magicWordTyped, "g4f86": &g4f86, "g4f88": &g4f88, "g4f8a": &g4f8a, "g4fa6": &g4fa6,
 	"partyFacing": &partyFacing, "partyBlock": &partyBlock, "cellX": &cellX, "cellY": &cellY,
 	"partyX": &partyX, "partyY": &partyY, "mazeA": &mazeA, "mazeB": &mazeB,
-	"mzRedrawView": &mzRedrawView, "mzG5034": &mzG5034, "mzG5038": &mzG5038, "mzG503a": &mzG503a,
-	"mzG503c": &mzG503c, "mzG503e": &mzG503e, "eventScreenDirty": &eventScreenDirty, "mzG5232": &mzG5232,
+	"mzRedrawView": &mzRedrawView, "mzEnteredCell": &mzEnteredCell, "mzWaitCut": &mzWaitCut, "mzBumpMessage": &mzBumpMessage,
+	"mzRefreshPending": &mzRefreshPending, "mzClearMessage": &mzClearMessage, "eventScreenDirty": &eventScreenDirty, "mzNextEvent": &mzNextEvent,
 	"returnCmd": &returnCmd, "g363e": &g363e, "reachableCells": &reachableCells, "eventCells": &eventCells,
 	"g4338": &g4338, "g433a": &g433a, "treasureID": &treasureID,
 	"lockTumblers": &lockTumblers, "msgNotFound": &msgNotFound, "dpTarget": &dpTarget, "dpResultMsg": &dpResultMsg, "dpResultBeep": &dpResultBeep,

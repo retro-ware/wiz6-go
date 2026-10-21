@@ -22,7 +22,7 @@ func wallChangeEvent() {
 	doorB := int(mazeB.Data[ev]) % 256
 	side := int(mazeB.Unk288[ev]) / 256
 	face := int(mazeB.Unk288[ev]) % 256
-	rel := (int(partyFacing) - side + 4) % 4
+	rel := (int(partyFacing) - side + dirCount) % dirCount
 	if rel == 3 {
 		rel = -1
 	}
@@ -48,19 +48,19 @@ func wallChangeEvent() {
 		}
 	}
 	switch side {
-	case 0:
+	case dirNorth:
 		setBitfield(mazeA.Walls0[:], cell, 2, val)
 		if door == 1 {
 			setDoorFeature(mx, my, 0, closed, 0)
 			setDoorFeature(mx, my+1, 2, closed, 0)
 		}
-	case 1:
+	case dirEast:
 		setBitfield(mazeA.Walls1[:], cell, 2, val)
 		if door == 1 {
 			setDoorFeature(mx, my, 1, closed, 0)
 			setDoorFeature(mx+1, my, 3, closed, 0)
 		}
-	case 2:
+	case dirSouth:
 		if door == 1 {
 			setDoorFeature(mx, my, 2, closed, 0)
 			setDoorFeature(mx, my-1, 0, closed, 0)
@@ -69,7 +69,7 @@ func wallChangeEvent() {
 			cell = int(blk)<<6 + int(y)<<3 + int(x)
 			setBitfield(mazeA.Walls0[:], cell, 2, val)
 		}
-	case 3:
+	case dirWest:
 		if door == 1 {
 			setDoorFeature(mx, my, 3, closed, 0)
 			setDoorFeature(mx-1, my, 1, closed, 0)
@@ -205,7 +205,7 @@ func puzzleEvent() {
 	setCursor(mainWindow, 20-(len(answer)+1)/2, 0)
 	printStringHi(mainWindow, answer, 3)
 	resumeWindowDraw(mainWindow)
-	textWin = createWindow(0, 19, 40, 5, 20, -1, 0, false)
+	textWin = createWindow(0, 19, 40, 5, 20, borderNone, 0, false)
 	fillWindow(textWin, 32, 3)
 	eraseWindow(bottomLineWin, false)
 	refreshAllWindows()
@@ -218,7 +218,7 @@ func puzzleEvent() {
 	enabled[choices] = -1
 	if single == 1 {
 		t := getMessage(msg)
-		c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)+1)/2, 1, 20, 4, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
+		c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)+1)/2, 1, 20, 4, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 		if f := byteAt(answer, c<<1)*10 + byteAt(answer, c<<1+1) - 528; f > 0 && f < 80 {
 			setBit(levelFlags[gameStateArg][:], f, false)
 		}
@@ -228,7 +228,7 @@ func puzzleEvent() {
 			fillWindow(textWin, 32, 3)
 			refreshWindow(textWin)
 			t := getMessage(msg)
-			c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)*2+4)/2, 1, len(t)+3, (choices-1)/2+1, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
+			c := menuSelectCancel(textWin, msg, enabled, 20-(len(t)*2+4)/2, 1, len(t)+3, (choices-1)/2+1, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 			if once == 1 && c >= 0 {
 				enabled[c] = 0
 			}
@@ -293,11 +293,11 @@ func riddleEvent() {
 	m := extractBits(bits, 0, 8) + int(mazeB.Data[ev])
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	textWin = createWindow(0, 19, 40, 5, 20, -1, 0, false)
+	textWin = createWindow(0, 19, 40, 5, 20, borderNone, 0, false)
 	refreshAllWindows()
 	setCursor(textWin, 2, 0)
 	printMessage(2039, textWin, 1)
-	reply := mzInputText(textWin, 20, 6, 0)
+	reply := inputTextAnimating(textWin, 20, 6, inputPrintable)
 	wrong := true
 	for acc := getMessage(m); !msgNotFound; acc = getMessage(m) {
 		if strings.HasPrefix(acc, "$") {
@@ -348,7 +348,7 @@ func showCenteredNotice(msg int) {
 	printStringHi(mainWindow, s, 3)
 	resumeWindowDraw(mainWindow)
 	refreshWindow(mainWindow)
-	playSound(0)
+	playSound(soundBeep)
 	waitAnimating(messageDelay)
 }
 
@@ -373,7 +373,7 @@ func applyMemberEffects() {
 		}
 		pc := &party[m]
 		good, bad := 0, 0
-		if pc.Condition < 3 {
+		if pc.Condition < conditionDead {
 			roll := rollDice(formatDice(count, sides, count))
 			for b := 0; b < 16; b++ {
 				if extractBits(bits, b, 1) != 1 {
@@ -397,12 +397,12 @@ func applyMemberEffects() {
 					pc.HP = int16(clampValue(int(pc.HP)+roll, 0, int(pc.HPMax)))
 				case 3:
 					pc.PoisonStr = 0
-					pc.Status[5] = 0
+					pc.Status[statusPoisoned] = 0
 				case 4:
 					pc.Status[3] = 0
 				case 5:
 					if pc.Condition == 2 {
-						pc.Condition = 0
+						pc.Condition = conditionOK
 					}
 				case 6:
 					for _, s := range []int{1, 2, 4, 8, 9} {
@@ -411,7 +411,7 @@ func applyMemberEffects() {
 				case 8:
 					pc.Stamina = int16(clampValue(int(pc.Stamina)-roll, 0, int(pc.StaminaMax)))
 					if pc.Stamina <= 0 {
-						pc.Status[2] += uint8(random(6) + 6)
+						pc.Status[statusAsleep] += uint8(random(6) + 6)
 					}
 				case 9:
 					for r := range 6 {
@@ -421,17 +421,17 @@ func applyMemberEffects() {
 				case 10:
 					pc.HP = int16(clampValue(int(pc.HP)-roll, 0, int(pc.HPMax)))
 					if pc.HP <= 0 {
-						pc.Condition = 3
+						pc.Condition = conditionDead
 						pc.HP = 0
 						pc.Stamina = 0
-						playSound(int(pc.Sex) + 8)
+						playSound(int(pc.Sex) + soundDeathBase)
 					}
 				case 11:
 					if int(pc.PoisonStr) < count {
 						pc.PoisonStr = uint8(count)
 					}
-					if int(pc.Status[5]) < roll {
-						pc.Status[5] = uint8(roll)
+					if int(pc.Status[statusPoisoned]) < roll {
+						pc.Status[statusPoisoned] = uint8(roll)
 					}
 				case 12:
 					if int(pc.Status[3]) < roll {
@@ -442,8 +442,8 @@ func applyMemberEffects() {
 						pc.Condition = 2
 					}
 				case 14:
-					if int(pc.Status[2]) < roll {
-						pc.Status[2] = uint8(roll)
+					if int(pc.Status[statusAsleep]) < roll {
+						pc.Status[statusAsleep] = uint8(roll)
 					}
 				}
 			}
@@ -464,61 +464,61 @@ func runCellEvents() {
 		if cellEventIndex == -1 {
 			break
 		}
-		mzG5232 = 1
+		mzNextEvent = 1
 		switch mazeB.Kind[cellEventIndex] {
-		case 1:
+		case eventTeleport:
 			doTeleportEvent()
-		case 2:
-			if mzG5034 != 0 {
+		case eventSpinner:
+			if mzEnteredCell != 0 {
 				spinnerEvent()
 			}
-		case 3:
+		case eventMessage:
 			doMessageEvent()
-		case 4:
+		case eventEncounter:
 			encounterEvent()
-		case 5:
+		case eventNPC:
 			npcEvent()
-		case 6:
+		case eventCheckItem:
 			checkPartyItemEvent()
-		case 7:
+		case eventDirValues:
 			setDirValuesEvent()
-		case 8:
+		case eventSecret:
 			if mazeB.Data[cellEventIndex] > 0 {
 				showMessageText(int(mazeB.Data[cellEventIndex]), 0)
 			} else {
 				checkSecretDetect()
 			}
-		case 9:
+		case eventTrap:
 			trapEvent()
-		case 10:
+		case eventChangeWalls:
 			changeWallsEvent()
-		case 11:
+		case eventSetFlag:
 			setFlagEvent()
-		case 12:
+		case eventPuzzle:
 			puzzleEvent()
-		case 13:
+		case eventRiddle:
 			riddleEvent()
-		case 16:
+		case eventText:
 			textEvent()
-		case 17:
-			wmazeFa68d()
-		case 18:
-			wmazeFa385()
-		case 21:
+		case eventNoop17:
+			noopEvent17()
+		case eventNoop18:
+			noopEvent18()
+		case eventWallChange:
 			wallChangeEvent()
-		case 22:
+		case eventClearFlag:
 			clearFlagEvent()
-		case 23:
+		case eventChangeFloor:
 			changeFloorEvent()
-		case 24:
+		case eventSwapFlags:
 			swapFlagsEvent()
-		case 25:
+		case eventMemberEffects:
 			applyMemberEffects()
 		}
-		if gameState != 5 {
+		if gameState != stateExplore {
 			return
 		}
-		if mzG5232 == 1 {
+		if mzNextEvent == 1 {
 			cellEventIndex++
 		}
 	}
@@ -540,15 +540,15 @@ func revealHiddenDoor(ev int) {
 	my := int(mazeA.BlockY[blk]) + int(y)
 	cell := int(blk)<<6 + int(y)<<3 + int(x)
 	switch partyFacing {
-	case 0:
+	case dirNorth:
 		setBitfield(mazeA.Walls0[:], cell, 2, 1)
-	case 1:
+	case dirEast:
 		setBitfield(mazeA.Walls1[:], cell, 2, 1)
-	case 2:
+	case dirSouth:
 		if moveToMazeCell(&x, &y, &blk, mx, my-1) == 0 {
 			setBitfield(mazeA.Walls0[:], int(blk)<<6+int(y)<<3+int(x), 2, 1)
 		}
-	case 3:
+	case dirWest:
 		if moveToMazeCell(&x, &y, &blk, mx-1, my) == 0 {
 			setBitfield(mazeA.Walls1[:], int(blk)<<6+int(y)<<3+int(x), 2, 1)
 		}
@@ -570,7 +570,7 @@ func tryFlagEventAt(ev int) bool {
 	cellEventIndex = int16(ev)
 	setEventFlags(extractBits(bits, 8, 2))
 	cellEventIndex = int16(ev + 1)
-	mzG5034 = 1
+	mzEnteredCell = 1
 	return true
 }
 
@@ -593,17 +593,17 @@ func searchCell() {
 			break
 		}
 		k := mazeB.Kind[ev]
-		if k == 7 && extractBits(int(mazeB.DirBits[ev]), int(partyFacing)<<1+8, 2) == 2 {
+		if k == eventDirValues && extractBits(int(mazeB.DirBits[ev]), int(partyFacing)<<1+8, 2) == 2 {
 			revealHiddenDoor(ev)
 			return
 		}
-		if k == 8 && tryFlagEventAt(ev) {
+		if k == eventSecret && tryFlagEventAt(ev) {
 			return
 		}
 	}
 	if nothing {
 		showMazeMessage(2045)
-		playSound(0)
+		playSound(soundBeep)
 		waitAnimating(messageDelay / 2)
 	}
 	eraseWindow(mainWindow, true)
@@ -649,7 +649,7 @@ func lockResult(win *Window, result int) {
 // member; 0 on success, 1 failed, 2 jammed (or the member gave out: jammed+1).
 func forceLock(member, ev int) int {
 	clearClickFlag()
-	win := createWindow(20, 19, 20, 5, 20, -1, 0, false)
+	win := createWindow(20, 19, 20, 5, 20, borderNone, 0, false)
 	fillWindow(win, 32, 1)
 	lockFrame(win, 19)
 	diff := extractBits(int(mazeB.Param[ev]), 0, 5)
@@ -660,7 +660,7 @@ func forceLock(member, ev int) int {
 	setCursor(mainWindow, 21, 0)
 	printStringHi(mainWindow, getMessage(2112), 3)
 	pc := &party[member]
-	target := 18 - (int(pc.Stats[0]) - diff) + diff
+	target := 18 - (int(pc.Stats[statStrength]) - diff) + diff
 	target = max(1, min(target, 18))
 	if jammed != 0 {
 		target = 18
@@ -675,11 +675,11 @@ func forceLock(member, ev int) int {
 	strength := 0
 	for {
 		deferWindowDraw(win)
-		power := int(int16(int32(pc.Stamina) * 100 / int32(pc.StaminaMax) * int32(pc.Stats[0]) / 100)) // (int) cast
+		power := int(int16(int32(pc.Stamina) * 100 / int32(pc.StaminaMax) * int32(pc.Stats[statStrength]) / 100)) // (int) cast
 		if power <= 0 || random(50) == 0 {
 			pc.Stamina--
 			if power <= 0 || pc.Stamina <= 0 {
-				pc.Status[2] = uint8(random(6) + 6)
+				pc.Status[statusAsleep] = uint8(random(6) + 6)
 				pc.Stamina = 0
 				drawMemberStatus(member)
 				destroyWindow(win, false)
@@ -700,7 +700,7 @@ func forceLock(member, ev int) int {
 		clearWindowArea(win, int(win.CurX), 1, 18, 1)
 		resumeWindowDraw(win)
 		refreshWindow(win)
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			going = false
 		}
 		if !going || checkScreenClick() {
@@ -729,7 +729,7 @@ func forceLock(member, ev int) int {
 // trains skill 15 for thieves, ninjas and bards. 0 on success.
 func pickLock(member, ev int) int {
 	clearClickFlag()
-	win := createWindow(20, 19, 20, 5, 20, -1, 0, false)
+	win := createWindow(20, 19, 20, 5, 20, borderNone, 0, false)
 	fillWindow(win, 32, 1)
 	lockFrame(win, 18)
 	for c := 3; c < 18; c += 3 {
@@ -745,7 +745,7 @@ func pickLock(member, ev int) int {
 	resumeWindowDraw(win)
 	diff := extractBits(int(mazeB.Param[ev]), 0, 5)
 	pc := &party[member]
-	skill := min(int(pc.Level)+int(pc.Skills[15]), 95)
+	skill := min(int(pc.Level)+int(pc.Skills[skillPickLock]), 95)
 	tumblers := min(diff/3+1, 6)
 	jammed := 0
 	if extractBits(int(mazeB.DirBits[ev]), int(partyFacing)<<1, 2) == 2 {
@@ -773,17 +773,17 @@ func pickLock(member, ev int) int {
 		}
 		resumeWindowDraw(win)
 		refreshWindow(win)
-		if keyAvailable(1) && int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) && int8(getKey(keyClassMenu)) == keyEnter {
 			going = false
 		}
 		if !going || checkScreenClick() {
 			break
 		}
 	}
-	thief := pc.Class == 3 || pc.Class == 6 || pc.Class == 13
+	thief := pc.Class == classThief || pc.Class == classBard || pc.Class == classNinja
 	if result != 0 {
 		if result == 1 && thief {
-			trySkillGain(member, 15, 1)
+			trySkillGain(member, skillPickLock, 1)
 		}
 		if random(3) == 0 {
 			jamLock(ev)
@@ -791,7 +791,7 @@ func pickLock(member, ev int) int {
 	} else {
 		openLockAhead(ev)
 		if thief {
-			trySkillGain(member, 15, 4)
+			trySkillGain(member, skillPickLock, 4)
 		}
 	}
 	lockResult(win, result)
@@ -807,7 +807,7 @@ func lockedDoorMenu(ev int) {
 	}
 	enabled := []int{1, 1, 1, -1} // the C's l20 (-1) ends the list
 	deferWindowDraw(g4fb0)
-	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
+	win := createWindow(0, 19, 19, 5, 10, borderRightEdge, 0, false)
 	for {
 		fillWindow(win, 32, 3)
 		eraseWindow(mainWindow, false)
@@ -817,7 +817,7 @@ func lockedDoorMenu(ev int) {
 		printMessage(2002, mainWindow, 18)
 		resumeWindowDraw(mainWindow)
 		refreshAllWindows()
-		choice := menuSelectCancel(win, 2100, enabled, 1, 1, 7, 1, 5, 0, 0, func() int { return getMazeInput(mzMsg2001) })
+		choice := menuSelectCancel(win, 2100, enabled, 1, 1, 7, 1, 5, 0, 0, func() int { return getMazeInput(menuPrompt) })
 		switch choice {
 		case 0, 1:
 			game := forceLock
@@ -849,7 +849,7 @@ func checkLockedDoorAt(ev int) bool {
 	}
 	cellEventIndex = int16(ev)
 	treasureID = int16(mazeB.Param[ev])
-	gameState = 21
+	gameState = stateTreasureFound
 	return true
 }
 
@@ -859,10 +859,10 @@ func handleLockedDoor() {
 		if ev = findCellEvent(int(cellX), int(cellY), int(partyBlock), ev); ev == -1 {
 			return
 		}
-		if mazeB.Kind[ev] == 3 && checkLockedDoorAt(ev) {
+		if mazeB.Kind[ev] == eventMessage && checkLockedDoorAt(ev) {
 			return
 		}
-		if mazeB.Kind[ev] == 7 {
+		if mazeB.Kind[ev] == eventDirValues {
 			if s := extractBits(int(mazeB.DirBits[ev]), int(partyFacing)<<1, 2); s == 1 || s == 2 {
 				lockedDoorMenu(ev)
 				return

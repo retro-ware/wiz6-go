@@ -56,43 +56,30 @@ func trySkillGain(m, skill, difficulty int) {
 	}
 }
 
-// mzAnimate is one idle step of the maze animation (the loop body of wait_key_animating
-// and its kin): every 10th call flips the animation phase and redraws.
-func mzAnimate() {
-	if mzAnimCounter == 0 {
-		animPace(mazeAnimPeriod)
-		animPhase = (animPhase + 1) % 2
-		redrawMazeView()
-	} else {
-		idleStep()
-	}
-	mzAnimCounter = (mzAnimCounter + 1) % 10
-}
-
 // wait_key_animating (WMAZE 9a66) animates the view until a key of class comes.
 func waitKeyAnimating(class int) int {
 	for !keyAvailable(class) {
-		mzAnimate()
+		animateStep()
 	}
 	return int(uint8(getKey(class)))
 }
 
 // input_text_m (WMAZE 9aae) reads up to maxLen characters at win's cursor, in colour;
 // digits only for mode 1, printable characters for mode 0.
-func mzInputText(win *Window, maxLen, color, mode int) string {
+func inputTextAnimating(win *Window, maxLen, color, mode int) string {
 	col, row := int(win.CurX), int(win.CurY)
 	var buf []byte
 	putChar(win, 'a', 1)
 	for {
-		c := waitKeyAnimating(1)
-		if c == 13 {
+		c := waitKeyAnimating(keyClassMenu)
+		if c == keyEnter {
 			break
 		}
 		setCursor(win, col, row)
 		putChar(win, ' ', 1)
 		setCursor(win, col, row)
 		switch {
-		case c == 8:
+		case c == keyLeft:
 			if len(buf) > 0 {
 				buf = buf[:len(buf)-1]
 				col--
@@ -100,11 +87,11 @@ func mzInputText(win *Window, maxLen, color, mode int) string {
 				putChar(win, ' ', 1)
 				setCursor(win, col, row)
 			} else {
-				playSound(0)
+				playSound(soundBeep)
 			}
 		case len(buf) >= maxLen:
-			playSound(0)
-		case mode == 0 && c >= 32 && c <= 127, mode == 1 && c >= '0' && c <= '9':
+			playSound(soundBeep)
+		case mode == inputPrintable && c >= ' ' && c <= maxInputChar, mode == inputDigits && c >= '0' && c <= '9':
 			buf = append(buf, byte(c))
 			putChar(win, byte(c), color)
 			col++
@@ -125,8 +112,8 @@ func waitMorePrompt() {
 	blink := 3
 	flushKeys()
 	for {
-		if keyAvailable(1) {
-			if int8(getKey(1)) == 13 {
+		if keyAvailable(keyClassMenu) {
+			if int8(getKey(keyClassMenu)) == keyEnter {
 				return
 			}
 			continue
@@ -148,7 +135,7 @@ func waitMorePrompt() {
 		} else {
 			idleStep()
 		}
-		mzAnimCounter = (mzAnimCounter + 1) % 10
+		mzAnimCounter = (mzAnimCounter + 1) % animFrameSteps
 	}
 }
 
@@ -163,7 +150,7 @@ func endTextPage(timed int) {
 	}
 	waitMorePrompt()
 	clearWindow(textWin, true)
-	mzG522c = 0
+	textLine = 0
 }
 
 // print_text_line_m (WMAZE 9d0c) runs the control characters at the start of s, then
@@ -177,7 +164,7 @@ func printTextLine(s string) {
 		switch k {
 		case 0:
 			s = s[1:]
-			mzG522c++
+			textLine++
 		case 1:
 			s = s[1:]
 			waitAnimating(messageDelay)
@@ -188,7 +175,7 @@ func printTextLine(s string) {
 		case 4:
 			s = s[1:]
 			clearWindow(textWin, true)
-			mzG522c = 0
+			textLine = 0
 		case 5:
 			s = s[1:]
 			endTextPage(0)
@@ -199,17 +186,17 @@ func printTextLine(s string) {
 				n = int(s[0])
 				s = s[1:]
 			}
-			if n >= 14 {
+			if n >= loadedSound {
 				if n != curSound {
 					loadSoundBank(n)
 				}
-				playSound(14)
+				playSound(loadedSound)
 			} else {
 				playSound(n)
 			}
 		}
 	}
-	if mzG522c > 4 {
+	if textLine > 4 {
 		endTextPage(0)
 	}
 	col := 20 - (len(s)+1)/2
@@ -218,24 +205,24 @@ func printTextLine(s string) {
 		case '$':
 			s, col = s[1:], 0
 		case '^':
-			s, col = s[1:], int(mzG522e)
+			s, col = s[1:], int(textLastColumn)
 		}
 	}
-	setCursor(textWin, col, int(mzG522c))
-	mzG522e = int16(col)
-	mzG522c++
+	setCursor(textWin, col, int(textLine))
+	textLastColumn = int16(col)
+	textLine++
 	printString(textWin, s, 5)
 }
 
-// mzOpenTextWin hides the message lines under the event text window (rows 19..23).
-func mzOpenTextWin(refresh bool) {
+// openEventTextWin hides the message lines under the event text window (rows 19..23).
+func openEventTextWin(refresh bool) {
 	eventScreenDirty = 1
 	deferWindowDraw(mainWindow)
 	deferWindowDraw(bottomLineWin)
-	textWin = createWindow(0, 19, 40, 5, 20, -1, 0, refresh)
+	textWin = createWindow(0, 19, 40, 5, 20, borderNone, 0, refresh)
 }
 
-func mzCloseTextWin() {
+func closeEventTextWin() {
 	destroyWindow(textWin, false)
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
@@ -247,8 +234,8 @@ func showMessageText(msg, timed int) {
 	if dtLog != nil { // the difftest stubs it
 		return
 	}
-	mzG522e, mzG522c = 0, 0
-	mzOpenTextWin(true)
+	textLastColumn, textLine = 0, 0
+	openEventTextWin(true)
 	for {
 		s := getMessage(msg)
 		if msgNotFound {
@@ -258,7 +245,7 @@ func showMessageText(msg, timed int) {
 		msg++
 	}
 	endTextPage(timed)
-	mzCloseTextWin()
+	closeEventTextWin()
 }
 
 // roll_dice (WMAZE 9ef6) is d.Base plus Count rolls of 1..Sides.
@@ -280,7 +267,7 @@ func formatDice(count, sides, base int) Dice {
 func randomOpenDir(open *[4]int) int {
 	d := random(4)
 	for open[d] == 0 {
-		d = (d + 1) % 4
+		d = (d + 1) % dirCount
 	}
 	return d
 }
@@ -312,16 +299,16 @@ func spinnerEvent() {
 		if turn == 1 && d != int(partyFacing) {
 			var n int
 			if step == 1 {
-				n = (d - int(partyFacing) + 4) % 4
+				n = (d - int(partyFacing) + dirCount) % dirCount
 			} else {
-				n = (int(partyFacing) - d + 4) % 4
+				n = (int(partyFacing) - d + dirCount) % dirCount
 			}
 			if dist == 0 {
 				n--
 			}
 			for range n {
 				waitAnimating(pause)
-				partyFacing = int16((int(partyFacing) + step + 4) % 4)
+				partyFacing = int16((int(partyFacing) + step + dirCount) % dirCount)
 				redrawMazeView()
 			}
 		}
@@ -340,7 +327,7 @@ func spinnerEvent() {
 				return
 			}
 			cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
-			mzG5232 = 0
+			mzNextEvent = 0
 		}
 		redrawMazeView()
 	}
@@ -375,7 +362,7 @@ func teleportParty() {
 	partyX = int16(mazeA.BlockX[partyBlock]) + cellX
 	partyY = int16(mazeA.BlockY[partyBlock]) + cellY
 	cellEventIndex = int16(mazeB.FirstEvent[partyBlock])
-	mzG5232 = 0
+	mzNextEvent = 0
 	if m == gameStateArg {
 		redrawMazeView()
 		return
@@ -385,7 +372,7 @@ func teleportParty() {
 	if gameStateArg >= 0 {
 		redrawMazeView()
 	}
-	mzG5034 = 1
+	mzEnteredCell = 1
 }
 
 // do_teleport_event (WMAZE a311).
@@ -397,7 +384,7 @@ func doTeleportEvent() {
 		showMazeMessage(2052)
 		playSound(8)
 		waitAnimating(messageDelay / 4)
-		mzG503e = 1
+		mzClearMessage = 1
 		teleportParty()
 	case 4, 5, 6:
 		playSound(8)
@@ -405,8 +392,8 @@ func doTeleportEvent() {
 	}
 }
 
-// wmazeFa385 (WMAZE a385) does nothing.
-func wmazeFa385() {}
+// noopEvent18 (WMAZE a385) does nothing.
+func noopEvent18() {}
 
 // do_message_event (WMAZE a386) shows the event's text (only facing one way, if set),
 // then may hand over to the treasure overlay (state 21).
@@ -425,19 +412,19 @@ func doMessageEvent() {
 		return
 	}
 	treasureID = int16(eventParam())
-	gameState = 21
+	gameState = stateTreasureFound
 }
 
 // show_member_notice (WMAZE a421) says member m noticed something (message 2040).
 func showMemberNotice(m int) {
-	mzOpenTextWin(false)
+	openEventTextWin(false)
 	refreshAllWindows()
 	s := replaceCharWithString(getMessage(2040), memberName(m), '^')
 	setCursor(textWin, 20-(len(s)+1)/2, 1)
 	printString(textWin, s, 5)
-	playSound(0)
+	playSound(soundBeep)
 	waitAnimating(messageDelay)
-	mzCloseTextWin()
+	closeEventTextWin()
 }
 
 // check_secret_detect (WMAZE a4f5) lets the members, in random order, try to notice a
@@ -457,10 +444,10 @@ func checkSecretDetect() {
 		}
 		tried[m] = true
 		p := &party[m]
-		if p.Condition != 0 || p.Status[2] != 0 || p.Status[3] != 0 {
+		if p.Condition != conditionOK || p.Status[statusAsleep] != 0 || p.Status[3] != 0 {
 			continue
 		}
-		if random(gameStateArg*10+110) < int(p.Skills[11]) {
+		if random(gameStateArg*10+110) < int(p.Skills[skillNoticeSecret]) {
 			showMemberNotice(m)
 			return
 		}
@@ -486,8 +473,8 @@ func setDirValuesEvent() {
 	setEventFlags(extractBits(eventParam(), 5, 2))
 }
 
-// wmazeFa68d (WMAZE a68d) does nothing.
-func wmazeFa68d() {}
+// noopEvent17 (WMAZE a68d) does nothing.
+func noopEvent17() {}
 
 // dirField (WMAZE a68e) is the 2-bit field i of v.
 func dirField(v, i int) int { return extractBits(v, i<<1, 2) }
@@ -580,7 +567,7 @@ func inflictCondition(m, msg, resist, cond int) {
 		if cond >= 3 {
 			p.HP = 0
 			p.Stamina = 0
-			playSound(int(p.Sex) + 8)
+			playSound(int(p.Sex) + soundDeathBase)
 		}
 		printMemberMessage(m, getMessage(msg), "", "", 1, 6, 0, 0)
 		drawMemberStatus(m)
@@ -592,7 +579,7 @@ func inflictCondition(m, msg, resist, cond int) {
 func trapDamageMember(m, count, sides int) {
 	n := rollDice(formatDice(count, sides, 0))
 	p := &party[m]
-	if n == 0 || p.Condition >= 3 {
+	if n == 0 || p.Condition >= conditionDead {
 		return
 	}
 	num := itoa(n)
@@ -613,7 +600,7 @@ func trapDamageMember(m, count, sides int) {
 }
 
 // inflict_status (WMAZE ad18) adds count dice of sides plus base to member m's status
-// timer status (base 255: for ever) unless resistance resist saves; says msg.
+// timer status (base statusForever: for ever) unless resistance resist saves; says msg.
 func inflictStatus(m, msg, resist, status, count, sides, base int) {
 	p := &party[m]
 	if p.Condition >= 2 {
@@ -623,15 +610,15 @@ func inflictStatus(m, msg, resist, status, count, sides, base int) {
 	if resist != 0 && random(100) <= int(int16(int(p.Resist[resist])-count*3)) { // C int wraps
 		return
 	}
-	if base == 255 {
-		p.Status[status] = 0xff
+	if base == statusForever {
+		p.Status[status] = statusForever
 	} else {
 		if int16(int(p.Status[status])+n) > 250 { // C int sum wraps
 			n = 250 - int(p.Status[status])
 		}
 		p.Status[status] += uint8(n)
 	}
-	if status == 5 {
+	if status == statusPoisoned {
 		p.PoisonStr = uint8(count)
 	}
 	printMemberMessage(m, getMessage(msg), "", "", 1, 6, 0, 0)
@@ -649,11 +636,11 @@ func trapEvent() {
 	}
 	eventScreenDirty = 1
 	if snd := eventParam(); snd > 0 {
-		if snd >= 14 {
+		if snd >= loadedSound {
 			if snd != curSound {
 				loadSoundBank(snd)
 			}
-			playSound(14)
+			playSound(loadedSound)
 		} else {
 			playSound(snd)
 		}
@@ -661,7 +648,7 @@ func trapEvent() {
 	if eventData() > 0 {
 		showMessageText(eventData(), 0)
 	}
-	mzOpenTextWin(false)
+	openEventTextWin(false)
 	kind := extractBits(bits, 8, 4)
 	sides := extractBits(bits, 0, 4)
 	count := extractBits(bits, 4, 4)
@@ -674,13 +661,13 @@ func trapEvent() {
 		refreshAllWindows()
 		setCursor(textWin, 20-(len(s)+1)/2, 1)
 		printString(textWin, s, 6)
-		playSound(0)
+		playSound(soundBeep)
 		waitAnimating(messageDelay)
 	}
 	resist := event288()
 	for m := range partyCount {
 		p := &party[m]
-		if random(54) <= int(p.Stats[4])-count {
+		if random(54) <= int(p.Stats[statDexterity])-count {
 			continue
 		}
 		if noDamage == 0 && (resist == 0 || random(100) > int(p.Resist[resist])-count*3) {
@@ -695,7 +682,7 @@ func trapEvent() {
 		}
 	}
 	setEventFlags(extractBits(eventBits(), 13, 2))
-	mzCloseTextWin()
+	closeEventTextWin()
 }
 
 // textEvent (WMAZE b123): a text event, only facing one way if set.
@@ -720,7 +707,7 @@ func encounterEvent() {
 		g433a = eventParam()
 	}
 	g4338, g4354 = 1, 1
-	gameState = 10
+	gameState = stateBeginCombat
 	setEventFlags(extractBits(eventBits(), 4, 2))
 	cellEventIndex++
 }
@@ -736,7 +723,7 @@ func npcEvent() {
 	}
 	g433a = eventParam()
 	g4338 = 1
-	gameState = 18
+	gameState = stateNPC
 	cellEventIndex++
 }
 

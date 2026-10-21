@@ -16,7 +16,7 @@ func MainMaze(dir string) int {
 func MainFight(dir string, mon int) int {
 	return run(dir, func() {
 		startTestView()
-		returnCmd = 5
+		returnCmd = int16(stateExplore)
 		startEncounter(0)
 		if mon > 0 {
 			g433a = mon
@@ -30,7 +30,7 @@ func PCView(dir string, m int) int {
 		startTestMaze()
 		menuKeys = getMessage(300)
 		curMember = int16(min(m, max(partyCount-1, 0)))
-		returnCmd, gameState = 5, 17
+		returnCmd, gameState = int16(stateExplore), stateViewCharacter
 	})
 }
 
@@ -39,7 +39,7 @@ func MainChest(dir string, id int) int {
 	return run(dir, func() {
 		startTestView()
 		treasureID = int16(id)
-		gameState = 21
+		gameState = stateTreasureFound
 	})
 }
 
@@ -48,7 +48,7 @@ func MainNPC(dir string, npc int) int {
 	return run(dir, func() {
 		startTestView()
 		g433a = npc
-		gameState = 18
+		gameState = stateNPC
 	})
 }
 
@@ -100,10 +100,10 @@ func startTestMaze() {
 	g4f88 = 0
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
-	g4fb0 = createWindow(20, 19, 20, 5, 8, -1, 0, false)
+	g4fb0 = createWindow(20, 19, 20, 5, 8, borderNone, 0, false)
 	fillWindow(g4fb0, 32, 3)
 	curEvent = [4]int16{}
 	g4f86 = 0
 	mazeA, mazeB = nil, nil
-	gameState = 6
+	gameState = stateLoadMap
 }

@@ -162,3 +162,29 @@ New names in wbase.go: `menuKeyEscape`..`menuKeyEnter` (places in menuKeys, the 
 - wbase.go drawGauge: `int16(int32(cur)*100/int32(max)/10) + 1`, the C's int casts and 16-bit wrap kept for parity.
 - `int(byte(getKey(...)))`: the C's `& 0xff` of the key word (low byte), kept as a byte conversion.
 - wbase_party.go loadGame: walks the save file's bytes record by record (`next`) and decodes them with dbs.Decode; pcfileRecordIO reads/writes a record at a byte offset of PCFILE.DBS.
+
+## internal/game: wmaze (wmaze, wmaze_main, wmaze_menu, wmaze_event, wmaze_lock, wmaze_view, wmaze_testhook)
+
+New names in wmaze.go: `dirNorth`..`dirWest`/`dirCount` (party_facing and wall sides), `exploreKeyForward`..`exploreKeyMenu` (places in message 2000), `event...` cell event kinds (mazeB.Kind), `mapBlocks`/`blockSize`/`mapEvents`/`blockStarts`/`animFrameSteps`, PC field indexes `conditionOK`/`conditionDead`, `statusAsleep`/`statusPoisoned`/`statusForever`, `statStrength`/`statDexterity`, `skillNoticeSecret`/`skillPickLock`, `classThief`/`classBard` (with wpcmk's `classNinja`), `soundBeep`/`soundDeathBase`; in wmaze_view.go `maxViewObjects`/`viewObjTiles`. Renamed: `mzMsg2000`/`mzMsg2001` -> `explorePrompt`/`menuPrompt`, `mzG5034` -> `mzEnteredCell`, `mzG5038` -> `mzWaitCut`, `mzG503a` -> `mzBumpMessage`, `mzG503c` -> `mzRefreshPending`, `mzG503e` -> `mzClearMessage`, `mzG5232` -> `mzNextEvent` (goldens rewritten), `mzG522c`/`mzG522e` -> `textLine`/`textLastColumn`, the view tables `mzG5042`..`mzG50b6`/`viewDepth` -> `viewNoFloor`, `viewAnimFloor`, `viewCellOpen`, `viewDrawLeftFront`, `viewDrawLeftSide`, ... (`mzParity`.. -> `viewParity`..), `wmazeF8ebb`..`wmazeF8f4c` -> `hide...Behind...`, `wmazeFa385`/`wmazeFa68d` -> `noopEvent18`/`noopEvent17`, `mzInputText` -> `inputTextAnimating`, `mzOpenTextWin`/`mzCloseTextWin` -> `openEventTextWin`/`closeEventTextWin`. `mzAnimate` duplicated `animateStep` and is gone. Game states, key codes/classes, borders, `clickRegionsEnd`, `noEquippedItem`, `inputPrintable`/`inputDigits` and `loadedSound` replace literals (wdopt.go still tests `Kind == 7`/`19` as numbers).
+
+### Hex/binary literals in code
+
+- None added. `DS:0x3498` and the bss addresses stay in comments only.
+
+### Unclear names kept
+
+- The compass names of `dirNorth`..`dirWest` assume y grows northwards; only the axis (0 y+1, 1 x+1, ...) is certain.
+- `g4f86`, `g4f88` (arrow pad turns/side-steps), `g4f8a` (the facing an event wants), `g4fa6` (last found block), `g363e` (door opening frame), `g4338`/`g4354`/`g433a` (combat entry parameters), `g4fb0`: core state, see the core section.
+- `mazeB.Unk288`, `scenarioHdr.Unk140`, `event288()`: dbs fields of unknown meaning.
+- Condition values other than 0 and 3 (2 is cured by event 25's bit 5), `Status[3]` and the other status slots, `Resist[...]` indexes, `partyCounters[0]`/`[2]`/`[5]` (effects: levitation-like, detect secret, trap ward by their use): left as numbers.
+- Wall codes (0 open, 1/3 doors, 2 wall, 4..14 features), floor feature codes 1..15 (getFrontWall, sideFeature, tryMove, searchCell's 5, setDoorFeature's 7), map numbers (`gameStateArg == 1, 2, 5, 8, 10, 12, ...` for pits, edges and special cells), encounter odds (74, 92, 975/990, 995), menu entry indexes of mazePartyMenu/diskOptionsMenu/lockedDoorMenu and the event bit field positions in `extractBits(bits, n, w)`: the original's map data and layout, not named.
+- Message numbers (2000.., 2100.., 5231.., 10000), sound numbers, window positions/priorities, colours (incl. printString's -5 highlight), fonts, glyph numbers (gauges 86/99, portraits 72, class 58, condition 37, lock frame glyphs, arrow pad glyphs in putGlyphs2x2/4x2), click region rectangles, MAZEDATA tile numbers (the drawFrontCell/drawSideWall/drawFloorCeiling argument lists, 344..361, frame offsets 10, 13, 15, 18) and the view clip tables: the original's arguments with no name of their own.
+- `noopEvent17`/`noopEvent18`: empty in the original; what the kinds are is unknown.
+
+### Low-level code kept
+
+- drawMazeView: the C writes byte 2+3r of the int16 table `viewAnimFloor` (low or high byte of one entry); kept as `|= 1 << (8 * (b % 2))` for parity.
+- `getBitfield`/`setBitfield`/`extractBits`/`testBit` on the map's packed cell arrays (walls, floor, feature, start points, encounter tables) and `cellIndex` / `block<<6 | y<<3 | x` cell numbers: the map file layout.
+- `encounterByte` reads past `Encounters` into `Walls0` as the C does; `jamLock`/`clearDirBits` mask DirBits directly.
+- `int16(...)`/`int32` casts in drawVitalBar, healMember, restParty, forceLock, inflictStatus, trySkillGain, clampValue, rollDice: the C's 16-bit int wrap, kept for parity.
+- addViewObject's endless `playSound` loop when the 30 objects overflow: the C hangs there.
