@@ -422,63 +422,6 @@ func readLine(win *Window, maxlen, color, mode int, next func() int, typed func(
 	return string(buf)
 }
 
-// drawGlyphAt (WBASE 5416) draws glyph ch of font 1 at (x, y).
-func drawGlyphAt(win *Window, x, y int, ch byte) {
-	setCursor(win, x, y)
-	putCharHi(win, ch, 1)
-}
-
-// checkMagicWord (WBASE 543f) is the copy protection: three random icons and their magic
-// word (a spell name, message 4000+); -1 if the word is wrong. The shipped (GOG) build
-// copies the typed word over the expected one before comparing, so any word passes; the
-// prompt, the icons and the random numbers stay as they were.
-func checkMagicWord() int {
-	if copyProtectionOK == 1 {
-		return 0
-	}
-	eraseWindow(mainWindow, false)
-	win := createWindow(0, 19, 40, 5, 10, -1, 0, false)
-	fillWindow(win, 32, 3)
-	deferWindowDraw(win)
-	printCentered(win, getMessage(1050), 1, 18)
-	drawGlyphAt(win, 7, 2, 17)
-	drawGlyphAt(win, 33, 2, 19)
-	drawGlyphAt(win, 7, 4, 6)
-	drawGlyphAt(win, 33, 4, 8)
-	for x := 8; x < 33; x++ {
-		drawGlyphAt(win, x, 2, 18)
-		drawGlyphAt(win, x, 4, 7)
-	}
-	drawGlyphAt(win, 7, 3, 4)
-	drawGlyphAt(win, 33, 3, 5)
-	deferWindowDraw(win)
-	clearWindowArea(win, 8, 3, 32, 3)
-	icon1 := random(8)
-	icon3 := random(8)
-	icon2 := random(4) + icon3/4<<2
-	setCursor(win, 10, 3)
-	putChar(win, byte(icon1+104), 4)
-	win.CurX++
-	putChar(win, byte(icon2+112), 5)
-	win.CurX++
-	putChar(win, byte(icon3+120), 2)
-	inputX := int(win.CurX) + 2
-	resumeWindowDraw(win)
-	refreshAllWindows()
-	clearWindowArea(win, 16, 3, 32, 3)
-	setCursor(win, inputX, 3)
-	_ = getMessage((icon2<<3+icon3<<6+icon1)%79 + 4000) // the magic word
-	word := inputTextAnimated(win, 15, 5, 0)
-	g4f84 = 17210
-	expected := word
-	destroyWindow(win, false)
-	if expected != word {
-		return -1
-	}
-	copyProtectionOK = 1
-	return 0
-}
-
 // setupGameWindows (WBASE 5d39) clears the party picture strip and makes the game's command
 // window.
 func setupGameWindows() {
@@ -512,13 +455,9 @@ func setupGameWindows() {
 	}
 }
 
-// startGame (WBASE 5f71) checks the copy protection, loads the game and goes to the maze.
+// startGame (WBASE 5f71) loads the game and goes to the maze. The C first asks for the
+// copy protection's magic word (WBASE 543f); the port leaves it out.
 func startGame(resume int) {
-	if checkMagicWord() == -1 {
-		closeGameWindows()
-		gameState = 3
-		return
-	}
 	if loadGame(resume) == -1 {
 		return
 	}
