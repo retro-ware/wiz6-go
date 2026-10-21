@@ -282,7 +282,7 @@ func animateAndShowTwoLines(line1, line2 string) {
 	eraseWindow(mainWindow, false)
 	win := createWindow(0, 19, 40, 5, 30, -1, 0, false)
 	deferWindowDraw(win)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	printCentered(win, line1, 1, 18)
 	printCentered(win, line2, 2, 18)
 	resumeWindowDraw(win)
@@ -431,7 +431,7 @@ func checkMagicWord() int {
 	}
 	eraseWindow(mainWindow, false)
 	win := createWindow(0, 19, 40, 5, 10, -1, 0, false)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	deferWindowDraw(win)
 	printCentered(win, getMessage(1050), 1, 18)
 	drawGlyphAt(win, 7, 2, 17)
@@ -485,7 +485,7 @@ func setupGameWindows() {
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
 	g4fb0 = createWindow(20, 19, 20, 5, 8, -1, 0, false)
-	fillWindow(g4fb0, 32, 3, false)
+	fillWindow(g4fb0, 32, 3)
 	deferWindowDraw(g4fb0)
 	// g4f88 is 0 here, so the C's other set of glyphs (for g4f88 != 0) is never drawn.
 	drawGlyph2x2(g4fb0, 13, 1, 5, 6, 7, 8)
@@ -628,7 +628,7 @@ func drawFrameGlyph(win *Window, x, y int, ch byte) {
 
 // drawListFrame (WBASE 63f7) draws the scroll bar of a list window.
 func drawListFrame(win *Window, show bool) {
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	deferWindowDraw(win)
 	drawFrameGlyph(win, 1, 0, 69)
 	for y := 1; y < 4; y++ {
@@ -679,7 +679,7 @@ func doMasterOptions() {
 		showMessageLine(1001)
 		eraseWindow(bottomLineWin, false)
 		win := createWindow(0, 19, 40, 5, 15, -1, 0, false)
-		fillWindow(win, 32, 3, false)
+		fillWindow(win, 32, 3)
 		enabled := []int{1, 1, 1, 1, 1, 1, 1, 1, 1, -1}
 		if partyCount < 1 {
 			enabled[1], enabled[2] = 0, 0
@@ -755,9 +755,9 @@ func doMasterOptions() {
 func resetPartyScreen() {
 	mazeA, mazeB = nil, nil
 	destroyWindow(g4fb0, false)
-	fillWindow(g4fba, 32, 3, false)
-	fillWindow(g4fb8, 32, 3, false)
-	fillWindow(partyPictureWin, 26, 3, false)
+	fillWindow(g4fba, 32, 3)
+	fillWindow(g4fb8, 32, 3)
+	fillWindow(partyPictureWin, 26, 3)
 	partyCount = 0
 	gameState = 4
 }

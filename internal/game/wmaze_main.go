@@ -283,7 +283,7 @@ func choosePartyMember(msg, cancel int) int {
 		return 0
 	}
 	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
 	refreshAllWindows()

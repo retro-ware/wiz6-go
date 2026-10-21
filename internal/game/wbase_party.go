@@ -196,9 +196,9 @@ func choosePcfileChar() int {
 		return -1
 	}
 	titleWin := createWindow(0, 19, 19, 5, 10, -4, 0, false)
-	fillWindow(titleWin, 32, 3, false)
+	fillWindow(titleWin, 32, 3)
 	listWin := createWindow(20, 19, 20, 5, 20, -5, 0, false)
-	fillWindow(listWin, 32, 3, false)
+	fillWindow(listWin, 32, 3)
 	title := getMessage(1201)
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
@@ -298,8 +298,8 @@ func removePartyMember(i int) {
 		memberPcfileIndex[j] = memberPcfileIndex[j+1]
 		memberPortrait[j] = memberPortrait[j+1]
 	}
-	fillWindow(g4fba, 32, 3, false)
-	fillWindow(g4fb8, 32, 3, false)
+	fillWindow(g4fba, 32, 3)
+	fillWindow(g4fb8, 32, 3)
 	for j := 0; j < partyCount; j++ {
 		drawMemberPanel(j)
 	}
@@ -312,7 +312,7 @@ func choosePartyMemberWbase(msg int) int {
 		return 0
 	}
 	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	cancelText := getMessage(2027)
 	cancelHilite := getMessage(2028)
 	title := getMessage(msg)
@@ -478,7 +478,7 @@ func doGameConfiguration() {
 	menuKeys = getMessage(1000)
 	changed := false
 	win := createWindow(0, 19, 40, 5, 22, -1, 0, false)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
 	doneText := getMessage(2308)

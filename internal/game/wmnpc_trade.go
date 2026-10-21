@@ -42,7 +42,7 @@ func npcApplySpell(caster, s, power, target int) {
 
 // npcCastSpell (WMNPC 9edb): member m casts a spell from its book and pays for it.
 func npcCastSpell(win *Window, m int) {
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	r := npcChooseSpell(win, m)
 	pvBlinkState = -1
 	if r == -1 {
@@ -187,9 +187,9 @@ func npcScrollList(list, lw *Window, ex, ey int, exitHi, exitLo string, n, sel i
 // npcChooseMemberItem (WMNPC 9a42) lists member m's items and swag under prompt msg with
 // the cursor on slot sel; the chosen slot or -1.
 func npcChooseMemberItem(win *Window, m, msg, sel int) int {
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
-	fillWindow(list, ' ', 3, false)
+	fillWindow(list, ' ', 3)
 	npcPrompt(replaceCharWithString(getMessage(1508), wdoptLowerName(memberName(m)), '$'), 0)
 	eraseCursorMark(bottomLineWin, false)
 	deferWindowDraw(win)
@@ -371,7 +371,7 @@ func npcBuyWare(m, i int) {
 // npcShop (WMNPC a76f): member m buys until it leaves the list.
 func npcShop(m int) {
 	win := createWindow(0, 19, 40, 5, 25, -1, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	eraseWindow(bottomLineWin, false)
 	for sel := 0; ; {
 		if sel = npcChooseWare(win, m, sel); sel == -1 {
@@ -412,7 +412,7 @@ func npcSellItem(win *Window, m, slot int) int {
 		return 0
 	}
 	s := replaceCharWithString(getMessage(1525), strconv.Itoa(int(price)), '$')
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	refreshWindow(win)
 	setCursor(win, 10-(len(s)+1)/2, 1)
 	printStringHi(win, s, 3)
@@ -445,7 +445,7 @@ func npcGiveGold(win *Window, m int) int {
 	level := int32(max(npcLevel(), 1))
 	var n int32
 	for {
-		fillWindow(win, ' ', 3, false)
+		fillWindow(win, ' ', 3)
 		deferWindowDraw(win)
 		setCursor(win, 5, 1)
 		printMessage(1581, win, 18)
@@ -523,7 +523,7 @@ func npcTrade(m int) {
 			enabled[0] = 0
 		}
 		npcDrawMemberStatus(m, npcShowGold)
-		fillWindow(win, ' ', 3, false)
+		fillWindow(win, ' ', 3)
 		npcPrompt(title, 0)
 		refreshAllWindows()
 		choice = npcMenuSelect(win, 1520, enabled, 4, 1, 7, 2, 5, 0, npcCountEnabled(enabled, choice))

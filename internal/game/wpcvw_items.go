@@ -103,7 +103,7 @@ func chooseItem(sheet, w *Window, title, m int, swag bool) int {
 		drawInventoryPanel(sheet, m)
 		count = int(p.ItemCount)
 	}
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	t, cancel := getMessage(title), getMessage(401)
 	setCursor(w, 2, 1)
@@ -181,7 +181,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 	loaded := false
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	for {
-		fillWindow(w, 0, 1, true)
+		fillWindow(w, 0, 1)
 		f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
 		f(0, 0, 14)
 		f(19, 0, 10)
@@ -238,7 +238,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		}
 		loaded = true
 		resumeWindowDraw(w)
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshWindow(w)
 		refreshWindow(menu)
 		// Entries: put in, take out, drop, exit.
@@ -252,12 +252,12 @@ func doSwagMenu(sheet, menu *Window, m int) {
 		if p.SwagCount == 0 {
 			enabled[2] = 0
 		}
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
 		switch wpcvwRunMenu(menu, 751, enabled, 2, 1, 8, 2, 5, wpcvwCountEnabledBefore(enabled, 3)) {
 		case 0:
 			deferWindowDraw(w)
-			fillWindow(menu, ' ', 3, true)
+			fillWindow(menu, ' ', 3)
 			refreshAllWindows()
 			pvChosenItem = chooseItem(sheet, menu, 760, m, false)
 			if pvChosenItem != -1 {
@@ -291,7 +291,7 @@ func doSwagMenu(sheet, menu *Window, m int) {
 				}
 			}
 		case 3:
-			fillWindow(menu, ' ', 3, true)
+			fillWindow(menu, ' ', 3)
 			destroyWindow(w, true)
 			return
 		}
@@ -556,7 +556,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 	p := &party[m]
 	rec := itemRec(int(p.Items[i].ID))
 	w := createWindow(20, 8, 20, 12, 25, -1, 0, false)
-	fillWindow(w, 0, 1, true)
+	fillWindow(w, 0, 1)
 	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
 	f(0, 0, 21)
 	f(19, 0, 8)
@@ -781,7 +781,7 @@ func showItemInfo(menu *Window, m, i, power int) {
 		printString(w, s, 1)
 	}
 	resumeWindowDraw(w)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	s := getMessage(609)
 	setCursor(menu, 20-(len(s)+1)/2, 1)

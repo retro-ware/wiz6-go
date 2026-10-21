@@ -298,7 +298,7 @@ func menuSelect(win *Window, firstMsg int, enabled []int, x0, y0, colWidth, rows
 
 // drawListBox (WPCMK 619b) draws the scroll bar of a 7-row list window.
 func drawListBox(win *Window, show bool) {
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	deferWindowDraw(win)
 	putGlyphAt(win, 0, 0, 69)
 	for i := 1; i < 6; i++ {
@@ -345,9 +345,9 @@ func showErrorMsg(msg, x, y int) {
 
 // drawCreationScreen (WPCMK 95f7) clears the screens and draws the sheet's frame.
 func drawCreationScreen(sheet, prompt *Window) {
-	fillWindow(sheet, 0, 1, false)
-	fillWindow(prompt, 32, 3, false)
-	fillWindow(menuWin, 32, 3, false)
+	fillWindow(sheet, 0, 1)
+	fillWindow(prompt, 32, 3)
+	fillWindow(menuWin, 32, 3)
 	deferWindowDraw(sheet)
 	drawCreationFrame(sheet)
 	resumeWindowDraw(sheet)
@@ -397,7 +397,7 @@ func loadAndShowCharacter(slot int) {
 
 // wpcmkWaitForKey (WPCMK 9778 wait_for_key) waits for Enter or a click.
 func wpcmkWaitForKey() {
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 12, 1)
 	printMessage(1110, promptWin, 18)
@@ -514,8 +514,8 @@ func selectRosterCharacter(win, listWin *Window, titleMsg int) int {
 	if n < 1 {
 		return -1 // the C returns no value; the menu only offers this with a character
 	}
-	fillWindow(win, 32, 3, false)
-	fillWindow(listWin, 32, 3, false)
+	fillWindow(win, 32, 3)
+	fillWindow(listWin, 32, 3)
 	deferWindowDraw(win)
 	title := getMessage(titleMsg)
 	setCursor(win, 20-(len(title)+1)/2, 1)

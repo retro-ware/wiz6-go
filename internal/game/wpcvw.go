@@ -251,11 +251,11 @@ func wpcvwGetMenuInput() int {
 
 // wpcvwWaitKeyOrClick (WPCVW 8d3a) shows message 409 in w and waits for Enter or a click.
 func wpcvwWaitKeyOrClick(w *Window) {
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	printCentered(w, getMessage(409), 2, 18)
 	wpcvwWaitEnterOrClick()
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 }
 
@@ -273,7 +273,7 @@ func wpcvwWaitEnterOrClick() {
 
 // wpcvwShowCenteredMsg (WPCVW e8b6) shows s centred on row 1 of w, beeps if beep, and waits.
 func wpcvwShowCenteredMsg(w *Window, s string, beep bool) {
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshWindow(w)
 	setCursor(w, 20-(len(s)+1)/2, 1)
 	printStringHi(w, s, 3)
@@ -325,7 +325,7 @@ func wpcvwInputLine(w *Window, max, color int, digits bool) string {
 // wpcvwInputNumber (WPCVW 95c6) asks with message msg for a number of up to max digits; 0 for
 // none.
 func wpcvwInputNumber(w *Window, msg, max int) int32 {
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	setCursor(w, 2, 1)
 	printMessage(msg, w, 18)
@@ -341,7 +341,7 @@ func wpcvwInputNumber(w *Window, msg, max int) int32 {
 
 // wpcvwDrawTextFrame (WPCVW 8dd4) draws the text window's frame.
 func wpcvwDrawTextFrame(w *Window) {
-	fillWindow(w, 0, 1, true)
+	fillWindow(w, 0, 1)
 	wpcvwPutFrameChar(w, 0, 0, 9)
 	wpcvwPutFrameChar(w, 39, 0, 10)
 	wpcvwPutFrameChar(w, 0, 15, 6)

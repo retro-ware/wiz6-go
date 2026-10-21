@@ -292,9 +292,9 @@ func distributeLoot() {
 	resumeWindowDraw(bottomLineWin)
 	eraseCursorMark(bottomLineWin, false)
 	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 21, -5, 0, false)
-	fillWindow(list, ' ', 3, false)
+	fillWindow(list, ' ', 3)
 	deferWindowDraw(win)
 	setCursor(win, 2, 1)
 	printMessage(5102, win, 18)
@@ -322,7 +322,7 @@ func distributeLoot() {
 		}
 		printChestPrompt(5101, 2)
 		deferWindowDraw(list)
-		fillWindow(list, ' ', 3, false)
+		fillWindow(list, ' ', 3)
 		for i := 0; i < lootCount; i++ {
 			drawLootLine(list, i)
 			setClickRegion(i, list.X+1, list.Y+byte(i), list.X+19, list.Y+byte(i))

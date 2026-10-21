@@ -57,7 +57,7 @@ func printSkillValue(win *Window, row, v int) {
 // academia) into win; the skills listed, in order.
 func drawSkillPage(win *Window, page int) []int {
 	setClassSkillMasks(classSkills[newPC.Class])
-	fillWindow(win, 0, 1, false)
+	fillWindow(win, 0, 1)
 	g := func(x, y int, ch byte) { setFrameGlyph(win, x, y, ch) }
 	g(0, 0, 14)
 	g(19, 0, 10)
@@ -116,7 +116,7 @@ func drawSkillPage(win *Window, page int) []int {
 func distributeSkillPoints(win, skillWin *Window, skills []int) {
 	points := int(newPC.SkillPoints)
 	count := len(skills)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	refreshWindow(win)
 	setCursor(win, 7, 1)
 	printMessage(610, win, 18)
@@ -202,7 +202,7 @@ func distributeSkillPoints(win, skillWin *Window, skills []int) {
 // skillPointsScreen (WPCMK 604d) goes through the skill pages until the skill points are
 // spent; the personal page only when the character has a personal skill.
 func skillPointsScreen(win *Window) {
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	refreshWindow(win)
 	skillWin := createWindow(20, 4, 20, 16, 25, -1, 0, false)
 	personal := false
@@ -274,16 +274,16 @@ func applySexModifiers(sex int) {
 // chooseFromMenu shows the prompt msg at column x, the status title status and the menu
 // of messages first.. in menuWin; the chosen one.
 func chooseFromMenu(x, msg, status, first int, enabled []int) int {
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, x, 1)
 	printMessage(msg, promptWin, 18)
-	fillWindow(menuWin, 32, 3, false)
+	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
 	printStatusCentered(status)
 	c := menuSelect(menuWin, first, enabled, 1, 1, 10, 11, 5, 0)
 	clearStatusLine()
-	fillWindow(menuWin, 32, 3, false)
+	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
 	return c
 }
@@ -331,7 +331,7 @@ func chooseClass() {
 // the stats. The cursor only reaches the first seven; karma is cast after.
 func distributeBonusPoints() {
 	w := promptWin
-	fillWindow(w, 32, 3, false)
+	fillWindow(w, 32, 3)
 	refreshWindow(w)
 	setCursor(w, 7, 1)
 	printMessage(1120, w, 18)
@@ -418,7 +418,7 @@ func distributeBonusPoints() {
 
 // rollKarma (WPCMK 7d9b) rolls karma until Enter or a click (women get one more).
 func rollKarma() {
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
 	printMessage(1111, promptWin, 18)
@@ -741,9 +741,9 @@ func initClassRatings() {
 
 // choosePortrait (WPCMK 9111) lets the player page through the 42 portraits.
 func choosePortrait() {
-	fillWindow(menuWin, 32, 3, false)
+	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 9, 1)
 	printMessage(1112, promptWin, 18)
@@ -777,9 +777,9 @@ func choosePortrait() {
 		}
 	}
 	clearStatusLine()
-	fillWindow(menuWin, 32, 3, false)
+	fillWindow(menuWin, 32, 3)
 	refreshWindow(menuWin)
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	drawPortrait(sheetWin, 0, 1, 1)
 }
@@ -845,7 +845,7 @@ func createCharacter(name string, slot int) {
 			chooseStartingSpell(sheetWin, promptWin, book)
 		}
 	}
-	fillWindow(promptWin, 32, 3, false)
+	fillWindow(promptWin, 32, 3)
 	refreshWindow(promptWin)
 	setCursor(promptWin, 6, 1)
 	printMessage(1103, promptWin, 18)
@@ -881,7 +881,7 @@ func unhighlightRealm(sheet, win *Window, realm int) {
 func drawSpellWindow(w *Window) {
 	g := func(x, y int, ch byte) { setFrameGlyph(w, x, y, ch) }
 	deferWindowDraw(w)
-	fillWindow(w, 0, 1, false)
+	fillWindow(w, 0, 1)
 	g(0, 0, 14)
 	g(19, 0, 10)
 	g(0, 2, 21)
@@ -983,7 +983,7 @@ func selectSpell(sheet, win *Window) int {
 	list := createWindow(21, 7, 19, 8, 23, -1, 0, false)
 	defer destroyWindow(list, false)
 	defer destroyWindow(w, false)
-	fillWindow(list, 32, 3, false)
+	fillWindow(list, 32, 3)
 	drawSpellWindow(w)
 	drawListBox(list, true)
 	refreshWindow(win)
@@ -1141,7 +1141,7 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 		newPC.KnownSpells = saved
 		return // ponytail: as in the original, the pick is never used up, so this loops forever
 	}
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	deferWindowDraw(win)
 	setCursor(win, 1, 1)
 	printMessage(703, win, 18)

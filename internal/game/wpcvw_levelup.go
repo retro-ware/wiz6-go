@@ -28,7 +28,7 @@ func drawSkillsPage(w *Window, m, pg int, shown *[10]int) int {
 	p := &party[m]
 	markShownSkills(m, classSkills[p.Class])
 	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
-	fillWindow(w, 0, 1, true)
+	fillWindow(w, 0, 1)
 	f(0, 0, 14)
 	f(19, 0, 10)
 	f(0, 15, 11)
@@ -106,11 +106,11 @@ func doSkillsMenu(menu *Window, m int) {
 		if pg+1 == 2 && !academic {
 			sel = wpcvwCountEnabledBefore(enabled, pg+2)
 		}
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
 		pg = wpcvwRunMenu(menu, 600, enabled, 2, 1, 10, 2, 5, sel)
 	}
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	destroyWindow(w, true)
 }
 
@@ -119,7 +119,7 @@ func doSkillsMenu(menu *Window, m int) {
 func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 	p := &party[m]
 	left := int(p.SkillPoints)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	setCursor(menu, 2, 1)
 	printMessage(606, menu, 18)
@@ -204,7 +204,7 @@ func spendSkillPage(menu, w *Window, m int, shown *[10]int, n int) {
 // spendSkillPoints (WPCVW e922) cycles member m through its skill pages until all its
 // skill points are spent.
 func spendSkillPoints(menu *Window, m int) {
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	wpcvwShowCenteredMsg(menu, getMessage(605), true)
 	w := createWindow(20, 4, 20, 16, 25, -1, 0, false)
@@ -523,7 +523,7 @@ func doLevelUp(sheet, menu *Window, m int) {
 	}
 	updateRank(m)
 	drawSheet(sheet, menu, m)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	s := replaceCharWithString(getMessage(5010), memberName(m), '^')
 	s = replaceCharWithString(s, getMessage(int(p.Class)+120), '$')
@@ -584,7 +584,7 @@ func levelUpEntry() {
 	resumeWindowDraw(mainWindow)
 	resumeWindowDraw(bottomLineWin)
 	eraseWindow(mainWindow, false)
-	fillWindow(partyPictureWin, 26, 3, true)
+	fillWindow(partyPictureWin, 26, 3)
 	deferWindowDraw(partyPictureWin)
 	for y := 0; y < 5; y++ {
 		setCursor(partyPictureWin, 19, y)
@@ -625,11 +625,11 @@ func doChangeClass(sheet, menu *Window, m int) {
 	p := &party[m]
 	calcAllowedClasses(m)
 	w := createWindow(20, 4, 20, 16, 30, -1, 0, false)
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	drawPortraitFrame(w)
 	resumeWindowDraw(w)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	refreshAllWindows()
 	enabled := make([]int, 16)
 	enabled[0], enabled[15] = 1, -1
@@ -665,7 +665,7 @@ func doChangeClass(sheet, menu *Window, m int) {
 
 // doRename (do_rename, WPCVW abd8) asks for a new name of up to 7 letters for member m.
 func doRename(w *Window, m int) {
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	setCursor(w, 1, 1)
 	printMessage(1128, w, 18)
@@ -683,11 +683,11 @@ func doRename(w *Window, m int) {
 func doChoosePortrait(w *Window, m int) {
 	p := &party[m]
 	pw := createWindow(20, 4, 20, 16, 30, -1, 0, false)
-	fillWindow(pw, ' ', 3, true)
+	fillWindow(pw, ' ', 3)
 	deferWindowDraw(pw)
 	drawPortraitFrame(pw)
 	resumeWindowDraw(pw)
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	setCursor(w, 9, 1)
 	printMessage(1112, w, 18)
@@ -726,7 +726,7 @@ func doChoosePortrait(w *Window, m int) {
 // doModifyMenu (do_modify_menu, WPCVW ac83): rename, portrait, change class, exit.
 func doModifyMenu(sheet, menu *Window, m int) {
 	for {
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshAllWindows()
 		// Entry 3 is off: the C's enabled array overlaps a local it zeroes.
 		enabled := []int{1, 1, 1, 0, 1, -1}

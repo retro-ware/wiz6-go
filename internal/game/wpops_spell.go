@@ -57,7 +57,7 @@ func wpopsDrawSpellFrame(w *Window) {
 // the cancel icon.
 func wpopsDrawSpellWindow(w *Window, m int) {
 	deferWindowDraw(w)
-	fillWindow(w, 0, 1, false)
+	fillWindow(w, 0, 1)
 	wpopsDrawSpellFrame(w)
 	for _, g := range [][3]int{{1, 1, 35}, {1, 3, 36}, {1, 5, 37}, {7, 1, 38}, {7, 3, 39}, {7, 5, 40}, {13, 3, 34}} {
 		putGlyphAt(w, g[0], g[1], byte(g[2]))
@@ -356,7 +356,7 @@ func chooseCombatSpell(win *Window, m int) int {
 	c := &monsterGroups[0].Members[m]
 	switch spellTable[spell].Target {
 	case 1:
-		fillWindow(win, 32, 3, false)
+		fillWindow(win, 32, 3)
 		refreshAllWindows()
 		c.B31 = 0
 		t := selectPartyMember(3609)
@@ -415,9 +415,9 @@ func wpopsDrawItemList(w *Window, m, pos int, hi bool, names []string, counts []
 // its spell; the item, or -1.
 func chooseCombatItem(win *Window, m int) int {
 	prompt := createWindow(0, 19, 19, 5, 12, -4, 0, false)
-	fillWindow(prompt, 32, 3, false)
+	fillWindow(prompt, 32, 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
-	fillWindow(list, 32, 3, false)
+	fillWindow(list, 32, 3)
 	deferWindowDraw(prompt)
 	setCursor(prompt, 2, 1)
 	printMessage(3504, prompt, 18)
@@ -491,7 +491,7 @@ func chooseCombatItem(win *Window, m int) int {
 		c := &monsterGroups[0].Members[m]
 		switch spellTable[spell].Target {
 		case 1:
-			fillWindow(win, 32, 3, false)
+			fillWindow(win, 32, 3)
 			refreshAllWindows()
 			c.B31 = 0
 			t := selectPartyMember(3610)

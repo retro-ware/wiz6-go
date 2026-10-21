@@ -70,7 +70,7 @@ func startTestMaze() {
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(bottomLineWin, false)
 	g4fb0 = createWindow(20, 19, 20, 5, 8, -1, 0, false)
-	fillWindow(g4fb0, 32, 3, false)
+	fillWindow(g4fb0, 32, 3)
 	curEvent = [4]int16{}
 	g4f86 = 0
 	mazeA, mazeB = nil, nil

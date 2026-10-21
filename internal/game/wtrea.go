@@ -458,7 +458,7 @@ func trChooseMember(msg, refreshAll int) int {
 		return 0
 	}
 	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	exitHi, exitLo := getMessage(2027), getMessage(2028)
 	printChestPrompt(msg, 10-(len(getMessage(msg))+6)/2)
 	exitX, exitY := int(mainWindow.CurX), int(mainWindow.CurY)

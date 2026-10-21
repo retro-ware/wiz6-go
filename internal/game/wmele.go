@@ -601,7 +601,7 @@ func endEncounter() {
 	resumeWindowDraw(g4fb0)
 	eraseWindow(mainWindow, false)
 	deferWindowDraw(partyPictureWin)
-	fillWindow(partyPictureWin, 26, 3, false)
+	fillWindow(partyPictureWin, 26, 3)
 	for r := range 5 {
 		setCursor(partyPictureWin, 19, r)
 		putCharHi(partyPictureWin, 27, 3)
@@ -675,7 +675,7 @@ func endCombatRound() {
 	compactMonsterGroups()
 	updateGroup(6)
 	tickCombatEffects()
-	fillWindow(combatWinA, 32, 3, false)
+	fillWindow(combatWinA, 32, 3)
 	clearWindow(combatWinB, false)
 	clearWindow(partyPictureWin, false)
 	if combatOver == 1 {

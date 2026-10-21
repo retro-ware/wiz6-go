@@ -513,7 +513,7 @@ func unhighlightRealmSlot(w *Window, r int) {
 
 // draw_chest_list_box (WTREA 7549) clears a list window and draws its scroll bar.
 func drawChestListBox(w *Window, refresh bool) {
-	fillWindow(w, ' ', 3, false)
+	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	putGlyphAt(w, 1, 0, 69)
 	for y := 1; y < 4; y++ {
@@ -548,7 +548,7 @@ func drawChestSpellFrame(w *Window) {
 // draw_chest_spell_window (WTREA 76c0) draws the realm picker with member's spell points.
 func drawChestSpellWindow(w *Window, member int) {
 	deferWindowDraw(w)
-	fillWindow(w, 0, 1, false)
+	fillWindow(w, 0, 1)
 	drawChestSpellFrame(w)
 	for r := range 6 {
 		putGlyphAt(w, r/3*6+1, r%3<<1+1, byte(r+35))
@@ -906,9 +906,9 @@ func handleChest(chest *TreasureRec) int {
 	resumeWindowDraw(bottomLineWin)
 	eraseCursorMark(bottomLineWin, false)
 	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	trapWin := createWindow(20, 19, 20, 5, 21, -5, 0, false)
-	fillWindow(trapWin, ' ', 3, false)
+	fillWindow(trapWin, ' ', 3)
 	deferWindowDraw(trapWin)
 	setCursor(trapWin, 4, 0)
 	printMessage(5226, trapWin, 18)
@@ -931,7 +931,7 @@ func handleChest(chest *TreasureRec) int {
 	options := []int{1, 1, 1, 1, 1, -1} // tried[6..10] and l22 behind it
 	for {
 		printChestPrompt(5200, 2)
-		fillWindow(win, ' ', 3, false)
+		fillWindow(win, ' ', 3)
 		refreshAllWindows()
 		switch chestMenuSelect(win, 5201, options, 2, 1, 10, 3, 5, 0) {
 		case 0: // inspect

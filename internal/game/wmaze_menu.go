@@ -229,7 +229,7 @@ func saveGame() int {
 // disk_options_menu (WMAZE 6bcd): save, save and quit, quit, cancel, or the options.
 func diskOptionsMenu() {
 	win := createWindow(0, 19, 40, 5, 20, -1, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseWindow(bottomLineWin, false)
 	refreshAllWindows()
@@ -259,7 +259,7 @@ func diskOptionsMenu() {
 func mazePartyMenu() {
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 20, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	eraseWindow(mainWindow, false)
 	eraseCursorMark(mainWindow, false)
 	refreshAllWindows()

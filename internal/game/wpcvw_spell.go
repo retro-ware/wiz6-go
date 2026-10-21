@@ -126,7 +126,7 @@ func castSpell(m, s, power, t int, sheet, menu *Window) {
 
 // wpcvwDrawSpellListFrame (WPCVW 719f) clears the spell list window and draws its left edge.
 func wpcvwDrawSpellListFrame(w *Window, refresh bool) {
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	deferWindowDraw(w)
 	putGlyphAt(w, 0, 0, 69)
 	for y := 1; y < 6; y++ {
@@ -143,7 +143,7 @@ func wpcvwDrawSpellListFrame(w *Window, refresh bool) {
 func wpcvwDrawSpellWindow(w *Window) {
 	f := func(x, y int, ch byte) { wpcvwPutFrameChar(w, x, y, ch) }
 	deferWindowDraw(w)
-	fillWindow(w, 0, 1, true)
+	fillWindow(w, 0, 1)
 	f(0, 0, 14)
 	f(19, 0, 10)
 	f(0, 2, 21)
@@ -270,7 +270,7 @@ func wpcvwChooseSpell(sheet, menu *Window, m int, askPower bool) int {
 		destroyWindow(list, false)
 		return v
 	}
-	fillWindow(list, ' ', 3, true)
+	fillWindow(list, ' ', 3)
 	wpcvwDrawSpellWindow(book)
 	wpcvwDrawSpellListFrame(list, true)
 	refreshWindow(menu)
@@ -537,10 +537,10 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 		p.KnownSpells = known
 		return
 	}
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	refreshWindow(menu)
 	wpcvwShowCenteredMsg(menu, replaceCharWithString(getMessage(702), getMessage(int(p.Class)+120), '$'), true)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	setCursor(menu, 1, 1)
 	printMessage(703, menu, 18)
@@ -573,7 +573,7 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 // doCastMenu (do_cast_menu, WPCVW 86d1) opens member m's spell book; when canCast it
 // casts the chosen spell, paying spell points and stamina.
 func doCastMenu(sheet, menu *Window, m int, canCast bool) {
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(menu, ' ', 3)
 	deferWindowDraw(menu)
 	setCursor(menu, 8, 1)
 	printMessage(701, menu, 18)

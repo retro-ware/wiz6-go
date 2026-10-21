@@ -206,7 +206,7 @@ func puzzleEvent() {
 	printStringHi(mainWindow, answer, 3)
 	resumeWindowDraw(mainWindow)
 	textWin = createWindow(0, 19, 40, 5, 20, -1, 0, false)
-	fillWindow(textWin, 32, 3, false)
+	fillWindow(textWin, 32, 3)
 	eraseWindow(bottomLineWin, false)
 	refreshAllWindows()
 	answer = getMessage(msg)
@@ -225,7 +225,7 @@ func puzzleEvent() {
 	} else {
 		failed, gaveUp := false, false
 		for i := 0; i < steps; i++ {
-			fillWindow(textWin, 32, 3, false)
+			fillWindow(textWin, 32, 3)
 			refreshWindow(textWin)
 			t := getMessage(msg)
 			c := mazeMenuSelect(textWin, msg, enabled, 20-(len(t)*2+4)/2, 1, len(t)+3, (choices-1)/2+1, 5, 0)
@@ -654,7 +654,7 @@ func lockResult(win *Window, result int) {
 func forceLock(member, ev int) int {
 	clearClickFlag()
 	win := createWindow(20, 19, 20, 5, 20, -1, 0, false)
-	fillWindow(win, 32, 1, false)
+	fillWindow(win, 32, 1)
 	lockFrame(win, 19)
 	diff := extractBits(int(mazeB.Param[ev]), 0, 5)
 	jammed := 0
@@ -734,7 +734,7 @@ func forceLock(member, ev int) int {
 func pickLock(member, ev int) int {
 	clearClickFlag()
 	win := createWindow(20, 19, 20, 5, 20, -1, 0, false)
-	fillWindow(win, 32, 1, false)
+	fillWindow(win, 32, 1)
 	lockFrame(win, 18)
 	for c := 3; c < 18; c += 3 {
 		for row, g := range []byte{34, 13, 16, 13, 11} {
@@ -813,7 +813,7 @@ func lockedDoorMenu(ev int) {
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
 	for {
-		fillWindow(win, 32, 3, false)
+		fillWindow(win, 32, 3)
 		eraseWindow(mainWindow, false)
 		eraseCursorMark(mainWindow, false)
 		setCursor(mainWindow, 3, 0)

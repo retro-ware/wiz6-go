@@ -115,7 +115,7 @@ func wdoptChooseTarget(msg int) int {
 		return 0
 	}
 	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	cancelText, cancelHi := getMessage(2027), getMessage(2028)
 	title := getMessage(msg)
 	showTitleText(title, 10-(len(title)+6)/2)
@@ -707,9 +707,9 @@ func wdoptDoUseItem(m int) {
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	list := createWindow(20, 19, 20, 5, 20, -5, 0, false)
-	fillWindow(list, ' ', 3, false)
+	fillWindow(list, ' ', 3)
 	title := replaceCharWithString(getMessage(2033), wdoptLowerName(memberName(m)), '$')
 	showTitleText(title, 10-(len(title)+1)/2)
 	eraseCursorMark(bottomLineWin, false)
@@ -845,7 +845,7 @@ func wdoptDoCastSpell(m int) {
 	dpAnimCount = 0
 	deferWindowDraw(g4fb0)
 	win := createWindow(0, 19, 19, 5, 10, -4, 0, false)
-	fillWindow(win, ' ', 3, false)
+	fillWindow(win, ' ', 3)
 	s := wdoptChooseSpell(win, m)
 	pvBlinkState = -1
 	if s != -1 {

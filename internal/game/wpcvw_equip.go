@@ -265,7 +265,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		if n <= 0 {
 			continue
 		}
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
 		setCursor(menu, 2, 1)
 		printStringHi(menu, replaceCharWithString(getMessage(350), getMessage(s+351), '$'), 3)
@@ -369,7 +369,7 @@ func doEquipItems(sheet, menu *Window, m int) {
 		if power[s] <= 0 {
 			continue
 		}
-		fillWindow(menu, ' ', 3, true)
+		fillWindow(menu, ' ', 3)
 		refreshWindow(menu)
 		t := getMessage(380)
 		setCursor(menu, 20-(len(t)+1)/2, 1)

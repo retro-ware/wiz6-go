@@ -91,7 +91,7 @@ func drawMonsterGroups(win *Window, refresh bool) {
 func drawAllyGroup() {
 	w := g4fae
 	deferWindowDraw(w)
-	fillWindow(w, 28, 3, false)
+	fillWindow(w, 28, 3)
 	setCursor(w, 4, 0)
 	printMessage(3516, w, 18)
 	clearWindowArea(w, 0, 1, 21, 1)
@@ -412,7 +412,7 @@ func selectMonsterGroup(win *Window, msg, rng, sel int) int {
 		return 1
 	}
 	list := combatWinB
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	refreshAllWindows()
 	title := replaceCharWithString(getMessage(3600), getMessage(msg), '$')
 	setCursor(win, 10-(len(title)+1)/2, 1)
@@ -517,7 +517,7 @@ func selectPartyMember(msg int) int {
 		return 0
 	}
 	win := createWindow(0, 19, 19, 5, 25, -4, 0, false)
-	fillWindow(win, 32, 3, false)
+	fillWindow(win, 32, 3)
 	clickText, keyText := getMessage(3607), getMessage(3608)
 	printCombatPrompt(getMessage(msg), 5)
 	mainWindow.CurX++
@@ -752,7 +752,7 @@ func choosePartyActions(win *Window) {
 			enabled[11] = -1
 			name := wpopsCopyName(memberName(member))
 			prompt := func(msg int) {
-				fillWindow(win, 32, 3, false)
+				fillWindow(win, 32, 3)
 				printCombatPrompt(replaceCharWithString(getMessage(msg), name, '$'), 0)
 			}
 			var action, choice, target int
@@ -902,7 +902,7 @@ func choosePartyActions(win *Window) {
 		member++
 		if member == partyCount {
 			drawMonsterGroups(combatWinB, false)
-			fillWindow(win, 32, 3, false)
+			fillWindow(win, 32, 3)
 			printCombatPrompt(getMessage(3506), 0)
 			refreshAllWindows()
 			ok := []int{1, 1, 1, -1}

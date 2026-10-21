@@ -381,8 +381,8 @@ func drawInventoryPanel(w *Window, m int) {
 
 // drawSheet (WPCVW 93f8) redraws member m's whole sheet.
 func drawSheet(sheet, menu *Window, m int) {
-	fillWindow(sheet, 0, 1, true)
-	fillWindow(menu, ' ', 3, true)
+	fillWindow(sheet, 0, 1)
+	fillWindow(menu, ' ', 3)
 	deferWindowDraw(sheet)
 	drawSheetFrame(sheet)
 	drawStatsPanel(sheet, m)
@@ -420,7 +420,7 @@ func wpcvwViewCharacter(m int) {
 	gameState = int(returnCmd)
 	menuKeys = getMessage(300)
 	pvCardWin = createWindow(20, 4, 20, 16, 26, -1, 0, false)
-	fillWindow(pvCardWin, ' ', 3, true)
+	fillWindow(pvCardWin, ' ', 3)
 	deferWindowDraw(pvCardWin)
 	drawPortraitFrame(pvCardWin)
 	sheet := createWindow(0, 0, 40, 20, 20, -1, 0, false)
@@ -548,7 +548,7 @@ func chooseMember(w *Window, title, sel int) int {
 		drawMemberCard(pvCardWin, i)
 	}
 	resumeWindowDraw(pvCardWin)
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	refreshAllWindows()
 	s := getMessage(title)
 	setCursor(w, 10-(len(s)+1)/2, 1)
@@ -625,7 +625,7 @@ func chooseMember(w *Window, title, sel int) int {
 			break
 		}
 	}
-	fillWindow(w, ' ', 3, true)
+	fillWindow(w, ' ', 3)
 	deferWindowDraw(pvCardWin)
 	return sel
 }

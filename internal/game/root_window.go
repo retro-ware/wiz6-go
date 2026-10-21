@@ -190,9 +190,10 @@ func resumeWindowDraw(w *Window) {
 	}
 }
 
-// fillWindow (ROOT 32be, asm) fills w with ch: in font 0 colour color, or with hi in
-// colour font color. It homes the cursor and marks w's cells dirty.
-func fillWindow(w *Window, ch, color int, hi bool) {
+// fillWindow (ROOT 32be, asm) fills w with ch in attribute attr. It homes the cursor and
+// marks w's cells dirty. The asm's 4th argument, shifted into the high nibble, is used
+// only when attr is 0; every call in the game passes 0 there, so it is left out.
+func fillWindow(w *Window, ch, attr int) {
 	id := windowID(w)
 	if id == 0 {
 		return
@@ -203,17 +204,13 @@ func fillWindow(w *Window, ch, color int, hi bool) {
 			cellOwner[j] |= cellDirty
 		}
 	}
-	attr := uint8(color) << 4
-	if hi {
-		attr = uint8(color)
-	}
 	for i := range w.Cells {
-		w.Cells[i] = Cell{uint8(ch), attr}
+		w.Cells[i] = Cell{uint8(ch), uint8(attr)}
 	}
 }
 
 // blankWindow (ROOT 329a, asm) fills w with spaces in colour 0.
-func blankWindow(w *Window) { fillWindow(w, ' ', 0, false) }
+func blankWindow(w *Window) { fillWindow(w, ' ', 0) }
 
 // refreshWindow (ROOT 2b19, asm) draws w's dirty cells and border.
 func refreshWindow(w *Window) {
@@ -459,7 +456,7 @@ func eraseWindow(w *Window, noDefer bool) {
 	if w == mainWindow {
 		ch = 28
 	}
-	fillWindow(w, ch, 3, true)
+	fillWindow(w, ch, 3)
 	refreshWindow(w)
 	if !noDefer {
 		resumeWindowDraw(w)
