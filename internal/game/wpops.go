@@ -573,12 +573,12 @@ func selectPartyMember(msg int) int {
 		switch k {
 		case 1:
 			if sel != -1 && sel%2 > 0 {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel--
 			}
 		case 2:
 			if sel != -1 {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				if sel-2 >= 0 {
 					sel -= 2
 				} else {
@@ -587,7 +587,7 @@ func selectPartyMember(msg int) int {
 			}
 		case 3:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel++
 			}
 		case 4:
@@ -596,7 +596,7 @@ func selectPartyMember(msg int) int {
 				printStringHi(mainWindow, clickText, 3)
 				sel = 0
 			} else if sel+2 < partyCount {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel += 2
 			}
 		}

@@ -8,11 +8,11 @@ func drawMemberCard(w *Window, m int) {
 	p := &party[m]
 	x, y := m%2*9+2, m/2*4+2
 	setCursor(w, x, y)
-	printStringHi(w, wpcvwName(m), 3)
-	for i := len(wpcvwName(m)); i < 7; i++ {
+	printStringHi(w, memberName(m), 3)
+	for i := len(memberName(m)); i < 7; i++ {
 		putCharHi(w, ' ', 3)
 	}
-	wpcvwDrawPortrait(w, m, x, y+1)
+	drawPortrait(w, int(memberPortrait[m]), x, y+1)
 	g := conditionGlyph[p.Condition]
 	if g == 0 && p.Status[2] > 0 {
 		g = 1
@@ -55,18 +55,6 @@ func refreshMemberCard(w *Window, m int) {
 	drawMemberCard(w, m)
 	waitSecondsOrEnter(4)
 	deferWindowDraw(w)
-}
-
-// wpcvwDrawPortrait (draw_portrait, WPCVW a8ab) draws member m's 3x3 portrait glyphs at
-// (x, y).
-func wpcvwDrawPortrait(w *Window, m, x, y int) {
-	g := int(memberPortrait[m])*9 + 72
-	for r := 0; r < 3; r++ {
-		setCursor(w, x, y+r)
-		for c := 0; c < 3; c++ {
-			putCharHi(w, byte(r*3+g+c), 2)
-		}
-	}
 }
 
 // drawSheetFrame (WPCVW 4ca8) draws the sheet's frame into its cells.
@@ -190,18 +178,18 @@ func calcCarriedWeight(m int) {
 	}
 }
 
-// wpcvwDrawSpellPoints (draw_spell_points, WPCVW 53fa) prints the six realms' spell
-// points on the sheet.
-func wpcvwDrawSpellPoints(w *Window, m int) {
+// draw_spell_points (WPCMK 50d1, WPCVW 53fa) prints pc's six realms' spell points on
+// the sheet w.
+func drawSpellPoints(w *Window, pc *PC) {
 	for r := 0; r < 6; r++ {
 		x := 13
 		if r < 3 {
 			x = 3
 		}
 		setCursor(w, x, r%3<<1+14)
-		printInt(w, int(party[m].SP[r].Cur), 3, wpcvwRealmColors[r])
+		printInt(w, int(pc.SP[r].Cur), 3, wpcvwRealmColors[r])
 		putChar(w, '/', 9)
-		printInt(w, int(party[m].SP[r].Max), 3, wpcvwRealmColors[r])
+		printInt(w, int(pc.SP[r].Max), 3, wpcvwRealmColors[r])
 	}
 }
 
@@ -210,8 +198,8 @@ func wpcvwDrawSpellPoints(w *Window, m int) {
 // spell points.
 func drawStatsPanel(w *Window, m int) {
 	p := &party[m]
-	wpcvwDrawPortrait(w, m, 1, 1)
-	wpcvwPrintAt(w, 4, 1, wpcvwName(m), 5)
+	drawPortrait(w, int(memberPortrait[m]), 1, 1)
+	wpcvwPrintAt(w, 4, 1, memberName(m), 5)
 	setCursor(w, 13, 1)
 	putChar(w, (getMessage(int(p.Sex)+140) + "\x00")[0], 1)
 	putChar(w, '-', 1)
@@ -298,7 +286,7 @@ func drawStatsPanel(w *Window, m int) {
 	for r := 0; r < 6; r++ {
 		putGlyphAt(w, r/3*10+1, r%3*2+14, byte(r+35))
 	}
-	wpcvwDrawSpellPoints(w, m)
+	drawSpellPoints(w, &party[m])
 }
 
 // drawInventoryPanel (WPCVW b1e5) draws member m's armour class, equipment icons and
@@ -542,11 +530,11 @@ func drawPortraitFrame(w *Window) {
 	wpcvwPutCharC1(w, 0, 15, 8)
 }
 
-// wpcvwDrawMemberName (draw_member_name, WPCVW 8937) reprints member m's name plain in
+// drawMemberNameRight (draw_member_name, WPCVW 8937) reprints member m's name plain in
 // chooseMember's list.
-func wpcvwDrawMemberName(w *Window, m int) {
+func drawMemberNameRight(w *Window, m int) {
 	setCursor(w, m%2*9+22, m/2+1)
-	printStringHi(w, wpcvwName(m), 3)
+	printStringHi(w, memberName(m), 3)
 }
 
 // chooseMember (WPCVW 897d) lets the player pick a member by name under title message
@@ -577,11 +565,11 @@ func chooseMember(w *Window, title, sel int) int {
 		x, y := i%2*9+22, i/2+1
 		setCursor(w, x, y)
 		if !mousePresent && i == sel {
-			printString(w, wpcvwName(i), -5)
+			printString(w, memberName(i), -5)
 		} else {
-			printStringHi(w, wpcvwName(i), 3)
+			printStringHi(w, memberName(i), 3)
 		}
-		wpcvwRegion(i, int(w.X)+x, int(w.Y)+y, len(wpcvwName(i))+int(w.X)+x-1, int(w.Y)+y)
+		wpcvwRegion(i, int(w.X)+x, int(w.Y)+y, len(memberName(i))+int(w.X)+x-1, int(w.Y)+y)
 	}
 	wpcvwRegion(partyCount, int(w.X)+cx, int(w.Y)+cy, len(cancel)+int(w.X)+cx-1, int(w.Y)+cy)
 	wpcvwEndRegions(partyCount + 1)
@@ -592,7 +580,7 @@ func chooseMember(w *Window, title, sel int) int {
 				printString(w, cancel, -5)
 			} else {
 				setCursor(w, sel%2*9+22, sel/2+1)
-				printString(w, wpcvwName(sel), -5)
+				printString(w, memberName(sel), -5)
 			}
 		}
 		k := wpcvwGetMenuInput()
@@ -606,7 +594,7 @@ func chooseMember(w *Window, title, sel int) int {
 		switch k {
 		case 1:
 			if sel != -1 {
-				wpcvwDrawMemberName(w, sel)
+				drawMemberNameRight(w, sel)
 				if sel%2 > 0 {
 					sel--
 				} else {
@@ -615,7 +603,7 @@ func chooseMember(w *Window, title, sel int) int {
 			}
 		case 2:
 			if sel != -1 && sel-2 >= 0 {
-				wpcvwDrawMemberName(w, sel)
+				drawMemberNameRight(w, sel)
 				sel -= 2
 			}
 		case 3:
@@ -624,12 +612,12 @@ func chooseMember(w *Window, title, sel int) int {
 				printStringHi(w, cancel, 3)
 				sel = 0
 			} else if sel%2 < 1 && sel+1 < partyCount {
-				wpcvwDrawMemberName(w, sel)
+				drawMemberNameRight(w, sel)
 				sel++
 			}
 		case 4:
 			if sel != -1 && sel+2 < partyCount {
-				wpcvwDrawMemberName(w, sel)
+				drawMemberNameRight(w, sel)
 				sel += 2
 			}
 		}

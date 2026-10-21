@@ -451,12 +451,6 @@ func chestMenuSelect(win *Window, firstMsg int, enabled []int, x0, y0, width, ro
 	return keys[sel]
 }
 
-// draw_member_name_cell (WTREA 5604) redraws member m's name plain in the member picker.
-func drawMemberNameCell(win *Window, m int) {
-	setCursor(win, m%2*9+2, m/2+1)
-	printStringHi(win, memberName(m), 3)
-}
-
 // choose_party_member (WTREA 5649) lets the player pick a member under prompt msg; -1 exit.
 // refreshAll 0 refreshes only the prompt and the picker.
 func trChooseMember(msg, refreshAll int) int {
@@ -511,19 +505,19 @@ func trChooseMember(msg, refreshAll int) int {
 		switch key {
 		case 1:
 			if sel != -1 && sel%2 > 0 {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel--
 			}
 		case 2:
 			if sel != -1 {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				if sel -= 2; sel < 0 {
 					sel = -1
 				}
 			}
 		case 3:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel++
 			}
 		case 4:
@@ -532,7 +526,7 @@ func trChooseMember(msg, refreshAll int) int {
 				printStringHi(mainWindow, exitHi, 3)
 				sel = 0
 			} else if sel+2 < partyCount {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel += 2
 			}
 		}

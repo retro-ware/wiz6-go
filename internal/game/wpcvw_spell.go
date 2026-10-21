@@ -567,7 +567,7 @@ func learnNewSpell(sheet, menu *Window, m, b int) {
 	sp.Max += int16(gain)
 	sp.Cur += int16(gain)
 	p.SpellsLearn[b]--
-	wpcvwDrawSpellPoints(sheet, m)
+	drawSpellPoints(sheet, &party[m])
 }
 
 // doCastMenu (do_cast_menu, WPCVW 86d1) opens member m's spell book; when canCast it

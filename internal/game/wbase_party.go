@@ -305,12 +305,6 @@ func removePartyMember(i int) {
 	}
 }
 
-// drawMemberNameWbase (WBASE 6be6 draw_member_name) prints member i's name in the picker.
-func drawMemberNameWbase(win *Window, i int) {
-	setCursor(win, i%2*9+2, i/2+1)
-	printStringHi(win, cstr(party[i].Name[:]), 3)
-}
-
 // choosePartyMemberWbase (WBASE 6c2b choose_party_member) lets the player pick a member
 // under title msg; the member, or -1. With one member it is that one.
 func choosePartyMemberWbase(msg int) int {
@@ -364,12 +358,12 @@ func choosePartyMemberWbase(msg int) int {
 		switch choice {
 		case 1:
 			if sel != -1 && sel%2 > 0 {
-				drawMemberNameWbase(win, sel)
+				drawMemberName(win, sel)
 				sel--
 			}
 		case 2:
 			if sel != -1 {
-				drawMemberNameWbase(win, sel)
+				drawMemberName(win, sel)
 				if sel-2 >= 0 {
 					sel -= 2
 				} else {
@@ -378,7 +372,7 @@ func choosePartyMemberWbase(msg int) int {
 			}
 		case 3:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-				drawMemberNameWbase(win, sel)
+				drawMemberName(win, sel)
 				sel++
 			}
 		case 4:
@@ -387,7 +381,7 @@ func choosePartyMemberWbase(msg int) int {
 				printStringHi(mainWindow, cancelText, 3)
 				sel = 0
 			} else if sel+2 < partyCount {
-				drawMemberNameWbase(win, sel)
+				drawMemberName(win, sel)
 				sel += 2
 			}
 		}

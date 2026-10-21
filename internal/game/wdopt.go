@@ -159,19 +159,19 @@ func wdoptChooseTarget(msg int) int {
 		switch c {
 		case 1:
 			if sel != -1 && sel%2 > 0 {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel--
 			}
 		case 2:
 			if sel != -1 {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				if sel -= 2; sel < 0 {
 					sel = -1
 				}
 			}
 		case 3:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel++
 			}
 		case 4:
@@ -180,7 +180,7 @@ func wdoptChooseTarget(msg int) int {
 				printStringHi(mainWindow, cancelText, 3)
 				sel = 0
 			} else if sel+2 < partyCount {
-				wmazeF4ee7(win, sel)
+				drawMemberName(win, sel)
 				sel += 2
 			}
 		}

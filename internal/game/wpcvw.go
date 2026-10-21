@@ -154,9 +154,6 @@ func wpcvwCopyThroughChar(s string, ch byte) string {
 	return s
 }
 
-// wpcvwName is member m's name.
-func wpcvwName(m int) string { return cstr(party[m].Name[:]) }
-
 // wpcvwItemRec reads item record id (access_scenario_record type 1).
 func wpcvwItemRec(id int) ItemRec {
 	b := make([]byte, dbs.Size[ItemRec]())

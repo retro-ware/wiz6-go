@@ -790,7 +790,7 @@ func choosePortrait() {
 			loadPortrait(int(newPC.Portrait), 0)
 			shown = int(newPC.Portrait)
 		}
-		drawPortraitWpcmk(menuWin, 8, 3)
+		drawPortrait(menuWin, 0, 8, 3)
 		k := getMenuInput(menuKeys, clickRegions[:])
 		if menuClicked == 1 && k >= 0 && k <= 2 {
 			k = [3]int{1, 3, 5}[k]
@@ -810,7 +810,7 @@ func choosePortrait() {
 	refreshWindow(menuWin)
 	fillWindow(promptWin, 32, 3, false)
 	refreshWindow(promptWin)
-	drawPortraitWpcmk(sheetWin, 1, 1)
+	drawPortrait(sheetWin, 0, 1, 1)
 }
 
 // initNewCharacter (WPCMK 9341) sets the new character's starting values.
@@ -889,20 +889,6 @@ func createCharacter(name string, slot int) {
 // pcmkSkillShown (WPCMK set_class_skill_masks' table) marks the skills the new character
 // can learn.
 var pcmkSkillShown [30]bool
-
-// drawSpellPointsWpcmk (WPCMK 50d1) shows the six realms' spell points on the sheet.
-func drawSpellPointsWpcmk() {
-	for r := range 6 {
-		x := 3
-		if r >= 3 {
-			x = 13
-		}
-		setCursor(sheetWin, x, r%3<<1+14)
-		printInt(sheetWin, int(newPC.SP[r].Cur), 3, wpcvwRealmColors[r])
-		putChar(sheetWin, 47, 9)
-		printInt(sheetWin, int(newPC.SP[r].Max), 3, wpcvwRealmColors[r])
-	}
-}
 
 // putCharAt (WPCMK 611b) puts ch at x, y of win in color 5.
 func putCharAt(win *Window, x, y int, ch byte) {
@@ -1212,5 +1198,5 @@ func chooseStartingSpell(sheet, win *Window, book int) {
 	newPC.SP[r].Max += add
 	newPC.SP[r].Cur += add
 	newPC.SpellsLearn[book]--
-	drawSpellPointsWpcmk()
+	drawSpellPoints(sheetWin, &newPC)
 }

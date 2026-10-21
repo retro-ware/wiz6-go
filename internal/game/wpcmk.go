@@ -142,13 +142,13 @@ func putGlyphAtC4(win *Window, x, y int, ch byte) {
 	putCharHi(win, ch, 4)
 }
 
-// drawPortraitWpcmk (WPCMK 5176 draw_portrait) draws portrait slot 0 (glyphs 72..80 of
-// font 2) at (x, y).
-func drawPortraitWpcmk(win *Window, x, y int) {
+// draw_portrait (WPCMK 5176, WPCVW a8ab) draws the 3x3 glyphs of portrait slot slot
+// (font 2, from glyph 72) at (x, y). WPCMK always draws slot 0.
+func drawPortrait(win *Window, slot, x, y int) {
 	for r := range 3 {
 		setCursor(win, x, y+r)
 		for c := range 3 {
-			putCharHi(win, byte(72+r*3+c), 2)
+			putCharHi(win, byte(72+slot*9+r*3+c), 2)
 		}
 	}
 }
@@ -201,7 +201,7 @@ func drawCharacterSheet() {
 	putGlyphAt(w, 11, 14, 38)
 	putGlyphAt(w, 11, 16, 39)
 	putGlyphAt(w, 11, 18, 40)
-	drawSpellPointsWpcmk()
+	drawSpellPoints(sheetWin, &newPC)
 }
 
 // drawStats (WPCMK 7068) draws the eight stats, the bonus points, HP and stamina.
@@ -389,7 +389,7 @@ func loadAndShowCharacter(slot int) {
 	pcfileRecordIO(&newPC, slot, false)
 	bonusPoints = -1
 	loadPortrait(int(newPC.Portrait), 0)
-	drawPortraitWpcmk(sheetWin, 1, 1)
+	drawPortrait(sheetWin, 0, 1, 1)
 	drawSexRaceClass()
 	drawCharacterSheet()
 	drawStats()

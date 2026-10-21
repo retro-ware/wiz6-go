@@ -884,22 +884,22 @@ func npcChooseMember(msg int, withExit bool) int {
 		switch key {
 		case 1:
 			if sel != -1 && sel%2 > 0 {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel--
 			}
 		case 2:
 			if sel != -1 {
 				if sel-2 >= 0 {
-					drawMemberNameCell(win, sel)
+					drawMemberName(win, sel)
 					sel -= 2
 				} else if withExit {
-					drawMemberNameCell(win, sel)
+					drawMemberName(win, sel)
 					sel = -1
 				}
 			}
 		case 3:
 			if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel++
 			}
 		case 4:
@@ -908,7 +908,7 @@ func npcChooseMember(msg int, withExit bool) int {
 				printStringHi(mainWindow, exitHi, 3)
 				sel = 0
 			} else if sel+2 < partyCount {
-				drawMemberNameCell(win, sel)
+				drawMemberName(win, sel)
 				sel += 2
 			}
 		}

@@ -525,7 +525,7 @@ func doLevelUp(sheet, menu *Window, m int) {
 	drawSheet(sheet, menu, m)
 	fillWindow(menu, ' ', 3, true)
 	refreshWindow(menu)
-	s := replaceCharWithString(getMessage(5010), wpcvwName(m), '^')
+	s := replaceCharWithString(getMessage(5010), memberName(m), '^')
 	s = replaceCharWithString(s, getMessage(int(p.Class)+120), '$')
 	wpcvwShowCenteredMsg(menu, s, true)
 	levelUpStats(sheet, menu, m)
@@ -704,7 +704,7 @@ func doChoosePortrait(w *Window, m int) {
 			loadPortrait(int(p.Portrait), int(memberPortrait[m]))
 			shown = int(p.Portrait)
 		}
-		wpcvwDrawPortrait(pw, m, 8, 6)
+		drawPortrait(pw, int(memberPortrait[m]), 8, 6)
 		k := wpcvwGetMenuInput()
 		if menuClicked == 1 && k >= 0 && k < 3 {
 			k = [3]int{1, 3, 5}[k]

@@ -267,8 +267,9 @@ func initMazeScreen() {
 // memberCell is where member m's name sits in the choose window.
 func memberCell(m int) (int, int) { return (m%2)*9 + 2, m/2 + 1 }
 
-// f4ee7 (WMAZE): member m's name, unhighlighted, in win.
-func wmazeF4ee7(win *Window, m int) {
+// draw_member_name (WMAZE 4ee7, WBASE 6be6, WTREA 5604, ...) reprints member m's name plain in
+// the member picker win.
+func drawMemberName(win *Window, m int) {
 	x, y := memberCell(m)
 	setCursor(win, x, y)
 	printStringHi(win, memberName(m), 3)
@@ -343,22 +344,22 @@ func choosePartyMember(msg, cancel int) int {
 			switch k {
 			case 1:
 				if sel != -1 && sel%2 > 0 {
-					wmazeF4ee7(win, sel)
+					drawMemberName(win, sel)
 					sel--
 				}
 			case 2:
 				if sel != -1 {
 					if sel-2 >= 0 {
-						wmazeF4ee7(win, sel)
+						drawMemberName(win, sel)
 						sel -= 2
 					} else if cancel == 1 {
-						wmazeF4ee7(win, sel)
+						drawMemberName(win, sel)
 						sel = -1
 					}
 				}
 			case 3:
 				if sel != -1 && sel%2 < 1 && sel+1 < partyCount {
-					wmazeF4ee7(win, sel)
+					drawMemberName(win, sel)
 					sel++
 				}
 			case 4:
@@ -367,7 +368,7 @@ func choosePartyMember(msg, cancel int) int {
 					printStringHi(mainWindow, exitHi, 3)
 					sel = 0
 				} else if sel+2 < partyCount {
-					wmazeF4ee7(win, sel)
+					drawMemberName(win, sel)
 					sel += 2
 				}
 			}
